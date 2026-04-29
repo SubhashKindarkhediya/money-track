@@ -1,0 +1,89 @@
+import { singleton } from "tsyringe";
+import { Op } from "sequelize";
+import Transaction from "../models/transaction.model";
+
+@singleton()
+export class DashboardService {
+  /**
+   * Get financial summary for a user (Total Overall)
+   * @param uid
+   */
+  async getSummary(uid: string) {
+    // 1. Calculate Udhar Statistics
+    const totalCredit = await Transaction.sum("amount", {
+      where: { uid, type: "credit", status: "pending" },
+    }) || 0;
+
+    const totalDebit = await Transaction.sum("amount", {
+      where: { uid, type: "debit", status: "pending" },
+    }) || 0;
+
+    // 2. Calculate Personal Statistics
+    const totalIncome = await Transaction.sum("amount", {
+      where: { uid, type: "income" },
+    }) || 0;
+
+    const totalExpense = await Transaction.sum("amount", {
+      where: { uid, type: "expense" },
+    }) || 0;
+
+    return {
+      udhar: {
+        totalCredit,
+        totalDebit,
+        netBalance: totalCredit - totalDebit,
+      },
+      personal: {
+        totalIncome,
+        totalExpense,
+        savings: totalIncome - totalExpense,
+      }
+    };
+  }
+
+  /**
+   * Get a detailed report for a specific month
+   */
+  async getMonthlyReport(uid: string, month: number, year: number) {
+    // Define the start and end of the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    // 1. Fetch all transactions for this month
+    const transactions = await Transaction.findAll({
+      where: {
+        uid,
+        date: {
+          [Op.between]: [startDate, endDate],
+        },
+      },
+      order: [["date", "ASC"]],
+    });
+
+    // 2. Calculate Monthly Totals
+    let monthlyIncome = 0;
+    let monthlyExpense = 0;
+    let monthlyCredit = 0;
+    let monthlyDebit = 0;
+
+    transactions.forEach(t => {
+      const amount = Number(t.amount);
+      if (t.type === "income") monthlyIncome += amount;
+      if (t.type === "expense") monthlyExpense += amount;
+      // Only count credit/debit in summary if they are pending
+      if (t.type === "credit" && t.status === "pending") monthlyCredit += amount;
+      if (t.type === "debit" && t.status === "pending") monthlyDebit += amount;
+    });
+
+    return {
+      period: { month, year },
+      summary: {
+        income: monthlyIncome,
+        expense: monthlyExpense,
+        credit: monthlyCredit,
+        debit: monthlyDebit,
+      },
+      transactions: transactions, // Full list for the user to see "where money went"
+    };
+  }
+}
