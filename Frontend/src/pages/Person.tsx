@@ -15,6 +15,7 @@ interface Person {
   createdAt: string;
   totalCredit?: number;
   totalDebit?: number;
+  linked_user_id?: string;
 }
 
 interface Transaction {
@@ -368,9 +369,28 @@ const Person: React.FC = () => {
                   <div className="w-20 h-20 rounded-full border-2 border-indigo-500 shrink-0 bg-indigo-50 dark:bg-[#1e1a3b] flex items-center justify-center">
                     <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">{selectedPerson.name.charAt(0).toUpperCase()}</span>
                   </div>
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
                     <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{selectedPerson.name}</h1>
-                    {selectedPerson.phone && <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{selectedPerson.phone}</p>}
+                    {selectedPerson.phone && (
+                      <div className="flex items-center gap-3">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{selectedPerson.phone}</p>
+                        {selectedPerson.linked_user_id && (
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-tighter border border-emerald-500/20">On App</span>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="mt-2">
+                      {selectedPerson.linked_user_id ? (
+                        <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-95">
+                          <CheckCircle2 size={14} /> Send Request
+                        </button>
+                      ) : (
+                        <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
+                          <UserPlus size={14} /> Invite to App
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -782,11 +802,23 @@ const Person: React.FC = () => {
                         {person.name.charAt(0).toUpperCase()}
                       </div>
 
-                      {/* Info */}
                       <div className="flex flex-col gap-0.5">
-                        <h4 className="text-base font-bold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-[200px]">
-                          {person.name}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-base font-bold text-gray-900 dark:text-white truncate max-w-[120px] sm:max-w-[180px]">
+                            {person.name}
+                          </h4>
+                          {person.linked_user_id ? (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                              <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">On App</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                              <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-tighter">Not on App</span>
+                            </div>
+                          )}
+                        </div>
                         {person.phone && (
                           <span className="text-xs font-medium text-gray-500 dark:text-gray-400 tracking-wide">
                             {person.phone}

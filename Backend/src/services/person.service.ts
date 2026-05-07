@@ -2,6 +2,7 @@ import { singleton } from "tsyringe";
 import Person from "../models/person.model";
 import Transaction from "../models/transaction.model";
 import { Op } from "sequelize";
+import User from "../models/user.model";
 
 @singleton()
 export class PersonService {
@@ -15,7 +16,19 @@ export class PersonService {
     notes?: string;
     uid: string;
   }) {
-    return await Person.create(data);
+    let linked_user_id = undefined;
+
+    // Check if a user exists with this phone number
+    if (data.phone) {
+      const existingUser = await User.findOne({
+        where: { phone_number: data.phone },
+      });
+      if (existingUser) {
+        linked_user_id = existingUser.id;
+      }
+    }
+
+    return await Person.create({ ...data, linked_user_id });
   }
 
   /**
@@ -26,7 +39,13 @@ export class PersonService {
     const persons = await Person.findAll({
       where: { uid },
       order: [["createdAt", "DESC"]],
-      raw: true,
+      include: [
+        {
+          model: User,
+          as: "linkedUser",
+          attributes: ["phone_number", "email", "name"],
+        },
+      ],
     });
 
     const transactions = await Transaction.findAll({
@@ -47,11 +66,18 @@ export class PersonService {
       if (tx.type === "debit") summaryMap[tx.person_id].totalDebit += amount;
     });
 
-    return persons.map((p: any) => ({
-      ...p,
-      totalCredit: summaryMap[p.id]?.totalCredit || 0,
-      totalDebit: summaryMap[p.id]?.totalDebit || 0,
-    }));
+    return persons.map((p: any) => {
+      const personData = p.get({ plain: true });
+      // Priority: 1. Latest phone from Linked User, 2. Saved phone in Person record
+      const displayPhone = personData.linkedUser?.phone_number || personData.phone;
+      
+      return {
+        ...personData,
+        phone: displayPhone,
+        totalCredit: summaryMap[personData.id]?.totalCredit || 0,
+        totalDebit: summaryMap[personData.id]?.totalDebit || 0,
+      };
+    });
   }
 
   /**

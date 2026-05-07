@@ -2,6 +2,7 @@ import { singleton } from "tsyringe";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model";
+import Person from "../models/person.model";
 
 @singleton()
 export class AuthService {
@@ -31,6 +32,16 @@ export class AuthService {
       password: hashedPassword,
       confirmPassword: hashedPassword, // Storing hashed version for consistency if required by model
     });
+
+    // --- MoneyTrail Connection Logic ---
+    // After user is created, link them to any existing people who added this phone number
+    if (phone_number) {
+      await Person.update(
+        { linked_user_id: newUser.id },
+        { where: { phone: phone_number } }
+      );
+    }
+    // ------------------------------------
 
     const userResponse = newUser.toJSON();
     delete (userResponse as any).password;
@@ -99,7 +110,16 @@ export class AuthService {
       user.name = name;
     }
 
-    if (phone_number !== undefined) user.phone_number = phone_number;
+    if (phone_number !== undefined && phone_number !== user.phone_number) {
+      user.phone_number = phone_number;
+      
+      // Re-link MoneyTrail connection for the new phone number
+      await Person.update(
+        { linked_user_id: user.id },
+        { where: { phone: phone_number } }
+      );
+    }
+    
     if (gender !== undefined) user.gender = gender;
     if (address !== undefined) user.address = address;
     if (dob !== undefined) user.dob = dob;

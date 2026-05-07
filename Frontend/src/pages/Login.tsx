@@ -99,7 +99,16 @@ const Login: React.FC = () => {
       });
       const { user, token } = response.data;
       login(token, user);
-      navigate("/");
+      
+      // Force keyboard to close
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      
+      // Small delay to let mobile OS retract keyboard before navigation
+      setTimeout(() => {
+        navigate("/");
+      }, 150);
     } catch (err: any) {
       setError(
         err.response?.data?.error ||

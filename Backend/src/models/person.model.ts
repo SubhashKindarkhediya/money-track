@@ -8,6 +8,7 @@ interface PersonAttributes {
   name: string;
   phone?: string;
   notes?: string;
+  linked_user_id?: string;
 }
 
 interface PersonCreationAttributes extends Optional<PersonAttributes, "id"> {}
@@ -21,6 +22,7 @@ class Person
   public name!: string;
   public phone?: string;
   public notes?: string;
+  public linked_user_id?: string;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -49,6 +51,10 @@ Person.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    linked_user_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
   },
   {
     sequelize,
@@ -56,5 +62,7 @@ Person.init(
     timestamps: true,
   },
 );
+
+Person.belongsTo(User, { foreignKey: "linked_user_id", as: "linkedUser" });
 
 export default Person;

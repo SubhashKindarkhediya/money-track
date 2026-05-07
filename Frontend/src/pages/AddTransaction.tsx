@@ -12,7 +12,7 @@ const AddTransaction: React.FC = () => {
   const [persons, setPersons] = useState<{ id: string; name: string; phone?: string }[]>([]);
   const [txForm, setTxForm] = useState({
     person_id: preSelectedPersonId || "",
-    type: "credit",
+    type: location.state?.type || "credit",
     amount: "",
     reason: "",
     date: "",

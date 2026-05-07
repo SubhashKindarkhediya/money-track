@@ -141,6 +141,43 @@ const Dashboard = () => {
   const [summary, setSummary] = useState({ totalCredit: 0, totalDebit: 0, netBalance: 0 });
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [isFabOpen, setIsFabOpen] = useState(false);
+  const { user } = useAuth();
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  useEffect(() => {
+    // Dismiss mobile keyboard on mount with a small delay
+    setTimeout(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }, 100);
+
+    // Show onboarding tooltip for new users with a smooth delay
+    const checkTooltip = () => {
+      const userData = user || JSON.parse(localStorage.getItem("user") || "{}");
+      const userKey = userData?.id || userData?.email;
+
+      if (userKey) {
+        const hasSeen = localStorage.getItem(`hasSeenFabTooltip_${userKey}`);
+        if (hasSeen !== "true") {
+          console.log("Showing onboarding tooltip for:", userKey);
+          setTimeout(() => setShowTooltip(true), 800);
+        }
+      }
+    };
+
+    checkTooltip();
+  }, [user]);
+
+  const handleCloseTooltip = () => {
+    const userData = user || JSON.parse(localStorage.getItem("user") || "{}");
+    const userKey = userData?.id || userData?.email;
+    if (userKey) {
+      localStorage.setItem(`hasSeenFabTooltip_${userKey}`, "true");
+    }
+    setShowTooltip(false);
+  };
 
   const toggleVisibility = (index: number) => {
     setVisibility(prev => prev.map((v, i) => i === index ? !v : v));
@@ -173,14 +210,11 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-
-
   const fmt = (n: number) => n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const cards = [
     { id: 0, title: "Total Credit", amount: summaryLoading ? "..." : fmt(summary.totalCredit), type: "credit" as const },
     { id: 1, title: "Total Debit", amount: summaryLoading ? "..." : fmt(summary.totalDebit), type: "debit" as const },
-    // { id: 2, title: "Net Balance", amount: summaryLoading ? "..." : fmt(summary.netBalance), type: "balance" as const },
   ];
 
   const handleScroll = () => {
@@ -203,7 +237,7 @@ const Dashboard = () => {
         scrollRef.current.scrollTo({ left: nextIndex * childWidth, behavior: 'smooth' });
         setActiveIndex(nextIndex);
       }
-    }, 4500); // Keeping the slightly longer delay as it's generally preferred
+    }, 4500);
     return () => clearInterval(interval);
   }, [activeIndex]);
 
@@ -214,6 +248,23 @@ const Dashboard = () => {
       setActiveIndex(index);
     }
   };
+
+  const fabOptions = [
+    {
+      label: "Give Money",
+      icon: <TrendingDown size={20} />,
+      color: "bg-rose-500",
+      path: "/add-transaction",
+      state: { type: "debit" }
+    },
+    {
+      label: "Receive Money",
+      icon: <TrendingUp size={20} />,
+      color: "bg-emerald-500",
+      path: "/add-transaction",
+      state: { type: "credit" }
+    }
+  ];
 
   return (
     <>
@@ -313,14 +364,70 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Floating Add Transaction Button (Shining Effect) */}
-      <button
-        onClick={() => navigate('/add-transaction')}
-        className="fixed bottom-28 right-6 lg:bottom-10 lg:right-10 z-[100] w-14 h-14 bg-gradient-to-br from-indigo-400 via-indigo-600 to-indigo-700 text-white rounded-2xl shadow-[0_0_25px_rgba(99,102,241,0.6)] hover:shadow-[0_0_35px_rgba(99,102,241,0.8)] border border-indigo-300/30 flex items-center justify-center transition-all duration-300 active:scale-95 hover:scale-110 overflow-hidden group"
-      >
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 translate-x-[-150%] skew-x-[-30deg] group-hover:animate-[shine_1.5s_ease-out_infinite]" />
-        <Plus size={26} className="relative z-10" />
-      </button>
+      {/* FAB Backdrop */}
+      {isFabOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] transition-opacity duration-300"
+          onClick={() => setIsFabOpen(false)}
+        />
+      )}
+
+      {/* Floating Add Transaction Menu */}
+      <div className="fixed bottom-28 right-6 lg:bottom-10 lg:right-10 z-[100] flex flex-col items-end gap-8">
+        {/* FAB Options */}
+        <div className={`flex flex-col items-end gap-3 transition-all duration-300 ${isFabOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"}`}>
+          {fabOptions.map((opt, i) => (
+            <div key={i} className="flex items-center gap-3 group">
+              <span className="bg-white dark:bg-gray-800 px-3 py-1.5 rounded-xl text-xs font-black shadow-lg border border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-200 opacity-100 transition-opacity">
+                {opt.label}
+              </span>
+              <button
+                onClick={() => {
+                  setIsFabOpen(false);
+                  navigate(opt.path, { state: opt.state });
+                }}
+                className={`w-12 h-12 ${opt.color} text-white rounded-2xl shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95`}
+              >
+                {opt.icon}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Main FAB */}
+        <div className="relative">
+          {/* Onboarding Tooltip */}
+          {showTooltip && !isFabOpen && (
+            <div className="absolute bottom-20 right-0 w-64 animate-in slide-in-from-bottom-2 duration-500">
+              <div className="bg-indigo-600 text-white p-4 rounded-3xl shadow-2xl relative">
+                <p className="text-sm font-bold leading-relaxed mb-3">
+                  Tap here to add a new transaction
+                </p>
+                <button
+                  onClick={handleCloseTooltip}
+                  className="bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-colors"
+                >
+                  Got it!
+                </button>
+                {/* Dashed Line Decoration */}
+                <div className="absolute -bottom-8 right-10 w-16 h-8 overflow-hidden">
+                  <svg className="w-full h-full text-indigo-600" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray="8 8">
+                    <path d="M10 10 Q 50 10 90 90" />
+                    <path d="M85 70 L 90 90 L 70 85" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={() => setIsFabOpen(!isFabOpen)}
+            className={`w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-2xl shadow-[0_0_25px_rgba(99,102,241,0.5)] border border-indigo-400/30 flex items-center justify-center transition-all duration-500 ${isFabOpen ? "rotate-[135deg] bg-slate-800 scale-90" : "hover:scale-110"}`}
+          >
+            <Plus size={26} />
+          </button>
+        </div>
+      </div>
     </>
   );
 };
@@ -332,6 +439,13 @@ function AppContent() {
   const { logout, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Global: Close keyboard on every route change
+  useEffect(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [location.pathname]);
 
   const isAuthPage =
     location.pathname === "/login" || location.pathname === "/register";
