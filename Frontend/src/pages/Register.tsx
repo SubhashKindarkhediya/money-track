@@ -10,7 +10,6 @@ import {
   Loader2,
   Phone,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
 const FloatingInput = ({
