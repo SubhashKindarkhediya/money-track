@@ -12,6 +12,7 @@ import {
   Wallet,
   Users,
   History,
+  Settings,
   LogOut,
   Menu,
   X,
