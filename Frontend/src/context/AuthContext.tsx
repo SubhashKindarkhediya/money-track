@@ -23,20 +23,42 @@ interface AuthContextType {
   loading: boolean;
 }
 
+// Helper: check if a JWT token is expired (client-side, no secret needed)
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    // exp is in seconds, Date.now() is in milliseconds
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true; // If we can't decode it, treat as expired
+  }
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
+
+    if (savedToken && !isTokenExpired(savedToken)) {
+      // Token is valid — restore session
+      setToken(savedToken);
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+    } else if (savedToken) {
+      // Token is expired — clear stale data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
+
     setLoading(false);
-  }, [token]);
+  }, []);
 
   const login = (newToken: string, newUser: User) => {
     localStorage.setItem('token', newToken);

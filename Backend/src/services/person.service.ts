@@ -16,9 +16,9 @@ export class PersonService {
     notes?: string;
     uid: string;
   }) {
-    let linked_user_id = undefined;
+    let linked_user_id: string | undefined = undefined;
 
-    // Check if a user exists with this phone number
+    // Step 1: Check if a registered user exists with this phone number
     if (data.phone) {
       const existingUser = await User.findOne({
         where: { phone_number: data.phone },
@@ -28,7 +28,37 @@ export class PersonService {
       }
     }
 
-    return await Person.create({ ...data, linked_user_id });
+    // Step 2: Create Subhash's Person entry (Ramesh in Subhash's list)
+    const newPerson = await Person.create({ ...data, linked_user_id });
+
+    // Step 3: AUTO CONNECT — If Ramesh is on the app,
+    // automatically add Subhash in Ramesh's person list too
+    if (linked_user_id) {
+      // Get Subhash's (current user's) info to create his entry in Ramesh's list
+      const currentUser = await User.findByPk(data.uid);
+
+      if (currentUser && currentUser.phone_number) {
+        // Check if Ramesh already has Subhash in his list (avoid duplicate)
+        const alreadyExists = await Person.findOne({
+          where: {
+            uid: linked_user_id,           // Ramesh's account
+            phone: currentUser.phone_number, // Subhash's phone
+          },
+        });
+
+        if (!alreadyExists) {
+          // Create Subhash as a Person in Ramesh's list
+          await Person.create({
+            uid: linked_user_id,           // Ramesh's user ID (owner)
+            name: currentUser.name,        // Subhash's name
+            phone: currentUser.phone_number, // Subhash's phone
+            linked_user_id: data.uid,      // Points back to Subhash's user ID
+          });
+        }
+      }
+    }
+
+    return newPerson;
   }
 
   /**

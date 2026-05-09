@@ -7,7 +7,7 @@ const api = axios.create({
   },
 });
 
-// Add a request interceptor to add the auth token
+// Request interceptor: attach auth token from localStorage to every request
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -17,6 +17,24 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor: handle 401 (token missing / expired) globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear stale auth data from storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+
+      // Redirect to login only if not already there
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login';
+      }
+    }
     return Promise.reject(error);
   }
 );
