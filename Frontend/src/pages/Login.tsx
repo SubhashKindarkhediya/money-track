@@ -7,8 +7,6 @@ import {
   LogIn as LogInIcon,
   ChevronRight,
   Loader2,
-  Sun,
-  Moon,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";

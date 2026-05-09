@@ -9,8 +9,6 @@ import {
   ChevronRight,
   Loader2,
   Phone,
-  Sun,
-  Moon,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";

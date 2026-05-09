@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, TrendingUp, TrendingDown, Clock, User, Filter, ChevronRight, ArrowLeft, CheckCircle2, IndianRupee, PlusCircle } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
