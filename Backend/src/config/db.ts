@@ -8,6 +8,11 @@ const sequelize = new Sequelize(env.DB_NAME, env.DB_USER, env.DB_PASSWORD, {
 
   logging: env.NODE_ENV === "development" ? console.log : false,
 
+  dialectOptions:
+    env.NODE_ENV === "production"
+      ? { ssl: { require: true, rejectUnauthorized: false } }
+      : {},
+
   pool: {
     max: 10,
     min: 0,
