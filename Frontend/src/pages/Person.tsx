@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Search, User, Phone, ArrowLeft, UserPlus,
   StickyNote, Loader2, Calendar, MessageSquare,
-  TrendingUp, TrendingDown, IndianRupee, MoreVertical, Clock, PlusCircle, Trash2, SquarePen, X, CheckCircle2, ChevronRight
+  TrendingUp, TrendingDown, IndianRupee, MoreVertical, Clock, PlusCircle, Trash2, SquarePen, X, CheckCircle2, ChevronRight, Eye
 } from "lucide-react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../services/api";
@@ -16,6 +16,7 @@ interface Person {
   totalCredit?: number;
   totalDebit?: number;
   linked_user_id?: string;
+  connection_status?: "none" | "requested" | "connected";
 }
 
 interface Transaction {
@@ -72,6 +73,48 @@ const FloatingInput = ({
   );
 };
 
+// ─── Marquee Text Component ───────────────────────────────────────────────────
+const MarqueeText: React.FC<{ text: string; className?: string; containerClassName?: string }> = ({ text, className = "", containerClassName = "" }) => {
+  const [isOverflow, setIsOverflow] = React.useState(false);
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const spanRef = React.useRef<HTMLSpanElement>(null);
+
+  const checkOverflow = React.useCallback(() => {
+    const wrap = wrapRef.current;
+    const span = spanRef.current;
+    if (wrap && span) {
+      span.style.animation = "none";
+      span.style.transform = "translateX(0)";
+      const overflow = span.scrollWidth > wrap.clientWidth;
+      setIsOverflow(overflow);
+      if (overflow) {
+        const dist = wrap.clientWidth - span.scrollWidth;
+        span.style.setProperty("--scroll-distance", `${dist}px`);
+      }
+      span.style.animation = "";
+      span.style.transform = "";
+    }
+  }, [text]);
+
+  React.useEffect(() => {
+    checkOverflow();
+    const observer = new ResizeObserver(checkOverflow);
+    if (wrapRef.current) observer.observe(wrapRef.current);
+    return () => observer.disconnect();
+  }, [checkOverflow]);
+
+  return (
+    <div ref={wrapRef} className={`relative overflow-hidden min-w-0 flex ${containerClassName}`}>
+      <span
+        ref={spanRef}
+        className={`whitespace-nowrap ${isOverflow ? "email-marquee" : "block truncate"} ${className}`}
+      >
+        {text}
+      </span>
+    </div>
+  );
+};
+
 // ─── Info Row (reusable for detail screen) ───────────────────────────────────
 const InfoRow = ({
   icon: Icon,
@@ -87,15 +130,17 @@ const InfoRow = ({
   last?: boolean;
 }) => (
   <div className={`flex items-center justify-between p-5 ${!last ? "border-b border-gray-50 dark:border-gray-800/50" : ""}`}>
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4 shrink-0">
       <div className={`p-2.5 rounded-xl bg-gray-50 dark:bg-[#1b1c2e] ${iconColor}`}>
         <Icon size={18} />
       </div>
       <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{label}</span>
     </div>
-    <span className="text-sm font-bold text-gray-900 dark:text-white max-w-[55%] text-right">
-      {value || "—"}
-    </span>
+    <MarqueeText 
+      text={value || "—"} 
+      containerClassName="max-w-[55%] justify-end" 
+      className="text-sm font-bold text-gray-900 dark:text-white" 
+    />
   </div>
 );
 
@@ -126,6 +171,9 @@ const Person: React.FC = () => {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", notes: "" });
+  const [txSearch, setTxSearch] = useState("");
+  const [showTxSearch, setShowTxSearch] = useState(false);
+  const [activeTxMenuId, setActiveTxMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPersons();
@@ -136,7 +184,11 @@ const Person: React.FC = () => {
       const p = persons.find(person => person.id === id);
       if (p) {
         setSelectedPerson(p);
-        const targetTab = location.state?.tab || "transactions";
+        
+        // Use URLSearchParams to get the tab from the URL
+        const params = new URLSearchParams(location.search);
+        const targetTab = (params.get("tab") as any) || location.state?.tab || "profile";
+        
         setDetailTab(targetTab);
         if (location.state?.status) {
           setStatusFilter(location.state.status);
@@ -150,7 +202,7 @@ const Person: React.FC = () => {
     } else if (!id) {
       setSelectedPerson(null);
     }
-  }, [id, persons, location.state]);
+  }, [id, persons, location.search, location.state]);
 
   const fetchPersons = async () => {
     try {
@@ -215,6 +267,7 @@ const Person: React.FC = () => {
       setSelectedPerson({ ...selectedPerson, ...updateData });
       fetchPersons();
       setDetailTab("profile");
+      navigate(`/person/${selectedPerson.id}?tab=profile`, { replace: true });
     } catch (error) {
       console.error("Failed to update person", error);
     } finally {
@@ -246,6 +299,17 @@ const Person: React.FC = () => {
       setIsConfirmingDelete(false);
     } catch (error) {
       console.error("Failed to delete person", error);
+    }
+  };
+
+  const handleSendRequest = async () => {
+    if (!selectedPerson) return;
+    try {
+      await api.post(`/person/${selectedPerson.id}/request`);
+      setSelectedPerson(prev => prev ? { ...prev, connection_status: "requested" } : null);
+      setPersons(prev => prev.map(p => p.id === selectedPerson.id ? { ...p, connection_status: "requested" } : p));
+    } catch (error) {
+      console.error("Failed to send request", error);
     }
   };
 
@@ -283,13 +347,37 @@ const Person: React.FC = () => {
     try {
       await api.put(`/transactions/${txId}`, { status: newStatus });
       setTransactions(prev => prev.map(tx => tx.id === txId ? { ...tx, status: newStatus } : tx));
+      // Also update persons to reflect balance change if necessary
+      fetchPersons();
     } catch (err) {
       console.error("Failed to update status", err);
     }
   };
 
+  const handleDeleteTransaction = async (txId: string) => {
+    if (!window.confirm("Are you sure you want to delete this transaction?")) return;
+    try {
+      await api.delete(`/transactions/${txId}`);
+      setTransactions(prev => prev.filter(tx => tx.id !== txId));
+      setSelectedTx(null);
+      fetchPersons();
+    } catch (err) {
+      console.error("Failed to delete transaction", err);
+    }
+  };
+
+  const handleEditTransaction = (tx: Transaction) => {
+    navigate("/add-transaction", { 
+      state: { 
+        editingTx: tx,
+        personId: selectedPerson?.id,
+        personName: selectedPerson?.name
+      } 
+    });
+  };
+
   const handlePersonClick = (person: Person, tab: "profile" | "transactions" = "transactions") => {
-    navigate(`/person/${person.id}`, { state: { tab } });
+    navigate(`/person/${person.id}?tab=${tab}`);
   };
 
   // ---------------------------------------------------------
@@ -305,6 +393,7 @@ const Person: React.FC = () => {
               onClick={() => {
                 if (detailTab === "edit") {
                   setDetailTab("profile");
+                  navigate(`/person/${selectedPerson.id}?tab=profile`, { replace: true });
                 } else {
                   navigate("/person");
                 }
@@ -317,16 +406,29 @@ const Person: React.FC = () => {
               <h2 className="text-base font-black text-gray-900 dark:text-white tracking-wide">
                 {detailTab === "transactions" ? "Transaction List" : detailTab === "edit" ? "Update Person" : "Person Details"}
               </h2>
-              {detailTab === "transactions" && (
+              {detailTab === "transactions" ? (
                 <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 mt-0.5">
                   for {selectedPerson.name}
                 </p>
+              ) : (
+                detailTab === "profile" && selectedPerson.linked_user_id && (
+                  <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 shadow-sm self-start animate-in zoom-in duration-300">
+                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">On App</span>
+                  </div>
+                )
               )}
             </div>
 
             {detailTab !== "edit" && (
               detailTab === "transactions" ? (
-                <div className="ml-auto">
+                <div className="ml-auto flex items-center gap-2">
+                  <button
+                    onClick={() => setShowTxSearch(!showTxSearch)}
+                    className={`p-2.5 rounded-2xl transition-all border ${showTxSearch ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-500/20' : 'bg-gray-50 dark:bg-[#151624] text-gray-400 border-gray-100 dark:border-gray-800'}`}
+                  >
+                    <Search size={20} />
+                  </button>
                   <button
                     onClick={() => navigate("/add-transaction", { state: { personId: selectedPerson.id, personName: selectedPerson.name, status: statusFilter } })}
                     className="p-2.5 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/30"
@@ -348,6 +450,7 @@ const Person: React.FC = () => {
                         notes: selectedPerson.notes || ""
                       });
                       setDetailTab("edit");
+                      navigate(`/person/${selectedPerson.id}?tab=edit`, { replace: true });
                     }}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all border border-indigo-100 dark:border-indigo-500/20 shadow-sm"
                   >
@@ -360,31 +463,74 @@ const Person: React.FC = () => {
           </div>
 
           <div className="px-5 mt-4 space-y-6">
+            
+            {/* Transaction Search Bar */}
+            {detailTab === "transactions" && (
+              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showTxSearch ? 'max-h-20 opacity-100 mb-6' : 'max-h-0 opacity-0 mb-0'}`}>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search transactions..."
+                    value={txSearch}
+                    onChange={(e) => setTxSearch(e.target.value)}
+                    className="w-full bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
+                  />
+                  {txSearch && (
+                    <button 
+                      onClick={() => {
+                        setTxSearch("");
+                        setShowTxSearch(false);
+                      }}
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Profile Section */}
             {detailTab === "profile" && (
               <div className="space-y-6">
                 {/* Profile Card */}
-                <div className="flex items-center gap-5 p-6 rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-indigo-500/20 shadow-lg shadow-indigo-900/5 dark:shadow-none">
-                  <div className="w-20 h-20 rounded-full border-2 border-indigo-500 shrink-0 bg-indigo-50 dark:bg-[#1e1a3b] flex items-center justify-center">
-                    <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">{selectedPerson.name.charAt(0).toUpperCase()}</span>
+                <div className="relative flex items-start gap-4 p-5 rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-indigo-500/20 shadow-lg shadow-indigo-900/5 dark:shadow-none">
+                  <div className="w-14 h-14 rounded-full border-2 border-indigo-500 shrink-0 bg-indigo-50 dark:bg-[#1e1a3b] flex items-center justify-center">
+                    <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{selectedPerson.name.charAt(0).toUpperCase()}</span>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{selectedPerson.name}</h1>
+                  <div className="flex flex-col gap-1 min-w-0 flex-1">
+                    <MarqueeText 
+                      text={selectedPerson.name} 
+                      className="text-lg font-black text-gray-900 dark:text-white tracking-tight" 
+                    />
                     {selectedPerson.phone && (
                       <div className="flex items-center gap-3">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{selectedPerson.phone}</p>
-                        {selectedPerson.linked_user_id && (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-tighter border border-emerald-500/20">On App</span>
-                        )}
                       </div>
                     )}
                     
-                    <div className="mt-2">
+                    <div className="mt-2 flex items-center gap-2">
                       {selectedPerson.linked_user_id ? (
-                        <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-95">
-                          <CheckCircle2 size={14} /> Send Request
-                        </button>
+                        <>
+                          {(!selectedPerson.connection_status || selectedPerson.connection_status === "none") && (
+                            <button onClick={handleSendRequest} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-95">
+                              <UserPlus size={14} /> Send Request
+                            </button>
+                          )}
+                          {selectedPerson.connection_status === "requested" && (
+                            <button disabled className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/20 transition-all cursor-default">
+                              <Clock size={14} /> Requested
+                            </button>
+                          )}
+                          {selectedPerson.connection_status === "connected" && (
+                            <button disabled className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-500/20 transition-all cursor-default">
+                              <CheckCircle2 size={14} /> Connected
+                            </button>
+                          )}
+                        </>
                       ) : (
                         <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
                           <UserPlus size={14} /> Invite to App
@@ -392,6 +538,7 @@ const Person: React.FC = () => {
                       )}
                     </div>
                   </div>
+
                 </div>
 
                 {/* Contact Info */}
@@ -458,7 +605,14 @@ const Person: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {transactions.filter(tx => tx.status === statusFilter).map(tx => (
+                    {transactions
+                      .filter(tx => tx.status === statusFilter)
+                      .filter(tx => 
+                        !txSearch || 
+                        (tx.reason && tx.reason.toLowerCase().includes(txSearch.toLowerCase())) ||
+                        tx.amount.toString().includes(txSearch)
+                      )
+                      .map(tx => (
                       <div
                         key={tx.id}
                         onClick={() => {
@@ -485,8 +639,14 @@ const Person: React.FC = () => {
                           <span className={`text-sm font-black whitespace-nowrap ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                             {tx.type === "credit" ? "+" : "-"}₹{tx.amount}
                           </span>
-                          <div className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 transition-colors">
-                            <ChevronRight size={16} />
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTxMenuId(tx.id);
+                            }}
+                            className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <MoreVertical size={16} />
                           </div>
                         </div>
                       </div>
@@ -625,14 +785,93 @@ const Person: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex">
+                <div className="flex gap-3">
                   <button
                     onClick={() => setSelectedTx(null)}
-                    className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all active:scale-[0.98]"
+                    className="flex-1 py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-black text-xs uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-[0.98]"
                   >
                     Close
                   </button>
+                  {selectedTx.status === "pending" && (
+                    <button
+                      onClick={() => {
+                        handleStatusChange(selectedTx.id, "completed");
+                        setSelectedTx(null);
+                      }}
+                      className="flex-[2] py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                    >
+                      <CheckCircle2 size={18} strokeWidth={3} />
+                      Mark as Complete
+                    </button>
+                  )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Transaction Action Bottom Drawer */}
+          {activeTxMenuId && (
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] animate-in fade-in duration-300 flex flex-col justify-end"
+              onClick={() => setActiveTxMenuId(null)}
+            >
+              <div
+                className="bg-white dark:bg-[#151624] rounded-t-[2.5rem] p-5 sm:p-6 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full duration-300 sm:max-w-md sm:mx-auto sm:w-full sm:rounded-[2.5rem] sm:mb-8"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6"></div>
+
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      const tx = transactions.find(t => t.id === activeTxMenuId);
+                      if (tx) setSelectedTx(tx);
+                      setActiveTxMenuId(null);
+                    }}
+                    className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                      <Eye size={20} />
+                    </div>
+                    Transaction Details
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const tx = transactions.find(t => t.id === activeTxMenuId);
+                      if (tx) handleEditTransaction(tx);
+                      setActiveTxMenuId(null);
+                    }}
+                    className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
+                      <SquarePen size={20} />
+                    </div>
+                    Edit Transaction
+                  </button>
+
+                  <div className="pt-2">
+                    <button
+                      onClick={() => {
+                        handleDeleteTransaction(activeTxMenuId!);
+                        setActiveTxMenuId(null);
+                      }}
+                      className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
+                        <Trash2 size={20} />
+                      </div>
+                      Delete Transaction
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setActiveTxMenuId(null)}
+                  className="w-full mt-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           )}
@@ -792,32 +1031,25 @@ const Person: React.FC = () => {
               return (
                 <div
                   key={person.id}
-                  onClick={() => handlePersonClick(person)}
-                  className="relative bg-white dark:bg-[#151624] p-5 rounded-[1.5rem] border border-gray-100 dark:border-gray-800/80 shadow-sm hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-500/30 transition-all group flex flex-col gap-4 cursor-pointer active:scale-[0.98]"
+                  className="relative bg-white dark:bg-[#151624] rounded-[1.5rem] border border-gray-100 dark:border-gray-800/80 shadow-sm hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-500/30 transition-all group flex flex-col overflow-hidden"
                 >
-                  <div className="flex items-start justify-between">
+                  <div 
+                    onClick={() => handlePersonClick(person, "profile")}
+                    className="flex items-start justify-between p-5 pb-4 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors active:bg-gray-100 dark:active:bg-gray-800"
+                  >
                     <div className="flex items-center gap-4">
                       {/* Avatar */}
                       <div className="w-12 h-12 rounded-[1rem] bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-105 transition-transform">
                         {person.name.charAt(0).toUpperCase()}
                       </div>
 
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-base font-bold text-gray-900 dark:text-white truncate max-w-[120px] sm:max-w-[180px]">
-                            {person.name}
-                          </h4>
-                          {person.linked_user_id ? (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                              <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">On App</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                              <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-tighter">Not on App</span>
-                            </div>
-                          )}
+                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <MarqueeText 
+                            text={person.name} 
+                            containerClassName="max-w-[120px] sm:max-w-[180px]"
+                            className="text-base font-bold text-gray-900 dark:text-white"
+                          />
                         </div>
                         {person.phone && (
                           <span className="text-xs font-medium text-gray-500 dark:text-gray-400 tracking-wide">
@@ -827,23 +1059,39 @@ const Person: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Three Dot Menu (Opens Bottom Drawer) */}
-                    <div className="absolute top-4 right-4">
+                    {/* Right Side Status & Menu */}
+                    <div className="absolute top-4 right-4 flex flex-col items-end gap-4">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveMenuId(person.id);
                         }}
-                        className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        className="p-1.5 -mr-1.5 -mt-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                       >
                         <MoreVertical size={18} />
                       </button>
+
+                      {person.linked_user_id ? (
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 shadow-sm animate-in zoom-in duration-300">
+                          <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
+                          <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">On App</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm animate-in zoom-in duration-300">
+                          <div className="w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-500"></div>
+                          <span className="text-[8px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Not on App</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Financial Summary */}
-                  <div className="grid grid-cols-2 gap-3 mt-1 pt-4 border-t border-gray-50 dark:border-gray-800/50">
-                    <div className="flex flex-col gap-1">
+                  <div 
+                    onClick={() => handlePersonClick(person, "transactions")}
+                    className="px-5 pb-5 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors active:bg-gray-100 dark:active:bg-gray-800"
+                  >
+                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-50 dark:border-gray-800/50">
+                      <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1">
                         <TrendingUp size={10} className="text-emerald-500" /> Credit
                       </span>
@@ -859,6 +1107,7 @@ const Person: React.FC = () => {
                         ₹{debit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
+                  </div>
                   </div>
                 </div>
               );
@@ -1006,7 +1255,7 @@ const Person: React.FC = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setSelectedTx(null)}
-                className="flex-1 py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-black text-sm"
+                className="flex-1 py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-black text-xs uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-[0.98]"
               >
                 Close
               </button>
@@ -1016,13 +1265,80 @@ const Person: React.FC = () => {
                     handleStatusChange(selectedTx.id, "completed");
                     setSelectedTx(null);
                   }}
-                  className="flex-[2] py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                  className="flex-[2] py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
-                  <CheckCircle2 size={18} />
-                  Mark as Completed
+                  <CheckCircle2 size={18} strokeWidth={3} />
+                  Mark as Complete
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Action Bottom Drawer */}
+      {activeTxMenuId && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] animate-in fade-in duration-300 flex flex-col justify-end"
+          onClick={() => setActiveTxMenuId(null)}
+        >
+          <div
+            className="bg-white dark:bg-[#151624] rounded-t-[2.5rem] p-5 sm:p-6 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full duration-300 sm:max-w-md sm:mx-auto sm:w-full sm:rounded-[2.5rem] sm:mb-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6"></div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  const tx = transactions.find(t => t.id === activeTxMenuId);
+                  if (tx) setSelectedTx(tx);
+                  setActiveTxMenuId(null);
+                }}
+                className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
+              >
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                  <Eye size={20} />
+                </div>
+                Transaction Details
+              </button>
+
+              <button
+                onClick={() => {
+                  const tx = transactions.find(t => t.id === activeTxMenuId);
+                  if (tx) handleEditTransaction(tx);
+                  setActiveTxMenuId(null);
+                }}
+                className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
+              >
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
+                  <SquarePen size={20} />
+                </div>
+                Edit Transaction
+              </button>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    handleDeleteTransaction(activeTxMenuId!);
+                    setActiveTxMenuId(null);
+                  }}
+                  className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
+                    <Trash2 size={20} />
+                  </div>
+                  Delete Transaction
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveTxMenuId(null)}
+              className="w-full mt-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}

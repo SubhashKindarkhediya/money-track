@@ -19,6 +19,67 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
+// Tap to copy email + auto-scroll if overflow — works on mobile & desktop
+const TruncatedEmail: React.FC<{ email: string; className?: string }> = ({ email, className = "" }) => {
+  const [copied, setCopied] = React.useState(false);
+  const [isOverflow, setIsOverflow] = React.useState(false);
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const spanRef = React.useRef<HTMLSpanElement>(null);
+
+  const checkOverflow = React.useCallback(() => {
+    const wrap = wrapRef.current;
+    const span = spanRef.current;
+    if (wrap && span) {
+      // Temporarily remove animation to measure real width
+      span.style.animation = "none";
+      span.style.transform = "translateX(0)";
+      const overflow = span.scrollWidth > wrap.clientWidth;
+      setIsOverflow(overflow);
+      if (overflow) {
+        const dist = wrap.clientWidth - span.scrollWidth;
+        span.style.setProperty("--scroll-distance", `${dist}px`);
+      }
+      // Restore animation
+      span.style.animation = "";
+      span.style.transform = "";
+    }
+  }, [email]);
+
+  React.useEffect(() => {
+    checkOverflow();
+    const observer = new ResizeObserver(checkOverflow);
+    if (wrapRef.current) observer.observe(wrapRef.current);
+    return () => observer.disconnect();
+  }, [checkOverflow]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(email).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      onClick={handleCopy}
+      className={`relative overflow-hidden min-w-0 cursor-pointer`}
+    >
+      <span
+        ref={spanRef}
+        className={`text-sm font-bold whitespace-nowrap ${isOverflow ? "email-marquee" : "block truncate"} ${className}`}
+      >
+        {email}
+      </span>
+      {copied && (
+        <span className="absolute -top-8 right-0 bg-gray-900 dark:bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-lg whitespace-nowrap animate-in fade-in zoom-in-95 duration-200 z-50">
+          ✓ Copied!
+        </span>
+      )}
+    </div>
+  );
+};
+
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -154,18 +215,19 @@ const Profile: React.FC = () => {
         <div className="px-5 mt-4 space-y-6">
 
           {/* 1. Main Profile Card */}
-          <div className="flex items-center gap-5 p-6 rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-indigo-500/20 shadow-lg shadow-indigo-900/5 dark:shadow-none">
+          <div className="flex items-start gap-4 p-5 rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-indigo-500/20 shadow-lg shadow-indigo-900/5 dark:shadow-none">
             {/* Avatar */}
-            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-indigo-500 shrink-0 bg-[#1e1a3b] p-1 flex items-center justify-center">
-              <User className="text-indigo-500" size={50} />
+            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-indigo-500 shrink-0 bg-[#1e1a3b] flex items-center justify-center">
+              <User className="text-indigo-500" size={28} />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
+              <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight break-words">
                 {user?.name || "User"}
               </h1>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                {user?.email || "-"}
-              </p>
+              <TruncatedEmail
+                email={user?.email || "-"}
+                className="text-gray-500 dark:text-gray-400 font-medium"
+              />
             </div>
           </div>
 
@@ -187,13 +249,18 @@ const Profile: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between p-5 border-b border-gray-50 dark:border-gray-800/50">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 shrink-0">
                   <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#1b1c2e] text-indigo-500 dark:text-indigo-400">
                     <Mail size={18} />
                   </div>
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Email Address</span>
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300 shrink-0">Email Address</span>
                 </div>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">{user?.email || "-"}</span>
+                <div className="ml-4 max-w-[45%] overflow-hidden">
+                  <TruncatedEmail
+                    email={user?.email || "-"}
+                    className="text-gray-900 dark:text-white"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-5 border-b border-gray-50 dark:border-gray-800/50">

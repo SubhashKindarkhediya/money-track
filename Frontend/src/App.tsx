@@ -27,6 +27,12 @@ import {
   User,
   ChevronDown,
   PlusCircle,
+  Bell,
+  IndianRupee,
+  UserPlus,
+  Coins,
+  ArrowLeft,
+  RefreshCw,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -436,6 +442,130 @@ function AppContent() {
   const { logout, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showNotifPill, setShowNotifPill] = useState(false);
+  const [notifScreenOpen, setNotifScreenOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'requests' | 'activity'>('requests');
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loadingNotifs, setLoadingNotifs] = useState(true);
+
+  const fetchNotifications = async () => {
+    try {
+      const { default: api } = await import("./services/api");
+      const res = await api.get("/notifications");
+      setNotifications(res.data);
+    } catch (err) {
+      console.error("Failed to fetch notifications", err);
+    } finally {
+      setLoadingNotifs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user]);
+
+  // Set default tab based on pending counts when opening screen
+  useEffect(() => {
+    if (notifScreenOpen) {
+      const pendingRequests = notifications.filter(n => n.type === 'request' && n.status === 'pending').length;
+      if (pendingRequests > 0) {
+        setActiveTab('requests');
+      } else {
+        setActiveTab('activity');
+      }
+    }
+  }, [notifScreenOpen]);
+
+  // Mark single notification as read
+  const markAsRead = async (id: string) => {
+    try {
+      const { default: api } = await import("./services/api");
+      await api.patch(`/notifications/${id}/read`);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    }
+  };
+
+  const getDayGroup = (date: string) => {
+    const d = new Date(date);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return 'Earlier';
+  };
+
+  // Map notifications to requests (only those received by the user)
+  const requests = notifications.filter(n => n.type === 'request' && n.recipient_id === user?.id).map(n => ({
+    id: n.id,
+    name: n.data?.senderName || n.sender?.name || 'Unknown',
+    status: n.status,
+    subType: n.data?.subType || 'incoming',
+    responseStatus: n.data?.status, // The actual accepted/rejected value
+    message: n.data?.message,
+    date: getDayGroup(n.createdAt),
+    initial: (n.data?.senderName || n.sender?.name || 'U')[0].toUpperCase(),
+    isRead: n.status !== 'pending'
+  }));
+
+  // Map notifications to activities (transactions)
+  const activities = notifications.filter(n => (n.type === 'transaction' || n.type === 'system') && n.recipient_id === user?.id).map(n => ({
+    id: n.id,
+    type: n.data?.type || 'received',
+    amount: n.data?.amount || 0,
+    person: n.data?.personName || n.data?.senderName || 'Someone',
+    date: getDayGroup(n.createdAt),
+    time: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    isRead: n.status === 'read',
+    message: n.data?.message,
+    autoAdded: n.data?.autoAdded || false
+  }));
+
+  const handleAccept = async (id: string) => {
+    try {
+      const { default: api } = await import("./services/api");
+      await api.patch(`/notifications/${id}/response`, { status: 'accepted' });
+      fetchNotifications();
+    } catch (err) {
+      console.error("Failed to accept request", err);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      const { default: api } = await import("./services/api");
+      await api.patch(`/notifications/${id}/response`, { status: 'rejected' });
+      fetchNotifications();
+    } catch (err) {
+      console.error("Failed to reject request", err);
+    }
+  };
+
+  // Handle Notification Pill Delay and Auto-hide on Dashboard
+  useEffect(() => {
+    if (location.pathname === "/") {
+      setShowNotifPill(false);
+      const showTimer = setTimeout(() => {
+        const pendingCount = notifications.filter(n => n.status === 'pending' && n.recipient_id === user?.id).length;
+        if (pendingCount > 0) {
+          setShowNotifPill(true);
+        }
+      }, 1200);
+      const hideTimer = setTimeout(() => setShowNotifPill(false), 7000); // Hide after ~6s of visibility
+      return () => {
+        clearTimeout(showTimer);
+        clearTimeout(hideTimer);
+      };
+    } else {
+      setShowNotifPill(false);
+    }
+  }, [location.pathname, notifications]);
 
   // Global: Close keyboard on every route change
   useEffect(() => {
@@ -617,32 +747,76 @@ function AppContent() {
         {!isFullScreenPage && (
           <header
             className={`
-            h-20 lg:h-24 sticky top-0 z-50 flex items-center justify-between px-6 lg:px-12
-            bg-white/70 dark:bg-gray-900/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800/50 shadow-sm shadow-indigo-900/5
-          `}
+              h-20 lg:h-24 sticky top-0 z-50 flex items-center justify-between px-4 lg:px-12
+              bg-white/70 dark:bg-gray-900/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800/50 shadow-sm shadow-indigo-900/5
+            `}
           >
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-3 bg-gray-50 dark:bg-gray-800 rounded-[1rem] text-gray-500 shadow-sm"
-            >
-              <Menu size={22} />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-500 shadow-sm hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <Menu size={22} />
+              </button>
 
-            <div className="flex-1 lg:hidden text-center px-4 font-black tracking-tighter text-xl text-gray-900 dark:text-white">
-              Money Track
+              <div className="lg:hidden text-left font-black tracking-tighter text-xl text-gray-900 dark:text-white">
+                Money Track
+              </div>
             </div>
 
-            <div className="flex items-center gap-5 ml-auto">
+            <div className="flex items-center gap-1 sm:gap-2 ml-auto">
               {/* 🌙 THEME TOGGLE */}
               <button
                 onClick={toggleTheme}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:scale-110 active:scale-95 transition-all"
+                className="p-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all"
                 aria-label="Toggle Theme"
               >
                 {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
               </button>
-              <button onClick={() => setProfileDrawerOpen(true)} className="flex items-center gap-5 group outline-none">
-                <div className="hidden sm:block text-right transition-transform group-hover:-translate-x-1">
+
+              {/* 🔔 REQUESTS & NOTIFICATIONS (Middle) */}
+              <div className="relative group/notif">
+                <button
+                  onClick={() => setNotifScreenOpen(true)}
+                  className="relative p-2.5 bg-indigo-50/50 dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 dark:hover:bg-gray-700 transition-all active:scale-95"
+                  aria-label="Notifications"
+                >
+                  <Bell size={20} className={showNotifPill ? "animate-bell-ring" : ""} />
+
+                  {/* Numeric Notification Badge - Only for Received & Pending */}
+                  {notifications.filter(n => n.status === 'pending' && n.recipient_id === user?.id).length > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 border-2 border-white dark:border-gray-900 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-sm">
+                      {notifications.filter(n => n.status === 'pending' && n.recipient_id === user?.id).length > 9 ? '9+' : notifications.filter(n => n.status === 'pending' && n.recipient_id === user?.id).length}
+                    </span>
+                  )}
+                </button>
+
+                {/* 🚀 INSTAGRAM STYLE FLOATING POPUP (Only on Dashboard with state delay) */}
+                {showNotifPill && (
+                  <div className="absolute top-[calc(100%+8px)] right-0 flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-indigo-600 rounded-full shadow-[0_10px_30px_-10px_rgba(79,70,229,0.4)] border border-indigo-100 dark:border-indigo-500/30 z-50 animate-in fade-in slide-in-from-top-4 duration-700 fill-mode-both">
+                    {/* Requests Count */}
+                    {requests.filter(r => r.status === 'pending').length > 0 && (
+                      <div className={`flex items-center gap-1.5 ${activities.filter(a => !a.isRead).length > 0 ? "border-r border-indigo-100 dark:border-indigo-500/30 pr-2" : ""}`}>
+                        <UserPlus size={13} className="text-indigo-600 dark:text-indigo-100" />
+                        <span className="text-[10px] font-black text-indigo-900 dark:text-white">{requests.filter(r => r.status === 'pending').length}</span>
+                      </div>
+                    )}
+                    {/* Transaction Count */}
+                    {activities.filter(a => !a.isRead).length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs">💸</span>
+                        <span className="text-[10px] font-black text-indigo-900 dark:text-white">{activities.filter(a => !a.isRead).length}</span>
+                      </div>
+                    )}
+
+                    {/* Little Arrow/Pointer */}
+                    <div className="absolute -top-1 right-4 w-2 h-2 bg-white dark:bg-indigo-600 border-l border-t border-indigo-100 dark:border-indigo-500/30 rotate-45"></div>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={() => setProfileDrawerOpen(true)} className="flex items-center gap-3 sm:gap-5 group outline-none ml-5">
+                <div className="hidden md:block text-right transition-transform group-hover:-translate-x-1">
                   <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">
                     {user?.name || "User"}
                   </p>
@@ -650,9 +824,9 @@ function AppContent() {
                     Premium Tier
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-[1rem] bg-gradient-to-br from-indigo-500 to-purple-600 p-0.5 shadow-lg transform group-hover:-rotate-12 group-hover:scale-105 transition-all cursor-pointer">
-                  <div className="w-full h-full rounded-[0.85rem] bg-indigo-50 dark:bg-gray-900 flex items-center justify-center border-2 border-white dark:border-gray-900">
-                    <span className="font-black text-indigo-600 text-lg">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1rem] bg-gradient-to-br from-indigo-500 to-purple-600 p-0.5 shadow-lg transform group-hover:-rotate-12 group-hover:scale-105 transition-all cursor-pointer">
+                  <div className="w-full h-full rounded-[0.8rem] sm:rounded-[0.85rem] bg-indigo-50 dark:bg-gray-900 flex items-center justify-center border-2 border-white dark:border-gray-900">
+                    <span className="font-black text-indigo-600 text-base sm:text-lg">
                       {user?.name ? user.name[0].toUpperCase() : "U"}
                     </span>
                   </div>
@@ -819,6 +993,259 @@ function AppContent() {
                   </div>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+        {/* 🔔 FULL SCREEN NOTIFICATION MODAL */}
+        {notifScreenOpen && (
+          <div className="fixed inset-0 z-[110] bg-gray-50 dark:bg-gray-900 animate-in slide-in-from-bottom duration-500 flex flex-col overflow-hidden">
+            {/* Header */}
+            <header className="h-20 lg:h-24 flex items-center px-4 lg:px-12 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-indigo-100/50 dark:border-gray-800/50 sticky top-0 z-[120]">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setNotifScreenOpen(false)}
+                  className="p-2.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all active:scale-95"
+                >
+                  <ArrowLeft size={22} />
+                </button>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Notifications</h2>
+                </div>
+              </div>
+            </header>
+
+            {/* Tabs */}
+            <div className="flex p-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+              <button
+                onClick={() => setActiveTab('requests')}
+                className={`flex-1 py-3 text-sm font-black rounded-xl transition-all ${activeTab === 'requests'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+              >
+                Requests <span className="ml-1 opacity-60">({requests.filter(r => (r.subType === 'incoming' && (r.status === 'pending' || r.status === 'read')) || (r.subType === 'response' && r.status === 'pending')).length})</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`flex-1 py-3 text-sm font-black rounded-xl transition-all ${activeTab === 'activity'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+              >
+                Activity <span className="ml-1 opacity-60">({activities.length})</span>
+              </button>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-4 lg:p-12 scrollbar-hide bg-gray-50 dark:bg-gray-950/50">
+              {activeTab === 'requests' ? (
+                <div className="max-w-2xl mx-auto space-y-8">
+                  {/* Grouped by Date: Today */}
+                  <div>
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2">Today</h3>
+                    <div className="space-y-3">
+                      {requests.filter(r => r.date === 'Today').map(req => {
+                        const cardStatus = req.subType === 'response' ? req.responseStatus : req.status;
+                        return (
+                        <div key={req.id} className={`relative bg-white dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 flex items-center justify-between gap-4 transition-all group overflow-hidden ${
+                          req.subType === 'response' 
+                            ? (cardStatus === 'accepted' ? 'bg-emerald-50/30 dark:bg-emerald-500/5' : 'bg-rose-50/30 dark:bg-rose-500/5')
+                            : ''
+                        }`}>
+                          {/* Left Accent Strip - Only for Responses */}
+                          {req.subType === 'response' && (cardStatus === 'accepted' || cardStatus === 'rejected') && (
+                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                              cardStatus === 'accepted' ? 'bg-emerald-500' : 'bg-rose-500'
+                            }`} />
+                          )}
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black">{req.initial}</div>
+                            <div>
+                              <p className={`text-sm tracking-tight ${!req.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>{req.name}</p>
+                              <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                                {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Wants to connect'}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            {(req.subType === 'incoming' && (req.status === 'pending' || req.status === 'read')) ? (
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => handleAccept(req.id)}
+                                  className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20"
+                                >
+                                  Accept
+                                </button>
+                                <button 
+                                  onClick={() => handleReject(req.id)}
+                                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            ) : req.status === 'accepted' ? (
+                              <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100 dark:border-emerald-500/20 animate-in zoom-in duration-300">
+                                ✓ Accepted
+                              </div>
+                            ) : req.status === 'rejected' ? (
+                              <div className="px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-rose-100 dark:border-rose-500/20 animate-in zoom-in duration-300">
+                                ✕ Rejected
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                        );
+                      })}
+                      {requests.filter(r => r.date === 'Today').length === 0 && (
+                        <p className="text-center py-4 text-xs font-bold text-gray-400">No requests today</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Grouped by Date: Earlier */}
+                  <div>
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2 mt-8">Earlier</h3>
+                    <div className="space-y-3">
+                      {requests.filter(r => r.date !== 'Today').map(req => {
+                        const cardStatus = req.subType === 'response' ? req.responseStatus : req.status;
+                        return (
+                        <div key={req.id} className={`bg-white dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 flex items-center justify-between gap-4 transition-all opacity-80 overflow-hidden relative ${
+                          req.subType === 'response' 
+                            ? (cardStatus === 'accepted' ? 'bg-emerald-50/20 dark:bg-emerald-500/5' : 'bg-rose-50/20 dark:bg-rose-500/5')
+                            : ''
+                        }`}>
+                          {/* Left Accent Strip - Only for Responses */}
+                          {req.subType === 'response' && (cardStatus === 'accepted' || cardStatus === 'rejected') && (
+                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                              cardStatus === 'accepted' ? 'bg-emerald-500' : 'bg-rose-500'
+                            }`} />
+                          )}
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 font-black">{req.initial}</div>
+                            <div>
+                              <p className="font-black text-gray-900 dark:text-white text-sm">{req.name}</p>
+                              <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                                {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Sent request'}
+                              </p>
+                            </div>
+                          </div>
+                          {(req.subType === 'incoming' && (req.status === 'pending' || req.status === 'read')) ? (
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => handleAccept(req.id)}
+                                className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg"
+                              >
+                                Accept
+                              </button>
+                              <button 
+                                onClick={() => handleReject(req.id)}
+                                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : req.status === 'accepted' ? (
+                            <div className="px-4 py-2 text-emerald-500 text-[10px] font-black uppercase tracking-widest">✓ Accepted</div>
+                          ) : req.status === 'rejected' ? (
+                            <div className="px-4 py-2 text-rose-500 text-[10px] font-black uppercase tracking-widest">✕ Rejected</div>
+                          ) : null}
+                        </div>
+                        );
+                      })}
+                      {requests.filter(r => r.date !== 'Today').length === 0 && (
+                        <p className="text-center py-4 text-xs font-bold text-gray-400">No older requests</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="max-w-2xl mx-auto space-y-8">
+                  {/* Today's Activity */}
+                  <div>
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2">Today</h3>
+                    <div className="space-y-3">
+                      {activities.filter(a => a.date === 'Today').map(act => (
+                        <div 
+                          key={act.id} 
+                          onClick={() => !act.isRead && markAsRead(act.id)}
+                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${
+                          !act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
+                        }`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                            act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10'
+                          }`}>
+                            {act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
+                               {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ₹${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{act.time}</span>
+                              {act.autoAdded && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[8px] font-black uppercase tracking-tighter rounded-md border border-indigo-100 dark:border-indigo-500/20">
+                                  <RefreshCw size={8} /> Synced
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {!act.isRead && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                              <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.6)] animate-pulse"></div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {activities.filter(a => a.date === 'Today').length === 0 && (
+                        <p className="text-center py-4 text-xs font-bold text-gray-400">No activity today</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Earlier Activity */}
+                  <div>
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2 mt-8">Earlier</h3>
+                    <div className="space-y-3">
+                      {activities.filter(a => a.date !== 'Today').map(act => (
+                        <div 
+                          key={act.id} 
+                          onClick={() => !act.isRead && markAsRead(act.id)}
+                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${
+                          !act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
+                        }`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                            act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10'
+                          }`}>
+                            {act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
+                               {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ₹${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{act.time}</span>
+                              {act.autoAdded && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[8px] font-black uppercase tracking-tighter rounded-md border border-indigo-100 dark:border-indigo-500/20">
+                                  <RefreshCw size={8} /> Synced
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {!act.isRead && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                              <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.6)] animate-pulse"></div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {activities.filter(a => a.date !== 'Today').length === 0 && (
+                        <p className="text-center py-4 text-xs font-bold text-gray-400">No older activity</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

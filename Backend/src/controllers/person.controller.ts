@@ -100,4 +100,20 @@ export class PersonController {
       res.status(500).json({ error: error.message });
     }
   };
+
+  /**
+   * Send connection request
+   */
+  sendRequest = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const uid = (req as any).user.uid;
+
+      const notification = await this.personService.sendRequest(id, uid);
+      res.json(notification);
+    } catch (error: any) {
+      console.error("Error in sendRequest controller:", error);
+      res.status(500).json({ error: error.message || "Internal Server Error" });
+    }
+  };
 }

@@ -3,9 +3,12 @@ import Person from "../models/person.model";
 import Transaction from "../models/transaction.model";
 import { Op } from "sequelize";
 import User from "../models/user.model";
+import { NotificationService } from "./notification.service";
 
 @singleton()
 export class PersonService {
+  constructor(private notificationService: NotificationService) {}
+
   /**
    * Create a new contact (Person)
    * @param data { name, phone, notes, uid }
@@ -30,33 +33,6 @@ export class PersonService {
 
     // Step 2: Create Subhash's Person entry (Ramesh in Subhash's list)
     const newPerson = await Person.create({ ...data, linked_user_id });
-
-    // Step 3: AUTO CONNECT — If Ramesh is on the app,
-    // automatically add Subhash in Ramesh's person list too
-    if (linked_user_id) {
-      // Get Subhash's (current user's) info to create his entry in Ramesh's list
-      const currentUser = await User.findByPk(data.uid);
-
-      if (currentUser && currentUser.phone_number) {
-        // Check if Ramesh already has Subhash in his list (avoid duplicate)
-        const alreadyExists = await Person.findOne({
-          where: {
-            uid: linked_user_id,           // Ramesh's account
-            phone: currentUser.phone_number, // Subhash's phone
-          },
-        });
-
-        if (!alreadyExists) {
-          // Create Subhash as a Person in Ramesh's list
-          await Person.create({
-            uid: linked_user_id,           // Ramesh's user ID (owner)
-            name: currentUser.name,        // Subhash's name
-            phone: currentUser.phone_number, // Subhash's phone
-            linked_user_id: data.uid,      // Points back to Subhash's user ID
-          });
-        }
-      }
-    }
 
     return newPerson;
   }
@@ -84,6 +60,19 @@ export class PersonService {
       raw: true,
     });
 
+    const { default: Notification } = await import("../models/notification.model");
+    const requestNotifications = await Notification.findAll({
+      where: {
+        type: 'request',
+        [Op.or]: [
+          { sender_id: uid },
+          { recipient_id: uid }
+        ]
+      },
+      order: [["createdAt", "DESC"]],
+      raw: true
+    });
+
     const summaryMap: Record<string, { totalCredit: number; totalDebit: number }> = {};
     
     transactions.forEach((tx: any) => {
@@ -98,14 +87,36 @@ export class PersonService {
 
     return persons.map((p: any) => {
       const personData = p.get({ plain: true });
-      // Priority: 1. Latest phone from Linked User, 2. Saved phone in Person record
       const displayPhone = personData.linkedUser?.phone_number || personData.phone;
+      
+      let connection_status = 'none';
+      if (personData.linked_user_id) {
+        const hasAccepted = requestNotifications.some(n => 
+          ((n.sender_id === uid && n.recipient_id === personData.linked_user_id) ||
+           (n.sender_id === personData.linked_user_id && n.recipient_id === uid)) &&
+          n.status === 'accepted'
+        );
+
+        if (hasAccepted) {
+          connection_status = 'connected';
+        } else {
+          const outgoingPending = requestNotifications.find(n => 
+            n.sender_id === uid && 
+            n.recipient_id === personData.linked_user_id && 
+            n.status === 'pending'
+          );
+          if (outgoingPending) {
+            connection_status = 'requested';
+          }
+        }
+      }
       
       return {
         ...personData,
         phone: displayPhone,
         totalCredit: summaryMap[personData.id]?.totalCredit || 0,
         totalDebit: summaryMap[personData.id]?.totalDebit || 0,
+        connection_status
       };
     });
   }
@@ -118,7 +129,58 @@ export class PersonService {
   async getPersonById(id: string, uid?: string) {
     const where: any = { id };
     if (uid) where.uid = uid;
-    return await Person.findOne({ where });
+    const person = await Person.findOne({ 
+      where,
+      include: [
+        {
+          model: User,
+          as: "linkedUser",
+          attributes: ["phone_number", "email", "name"],
+        },
+      ]
+    });
+    
+    if (person && uid) {
+      const { default: Notification } = await import("../models/notification.model");
+      const requestNotifications = await Notification.findAll({
+        where: {
+          type: 'request',
+          [Op.or]: [
+            { sender_id: uid },
+            { recipient_id: uid }
+          ]
+        },
+        order: [["createdAt", "DESC"]],
+        raw: true
+      });
+      
+      let connection_status = 'none';
+      if (person.linked_user_id) {
+        const hasAccepted = requestNotifications.some(n => 
+          ((n.sender_id === uid && n.recipient_id === person.linked_user_id) ||
+           (n.sender_id === person.linked_user_id && n.recipient_id === uid)) &&
+          n.status === 'accepted'
+        );
+
+        if (hasAccepted) {
+          connection_status = 'connected';
+        } else {
+          const outgoingPending = requestNotifications.find(n => 
+            n.sender_id === uid && 
+            n.recipient_id === person.linked_user_id && 
+            n.status === 'pending'
+          );
+          if (outgoingPending) {
+            connection_status = 'requested';
+          }
+        }
+      }
+      person.setDataValue('connection_status' as any, connection_status);
+      const displayPhone = (person as any).linkedUser?.phone_number || person.phone;
+      person.setDataValue('phone', displayPhone);
+    }
+    
+    return person;
   }
 
   /**
@@ -151,5 +213,36 @@ export class PersonService {
     }
     await person.destroy();
     return true;
+  }
+
+  /**
+   * Manual send request notification
+   */
+  async sendRequest(id: string, uid: string) {
+    console.log(`Sending request from user ${uid} to person ${id}`);
+    const person = await this.getPersonById(id, uid);
+    if (!person) {
+      throw new Error("Person not found");
+    }
+
+    if (!person.linked_user_id) {
+      throw new Error("Person is not on the app");
+    }
+
+    const currentUser = await User.findByPk(uid);
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    return await this.notificationService.createNotification({
+      recipient_id: person.linked_user_id,
+      sender_id: uid,
+      type: "request",
+      data: {
+        message: `${currentUser.name} wants to connect with you.`,
+        senderName: currentUser.name,
+        senderPhone: currentUser.phone_number,
+      },
+    });
   }
 }

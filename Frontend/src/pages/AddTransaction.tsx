@@ -9,14 +9,17 @@ const AddTransaction: React.FC = () => {
   const preSelectedPersonId = location.state?.personId;
   const preSelectedPersonName = location.state?.personName;
 
+  const editingTx = location.state?.editingTx;
+  const isEditing = !!editingTx;
+
   const [persons, setPersons] = useState<{ id: string; name: string; phone?: string }[]>([]);
   const [txForm, setTxForm] = useState({
-    person_id: preSelectedPersonId || "",
-    type: location.state?.type || "credit",
-    amount: "",
-    reason: "",
-    date: "",
-    status: location.state?.status || "pending"
+    person_id: editingTx?.person_id || preSelectedPersonId || "",
+    type: editingTx?.type || location.state?.type || "credit",
+    amount: editingTx?.amount?.toString() || "",
+    reason: editingTx?.reason || "",
+    date: editingTx?.date ? new Date(editingTx.date).toISOString().split('T')[0] : "",
+    status: editingTx?.status || location.state?.status || "pending"
   });
   const [txLoading, setTxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -77,14 +80,23 @@ const AddTransaction: React.FC = () => {
       setTxLoading(true);
       
       if (mode === "single") {
-        await api.post("/transactions", {
-          person_id: txForm.person_id,
-          type: txForm.type,
-          amount: parseFloat(txForm.amount),
-          reason: txForm.reason || undefined,
-          date: txForm.date || undefined,
-          status: txForm.status,
-        });
+        if (isEditing) {
+          await api.put(`/transactions/${editingTx.id}`, {
+            amount: parseFloat(txForm.amount),
+            reason: txForm.reason || undefined,
+            date: txForm.date || undefined,
+            status: txForm.status,
+          });
+        } else {
+          await api.post("/transactions", {
+            person_id: txForm.person_id,
+            type: txForm.type,
+            amount: parseFloat(txForm.amount),
+            reason: txForm.reason || undefined,
+            date: txForm.date || undefined,
+            status: txForm.status,
+          });
+        }
       } else {
         // Group transaction logic
         const amountPerPerson = parseFloat(perPersonAmount);
@@ -142,12 +154,12 @@ const AddTransaction: React.FC = () => {
           <ArrowLeft size={20} className="text-gray-600 dark:text-gray-300" />
         </button>
         <h2 className="text-base font-black text-gray-900 dark:text-white tracking-wide">
-          New Transaction
+          {isEditing ? "Update Transaction" : "New Transaction"}
         </h2>
       </div>
 
-      {/* Transaction Mode Tabs - Only show if not coming from a specific person's profile */}
-      {!preSelectedPersonId && (
+      {/* Transaction Mode Tabs - Only show if not coming from a specific person's profile and not editing */}
+      {!preSelectedPersonId && !isEditing && (
         <div className="flex border-b border-indigo-100/30 dark:border-gray-800/50 bg-white/50 dark:bg-[#151624]/30">
           <button
             type="button"
@@ -258,38 +270,40 @@ const AddTransaction: React.FC = () => {
                 </div>
               )}
 
-              {/* Type Toggle */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Transaction Type</label>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setTxForm({ ...txForm, type: "credit" })}
-                    className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "credit"
-                      ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-500/20 ring-offset-2 dark:ring-offset-[#0a0a1a]"
-                      : "bg-white dark:bg-[#151624] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e1f30]"
-                      }`}>
-                    <TrendingUp size={18} />
-                    <span>
-                      Credit
-                      <span className={`text-[10px] ml-1 opacity-70 font-medium ${txForm.type === "credit" ? "text-emerald-50" : "text-gray-400"}`}>
-                        (Received)
+              {/* Type Toggle - Hide if editing (Type cannot be changed for existing records to prevent balance confusion) */}
+              {!isEditing && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Transaction Type</label>
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => setTxForm({ ...txForm, type: "credit" })}
+                      className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "credit"
+                        ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-500/20 ring-offset-2 dark:ring-offset-[#0a0a1a]"
+                        : "bg-white dark:bg-[#151624] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e1f30]"
+                        }`}>
+                      <TrendingUp size={18} />
+                      <span>
+                        Credit
+                        <span className={`text-[10px] ml-1 opacity-70 font-medium ${txForm.type === "credit" ? "text-emerald-50" : "text-gray-400"}`}>
+                          (Received)
+                        </span>
                       </span>
-                    </span>
-                  </button>
-                  <button type="button" onClick={() => setTxForm({ ...txForm, type: "debit" })}
-                    className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "debit"
-                      ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30 ring-2 ring-rose-500/20 ring-offset-2 dark:ring-offset-[#0a0a1a]"
-                      : "bg-white dark:bg-[#151624] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e1f30]"
-                      }`}>
-                    <TrendingDown size={18} />
-                    <span>
-                      Debit
-                      <span className={`text-[10px] ml-1 opacity-70 font-medium ${txForm.type === "debit" ? "text-rose-50" : "text-gray-400"}`}>
-                        (Given)
+                    </button>
+                    <button type="button" onClick={() => setTxForm({ ...txForm, type: "debit" })}
+                      className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "debit"
+                        ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30 ring-2 ring-rose-500/20 ring-offset-2 dark:ring-offset-[#0a0a1a]"
+                        : "bg-white dark:bg-[#151624] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e1f30]"
+                        }`}>
+                      <TrendingDown size={18} />
+                      <span>
+                        Debit
+                        <span className={`text-[10px] ml-1 opacity-70 font-medium ${txForm.type === "debit" ? "text-rose-50" : "text-gray-400"}`}>
+                          (Given)
+                        </span>
                       </span>
-                    </span>
-                  </button>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Amount */}
               <div>
@@ -592,7 +606,7 @@ const AddTransaction: React.FC = () => {
             <>
               <CheckCircle2 size={18} />
               <span className="uppercase tracking-[0.1em] text-sm font-bold">
-                Save Transaction
+                {isEditing ? "Update Transaction" : "Save Transaction"}
               </span>
             </>
           )}

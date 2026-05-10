@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft, CheckCircle2, SquarePen, Trash2, MoreVertical, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
@@ -29,6 +29,7 @@ const TransactionHistory: React.FC = () => {
   const [filterType, setFilterType] = useState<"all" | "credit" | "debit">("all");
   const [statusFilter, setStatusFilter] = useState<"pending" | "completed">("pending");
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [activeTxMenuId, setActiveTxMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -56,6 +57,27 @@ const TransactionHistory: React.FC = () => {
     } catch (err) {
       console.error("Failed to update status", err);
     }
+  };
+
+  const handleDeleteTransaction = async (txId: string) => {
+    if (!window.confirm("Are you sure you want to delete this transaction?")) return;
+    try {
+      await api.delete(`/transactions/${txId}`);
+      setTransactions(prev => prev.filter(tx => tx.id !== txId));
+      setSelectedTx(null);
+    } catch (err) {
+      console.error("Failed to delete transaction", err);
+    }
+  };
+
+  const handleEditTransaction = (tx: Transaction) => {
+    navigate("/add-transaction", { 
+      state: { 
+        editingTx: tx,
+        personId: tx.Person?.id,
+        personName: tx.Person?.name
+      } 
+    });
   };
 
   const formatDate = (dateStr: string) => {
@@ -292,8 +314,14 @@ const TransactionHistory: React.FC = () => {
                         >
                           {tx.type === "credit" ? "+" : "-"}₹{Number(tx.amount).toLocaleString("en-IN")}
                         </span>
-                        <div className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 transition-colors">
-                          <ChevronRight size={16} />
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveTxMenuId(tx.id);
+                          }}
+                          className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        >
+                          <MoreVertical size={16} />
                         </div>
                       </div>
                     </div>
@@ -350,16 +378,94 @@ const TransactionHistory: React.FC = () => {
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{selectedTx.reason}</p>
                 </div>
               )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setSelectedTx(null)}
+                  className="flex-1 py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-black text-xs uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-[0.98]"
+                >
+                  Close
+                </button>
+                {selectedTx.status === "pending" && (
+                  <button
+                    onClick={() => {
+                      handleStatusChange(selectedTx.id, "completed");
+                      setSelectedTx(null);
+                    }}
+                    className="flex-[2] py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                  >
+                    <CheckCircle2 size={18} strokeWidth={3} />
+                    Mark as Complete
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Action Bottom Drawer */}
+      {activeTxMenuId && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] animate-in fade-in duration-300 flex flex-col justify-end"
+          onClick={() => setActiveTxMenuId(null)}
+        >
+          <div
+            className="bg-white dark:bg-[#151624] rounded-t-[2.5rem] p-5 sm:p-6 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full duration-300 sm:max-w-md sm:mx-auto sm:w-full sm:rounded-[2.5rem] sm:mb-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6"></div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  const tx = transactions.find(t => t.id === activeTxMenuId);
+                  if (tx) setSelectedTx(tx);
+                  setActiveTxMenuId(null);
+                }}
+                className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
+              >
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                  <Eye size={20} />
+                </div>
+                Transaction Details
+              </button>
+
+              <button
+                onClick={() => {
+                  const tx = transactions.find(t => t.id === activeTxMenuId);
+                  if (tx) handleEditTransaction(tx);
+                  setActiveTxMenuId(null);
+                }}
+                className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
+              >
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
+                  <SquarePen size={20} />
+                </div>
+                Edit Transaction
+              </button>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    handleDeleteTransaction(activeTxMenuId!);
+                    setActiveTxMenuId(null);
+                  }}
+                  className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
+                    <Trash2 size={20} />
+                  </div>
+                  Delete Transaction
+                </button>
+              </div>
             </div>
 
-            <div className="flex">
-              <button
-                onClick={() => setSelectedTx(null)}
-                className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all active:scale-[0.98]"
-              >
-                Close
-              </button>
-            </div>
+            <button
+              onClick={() => setActiveTxMenuId(null)}
+              className="w-full mt-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}

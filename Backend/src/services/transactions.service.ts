@@ -1,9 +1,14 @@
 import { singleton } from "tsyringe";
+import { Op } from "sequelize";
 import Transaction, { TransactionType } from "../models/transaction.model";
 import Person from "../models/person.model";
+import User from "../models/user.model";
+import { NotificationService } from "./notification.service";
 
 @singleton()
 export class TransactionsService {
+  constructor(private notificationService: NotificationService) {}
+
   /**
    * Add a new transaction
    */
@@ -16,8 +21,73 @@ export class TransactionsService {
     note?: string;
     status?: "pending" | "completed";
     date?: Date;
-  }) {
-    return await Transaction.create(data);
+  }, isMirror: boolean = false) {
+    const transaction = await Transaction.create(data);
+
+    // Trigger mirroring and notification if linked user exists and it's not already a mirror
+    if (!isMirror && data.person_id && (data.type === 'credit' || data.type === 'debit')) {
+      const person = await Person.findByPk(data.person_id);
+      
+      if (person && person.linked_user_id) {
+        // Find if there is an accepted connection
+        const { default: Notification } = await import("../models/notification.model");
+        const connection = await Notification.findOne({
+          where: {
+            type: 'request',
+            status: 'accepted',
+            [Op.or]: [
+              { sender_id: data.uid, recipient_id: person.linked_user_id },
+              { sender_id: person.linked_user_id, recipient_id: data.uid }
+            ]
+          }
+        });
+
+        if (connection) {
+          const currentUser = await User.findByPk(data.uid);
+          
+          // Find the mirror person (Current User in the Linked User's list)
+          const mirrorPerson = await Person.findOne({
+            where: {
+              uid: person.linked_user_id,
+              linked_user_id: data.uid
+            }
+          });
+
+          if (mirrorPerson) {
+            // Create Mirror Transaction
+            const mirrorType: TransactionType = data.type === 'credit' ? 'debit' : 'credit';
+            
+            await Transaction.create({
+              uid: person.linked_user_id,
+              person_id: mirrorPerson.id,
+              type: mirrorType,
+              amount: data.amount,
+              reason: data.reason,
+              note: data.note,
+              status: data.status || 'pending',
+              date: data.date || new Date(),
+            });
+
+            // Notify the recipient
+            await this.notificationService.createNotification({
+              recipient_id: person.linked_user_id,
+              sender_id: data.uid,
+              type: "transaction",
+              data: {
+                message: `${currentUser?.name} added a transaction of ₹${data.amount} (${data.type === 'credit' ? 'Gave to you' : 'Got from you'}). This has been automatically added to your history.`,
+                amount: data.amount,
+                type: mirrorType,
+                senderName: currentUser?.name,
+                reason: data.reason,
+                autoAdded: true
+              },
+            });
+          }
+        }
+      }
+    }
+
+    return transaction;
   }
 
   /**

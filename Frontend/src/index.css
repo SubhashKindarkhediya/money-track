@@ -33,3 +33,44 @@ body {
   0% { transform: translateX(-150%) skewX(-30deg); }
   100% { transform: translateX(200%) skewX(-30deg); }
 }
+
+/* Hide scrollbar */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Email marquee scroll */
+/* Email marquee — left only, no reverse */
+@keyframes email-scroll {
+  0%    { transform: translateX(0);                      opacity: 1; }
+  8%    { transform: translateX(0);                      opacity: 1; }
+  78%   { transform: translateX(var(--scroll-distance)); opacity: 1; }
+  90%   { transform: translateX(var(--scroll-distance)); opacity: 0; }
+  91%   { transform: translateX(0);                      opacity: 0; }
+  100%  { transform: translateX(0);                      opacity: 1; }
+}
+
+.email-marquee {
+  display: inline-block;
+  animation: email-scroll 3.5s linear infinite;
+}
+
+/* Bell Ringing Animation */
+@keyframes bell-ring {
+  0% { transform: rotate(0); }
+  10% { transform: rotate(15deg); }
+  20% { transform: rotate(-15deg); }
+  30% { transform: rotate(12deg); }
+  40% { transform: rotate(-12deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  70% { transform: rotate(5deg); }
+  80% { transform: rotate(-5deg); }
+  90% { transform: rotate(2deg); }
+  100% { transform: rotate(0); }
+}
+
+.animate-bell-ring {
+  animation: bell-ring 0.8s ease-in-out;
+  transform-origin: top center;
+}
+

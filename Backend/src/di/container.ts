@@ -7,17 +7,21 @@ import { TransactionsService } from "../services/transactions.service";
 import { TransactionsController } from "../controllers/transactions.controller";
 import { DashboardService } from "../services/dashboard.service";
 import { DashboardController } from "../controllers/dashboard.controller";
+import { NotificationService } from "../services/notification.service";
+import { NotificationController } from "../controllers/notification.controller";
 
 // Register Services
 container.registerSingleton(PersonService);
 container.registerSingleton(AuthService);
 container.registerSingleton(TransactionsService);
 container.registerSingleton(DashboardService);
+container.registerSingleton(NotificationService);
 
 // Register Controllers
 container.register(PersonController, { useClass: PersonController });
 container.register(AuthController, { useClass: AuthController });
 container.register(TransactionsController, { useClass: TransactionsController });
 container.register(DashboardController, { useClass: DashboardController });
+container.register(NotificationController, { useClass: NotificationController });
 
 export { container };

@@ -17,6 +17,12 @@ app.use(helmet());
 // All API routes
 app.use("/api/v1", routes);
 
+// Global Error Handler
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error("GLOBAL ERROR:", err);
+  res.status(500).json({ error: err.message || "Something went wrong" });
+});
+
 // Health check
 app.get("/", (req, res) => {
   res.json({ message: "Server is running 🚀" });
