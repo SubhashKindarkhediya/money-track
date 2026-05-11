@@ -316,7 +316,13 @@ const Person: React.FC = () => {
   };
 
   const handleInviteApp = async () => {
-    if (!selectedPerson || !user) return;
+    if (!selectedPerson) {
+      alert("Person details not found.");
+      return;
+    }
+    
+    // Fallback name if user is not loaded
+    const senderName = user?.name || "Your Friend";
     
     const message = `Hi ${selectedPerson.name}! 👋
 
@@ -329,7 +335,7 @@ https://money-track-254.vercel.app/
 
 Takes less than a minute. See you there! 😊
 
-— ${user.name}`;
+— ${senderName}`;
 
     const shareData = {
       title: 'Money Track',
@@ -337,14 +343,29 @@ Takes less than a minute. See you there! 😊
     };
 
     try {
+      // 1. Try Native Share API
       if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(message);
-        alert("Invitation message copied to clipboard!");
+        return;
       }
-    } catch (err) {
+      
+      // 2. Try Clipboard Fallback
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(message);
+        alert("Invitation message copied to clipboard! You can now paste it in WhatsApp or any other app.");
+      } else {
+        // 3. Last Resort: WhatsApp Direct Link (especially useful on mobile if clipboard fails)
+        const whatsappUrl = `https://wa.me/${selectedPerson.phone ? selectedPerson.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+      }
+    } catch (err: any) {
       console.error("Error sharing", err);
+      // If native share was canceled by user, don't show error
+      if (err.name === 'AbortError') return;
+      
+      // Final fallback to WhatsApp if anything else fails
+      const whatsappUrl = `https://wa.me/${selectedPerson.phone ? selectedPerson.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
     }
   };
 
