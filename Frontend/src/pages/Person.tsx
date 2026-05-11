@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 interface Person {
   id: string;
@@ -146,6 +147,7 @@ const InfoRow = ({
 
 const Person: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const location = useLocation();
   const [persons, setPersons] = useState<Person[]>([]);
   const [search, setSearch] = useState("");
@@ -314,19 +316,32 @@ const Person: React.FC = () => {
   };
 
   const handleInviteApp = async () => {
-    if (!selectedPerson) return;
+    if (!selectedPerson || !user) return;
+    
+    const message = `Hi ${selectedPerson.name}! 👋
+
+I've been using *Money Track* to manage shared expenses with friends and contacts — and it's been really helpful!
+
+We already have some transactions recorded together. Join Money Track to easily see what we owe each other, all in one place.
+
+🔗 Get started for free:
+https://money-track-254.vercel.app/
+
+Takes less than a minute. See you there! 😊
+
+— ${user.name}`;
+
     const shareData = {
       title: 'Money Track',
-      text: `Hey, join me on Money Track to manage our transactions together!`,
-      url: window.location.origin
+      text: message,
     };
 
     try {
       if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
       } else {
-        await navigator.clipboard.writeText(shareData.url);
-        alert("App link copied to clipboard!");
+        await navigator.clipboard.writeText(message);
+        alert("Invitation message copied to clipboard!");
       }
     } catch (err) {
       console.error("Error sharing", err);
