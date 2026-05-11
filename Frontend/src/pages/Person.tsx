@@ -313,6 +313,26 @@ const Person: React.FC = () => {
     }
   };
 
+  const handleInviteApp = async () => {
+    if (!selectedPerson) return;
+    const shareData = {
+      title: 'Money Track',
+      text: `Hey, join me on Money Track to manage our transactions together!`,
+      url: window.location.origin
+    };
+
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        alert("App link copied to clipboard!");
+      }
+    } catch (err) {
+      console.error("Error sharing", err);
+    }
+  };
+
   const filteredPersons = persons.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -532,7 +552,10 @@ const Person: React.FC = () => {
                           )}
                         </>
                       ) : (
-                        <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
+                        <button 
+                          onClick={handleInviteApp}
+                          className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                        >
                           <UserPlus size={14} /> Invite to App
                         </button>
                       )}
