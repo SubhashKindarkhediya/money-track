@@ -33,6 +33,8 @@ import {
   Coins,
   ArrowLeft,
   RefreshCw,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -514,8 +516,13 @@ function AppContent() {
     isRead: n.status !== 'pending'
   }));
 
-  // Map notifications to activities (transactions)
-  const activities = notifications.filter(n => (n.type === 'transaction' || n.type === 'system') && n.recipient_id === user?.id).map(n => ({
+  // Map notifications to activities (transactions + connection responses)
+  const activities = notifications.filter(n =>
+    // Regular transaction/system notifications
+    ((n.type === 'transaction' || n.type === 'system') && n.recipient_id === user?.id) ||
+    // "User B accepted/rejected your request" — show in Activity tab for User A
+    (n.type === 'request' && n.data?.subType === 'response' && n.recipient_id === user?.id)
+  ).map(n => ({
     id: n.id,
     type: n.data?.type || 'received',
     amount: n.data?.amount || 0,
@@ -524,7 +531,10 @@ function AppContent() {
     time: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     isRead: n.status === 'read',
     message: n.data?.message,
-    autoAdded: n.data?.autoAdded || false
+    autoAdded: n.data?.autoAdded || false,
+    // Extra fields for connection response notifications
+    subType: n.data?.subType || null,
+    responseStatus: n.data?.status || null,
   }));
 
   const handleAccept = async (id: string) => {
@@ -1172,10 +1182,16 @@ function AppContent() {
                           className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${
                           !act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
                         }`}>
+                          {/* Icon — connection response or transaction */}
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                            act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10'
+                            act.subType === 'response'
+                              ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                              : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
                           }`}>
-                            {act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                            {act.subType === 'response'
+                              ? (act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />)
+                              : (act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />)
+                            }
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
@@ -1214,10 +1230,16 @@ function AppContent() {
                           className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${
                           !act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
                         }`}>
+                          {/* Icon — connection response or transaction */}
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                            act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10'
+                            act.subType === 'response'
+                              ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                              : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
                           }`}>
-                            {act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                            {act.subType === 'response'
+                              ? (act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />)
+                              : (act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />)
+                            }
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
