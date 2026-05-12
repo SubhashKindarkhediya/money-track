@@ -1093,14 +1093,6 @@ function AppContent() {
                                   Reject
                                 </button>
                               </div>
-                            ) : req.subType === 'response' ? (
-                              <div className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg border animate-in zoom-in duration-300 ${
-                                cardStatus === 'accepted'
-                                  ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20'
-                                  : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20'
-                              }`}>
-                                {cardStatus === 'accepted' ? '✓ Accepted' : '✕ Rejected'}
-                              </div>
                             ) : req.status === 'accepted' ? (
                               <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100 dark:border-emerald-500/20 animate-in zoom-in duration-300">
                                 ✓ Accepted
@@ -1170,12 +1162,6 @@ function AppContent() {
                                 >
                                   Reject
                                 </button>
-                              </div>
-                            ) : req.subType === 'response' ? (
-                              <div className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest ${
-                                cardStatus === 'accepted' ? 'text-emerald-500' : 'text-rose-500'
-                              }`}>
-                                {cardStatus === 'accepted' ? '✓ Accepted' : '✕ Rejected'}
                               </div>
                             ) : req.status === 'accepted' ? (
                               <div className="px-4 py-2 text-emerald-500 text-[10px] font-black uppercase tracking-widest">✓ Accepted</div>
