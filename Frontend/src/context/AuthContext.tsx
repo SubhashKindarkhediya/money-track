@@ -33,6 +33,26 @@ const isTokenExpired = (token: string): boolean => {
   }
 };
 
+// Helper: verify token is valid with the backend (user still exists in DB)
+const verifySessionWithBackend = async (token: string): Promise<boolean> => {
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+    const response = await fetch(`${apiUrl}/auth/me`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    // 200 = user exists, anything else (401/404/500) = force logout
+    return response.ok;
+  } catch {
+    // Network error — don't force logout, assume offline
+    // We only force logout when we get a clear 401 from server
+    return true;
+  }
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -41,22 +61,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
+    const initSession = async () => {
+      const savedToken = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
 
-    if (savedToken && !isTokenExpired(savedToken)) {
-      // Token is valid — restore session
-      setToken(savedToken);
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+      if (savedToken && !isTokenExpired(savedToken)) {
+        // Token looks valid locally — now verify with backend that user still exists
+        const isValid = await verifySessionWithBackend(savedToken);
+
+        if (isValid) {
+          // User exists in DB — restore session
+          setToken(savedToken);
+          if (savedUser) {
+            setUser(JSON.parse(savedUser));
+          }
+        } else {
+          // User was deleted from DB — clear stale session and force login
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setToken(null);
+          setUser(null);
+        }
+      } else if (savedToken) {
+        // Token is expired — clear stale data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
       }
-    } else if (savedToken) {
-      // Token is expired — clear stale data
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
 
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initSession();
   }, []);
 
   const login = (newToken: string, newUser: User) => {

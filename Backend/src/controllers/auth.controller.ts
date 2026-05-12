@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { injectable } from "tsyringe";
 import { AuthService } from "../services/auth.service";
+import User from "../models/user.model";
 
 @injectable()
 export class AuthController {
@@ -99,6 +100,29 @@ export class AuthController {
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Verify current session — checks if user still exists in DB
+   * Used by frontend on app startup to detect deleted accounts
+   */
+  getMe = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.uid;
+      const user = await User.findByPk(userId, {
+        attributes: { exclude: ["password", "confirmPassword"] },
+      });
+
+      if (!user) {
+        // User was deleted from DB — token is stale, force logout
+        res.status(401).json({ error: "User no longer exists. Please login again." });
+        return;
+      }
+
+      res.status(200).json({ user });
+    } catch (error: any) {
+      res.status(401).json({ error: "Invalid session" });
     }
   };
 }
