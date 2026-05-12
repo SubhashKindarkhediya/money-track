@@ -523,9 +523,11 @@ function AppContent() {
     isRead: n.status !== 'pending'
   }));
 
-  // Map notifications to activities (transactions only)
+  // Map notifications to activities (transactions only — excludes "connected" system notifications)
   const activities = notifications.filter(n =>
-    (n.type === 'transaction' || n.type === 'system') && n.recipient_id === user?.id
+    (n.type === 'transaction' || n.type === 'system') &&
+    n.recipient_id === user?.id &&
+    n.data?.subType !== 'connected'   // hide "added to contacts" — toast handles this instead
   ).map(n => ({
     id: n.id,
     type: n.data?.type || 'received',
