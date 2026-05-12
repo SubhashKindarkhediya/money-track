@@ -111,9 +111,12 @@ export class NotificationService {
 
     const updatedNotif = await notification.update({ status });
 
-    // Send notification back to the original requester
+    // Send notification back to the original requester (User A)
     if (notification.type === "request") {
       const recipientUser = await User.findByPk(notification.recipient_id);
+      const senderUser = await User.findByPk(notification.sender_id);
+
+      // Notify User A: "User B has accepted/rejected your request"
       await this.createNotification({
         recipient_id: notification.sender_id,
         sender_id: notification.recipient_id,
@@ -125,6 +128,20 @@ export class NotificationService {
           personName: recipientUser?.name
         }
       });
+
+      // Notify User B: "User A has been added to your contacts" (only on accept)
+      if (status === "accepted") {
+        await this.createNotification({
+          recipient_id: notification.recipient_id,
+          sender_id: notification.sender_id,
+          type: "system",
+          data: {
+            message: `${senderUser?.name || 'Someone'} has been added to your contacts.`,
+            subType: "connected",
+            personName: senderUser?.name
+          }
+        });
+      }
     }
 
     return updatedNotif;

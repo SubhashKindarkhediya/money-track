@@ -450,6 +450,12 @@ function AppContent() {
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+
+  const showToast = (message: string) => {
+    setToast({ message, visible: true });
+    setTimeout(() => setToast({ message: '', visible: false }), 3500);
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -536,8 +542,12 @@ function AppContent() {
   const handleAccept = async (id: string) => {
     try {
       const { default: api } = await import("./services/api");
+      // Get person name before fetching updated notifications
+      const req = requests.find(r => r.id === id);
       await api.patch(`/notifications/${id}/response`, { status: 'accepted' });
       fetchNotifications();
+      // Show toast so User B knows the contact was added
+      showToast(`✅ ${req?.name || 'Contact'} added to your contacts!`);
     } catch (err) {
       console.error("Failed to accept request", err);
     }
@@ -1285,7 +1295,17 @@ function AppContent() {
             </div>
           </div>
         )}
+
+        {/* ✅ TOAST NOTIFICATION */}
+        {toast.visible && (
+          <div className="fixed bottom-28 lg:bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-4 fade-in duration-300">
+            <div className="flex items-center gap-3 px-5 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl shadow-2xl border border-white/10 dark:border-gray-200">
+              <span className="text-sm font-black tracking-tight whitespace-nowrap">{toast.message}</span>
+            </div>
+          </div>
+        )}
       </main>
+
     </div>
   );
 }
