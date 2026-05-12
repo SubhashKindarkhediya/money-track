@@ -1055,7 +1055,7 @@ function AppContent() {
                   : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
               >
-                Activity <span className="ml-1 opacity-60">({activities.length})</span>
+                Activity <span className="ml-1 opacity-60">({activities.filter(a => !a.isRead).length})</span>
               </button>
             </div>
 
