@@ -515,9 +515,10 @@ function AppContent() {
     name: n.data?.senderName || n.sender?.name || 'Unknown',
     status: n.status,
     subType: n.data?.subType || 'incoming',
-    responseStatus: n.data?.status, // The actual accepted/rejected value
+    responseStatus: n.data?.status,
     message: n.data?.message,
     date: getDayGroup(n.createdAt),
+    time: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     initial: (n.data?.senderName || n.sender?.name || 'U')[0].toUpperCase(),
     isRead: n.status !== 'pending'
   }));
@@ -547,7 +548,7 @@ function AppContent() {
       await api.patch(`/notifications/${id}/response`, { status: 'accepted' });
       fetchNotifications();
       // Show toast so User B knows the contact was added
-      showToast(`✅ ${req?.name || 'Contact'} added to your contacts!`);
+      showToast(`"${req?.name || 'Contact'}" has been added to your person list.`);
     } catch (err) {
       console.error("Failed to accept request", err);
     }
@@ -1084,6 +1085,7 @@ function AppContent() {
                               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
                                 {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Wants to connect'}
                               </p>
+                              <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
                             </div>
                           </div>
                           
@@ -1155,6 +1157,7 @@ function AppContent() {
                               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
                                 {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Sent request'}
                               </p>
+                              <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
