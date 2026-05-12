@@ -487,14 +487,18 @@ function AppContent() {
     }
   }, [notifScreenOpen]);
 
-  // Mark single notification as read
+  // Mark single notification as read (optimistic — UI updates instantly)
   const markAsRead = async (id: string) => {
+    // 1. Update UI immediately so count clears right away
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
     try {
+      // 2. Persist to backend in background
       const { default: api } = await import("./services/api");
       await api.patch(`/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
     } catch (err) {
+      // 3. If API fails, revert the local change
       console.error("Failed to mark as read", err);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'pending' } : n));
     }
   };
 
