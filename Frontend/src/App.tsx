@@ -51,11 +51,16 @@ import { useTheme } from "./context/ThemeContext";
 // inside component
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { token, loading } = useAuth();
+  const { token, loading, isWakingUp } = useAuth();
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center font-black transition-all animate-pulse text-indigo-600">
-        LOADING...
+      <div className="min-h-screen flex flex-col items-center justify-center font-black transition-all">
+        <div className="animate-pulse text-indigo-600 text-xl tracking-widest">LOADING...</div>
+        {isWakingUp && (
+          <div className="mt-4 text-sm font-medium text-gray-500 animate-in fade-in duration-500">
+            Server is waking up, please wait a moment...
+          </div>
+        )}
       </div>
     );
   if (!token) return <Navigate to="/login" />;

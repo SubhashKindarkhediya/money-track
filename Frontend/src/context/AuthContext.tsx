@@ -20,6 +20,7 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (newUser: User) => void;
   loading: boolean;
+  isWakingUp: boolean;
 }
 
 // Helper: check if a JWT token is expired (client-side, no secret needed)
@@ -59,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isWakingUp, setIsWakingUp] = useState(false);
 
   useEffect(() => {
     const initSession = async () => {
@@ -67,7 +69,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (savedToken && !isTokenExpired(savedToken)) {
         // Token looks valid locally — now verify with backend that user still exists
+        
+        // If it takes more than 3 seconds, backend might be sleeping (Cold Start)
+        const wakeUpTimeout = setTimeout(() => setIsWakingUp(true), 3000);
+        
         const isValid = await verifySessionWithBackend(savedToken);
+        
+        clearTimeout(wakeUpTimeout);
+        setIsWakingUp(false);
 
         if (isValid) {
           // User exists in DB — restore session
@@ -114,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading, isWakingUp }}>
       {children}
     </AuthContext.Provider>
   );
