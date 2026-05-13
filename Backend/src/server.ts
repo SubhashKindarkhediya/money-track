@@ -2,6 +2,7 @@ import "reflect-metadata";
 import app from "./app";
 import { connectDB } from "./config/db";
 import sequelize from "./config/db";
+import { startKeepAlive } from "./utils/keepAlive";
 
 const PORT = process.env.PORT || 5000;
 
@@ -15,6 +16,7 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
+      startKeepAlive();
     });
   } catch (error) {
     console.error("❌ FAILED TO START SERVER:", error);

@@ -70,8 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (savedToken && !isTokenExpired(savedToken)) {
         // Token looks valid locally — now verify with backend that user still exists
         
-        // If it takes more than 3 seconds, backend might be sleeping (Cold Start)
-        const wakeUpTimeout = setTimeout(() => setIsWakingUp(true), 3000);
+        // If it takes more than 1.5 seconds, backend might be sleeping (Cold Start)
+        const wakeUpTimeout = setTimeout(() => setIsWakingUp(true), 1500);
         
         const isValid = await verifySessionWithBackend(savedToken);
         
