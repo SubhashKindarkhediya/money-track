@@ -122,6 +122,14 @@ const Profile: React.FC = () => {
     }
   }, [user]);
 
+  // Helper to format YYYY-MM-DD to DD/MM/YYYY
+  const formatDateToDDMMYYYY = (isoDate: string) => {
+    if (!isoDate) return "";
+    const [year, month, day] = isoDate.split("-");
+    if (!year || !month || !day) return isoDate;
+    return `${day}/${month}/${year}`;
+  };
+
   // Click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -280,7 +288,7 @@ const Profile: React.FC = () => {
                   </div>
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Date of Birth</span>
                 </div>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">{user?.dob || "-"}</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">{formatDateToDDMMYYYY(user?.dob || "") || "-"}</span>
               </div>
             </div>
           </div>
@@ -502,13 +510,36 @@ const Profile: React.FC = () => {
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 ml-1">
                   Date of Birth
                 </label>
-                <input
-                  type="date"
-                  name="dob"
-                  value={formData.dob}
-                  onChange={handleChange}
-                  className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 font-bold uppercase text-xs text-gray-900 dark:text-white"
-                />
+                <div className="relative">
+                  {/* Visible Formatted Text Input */}
+                  <input
+                    type="text"
+                    placeholder="dd/mm/yyyy"
+                    value={formatDateToDDMMYYYY(formData.dob)}
+                    readOnly
+                    className="w-full pl-5 pr-12 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 font-bold uppercase text-xs text-gray-900 dark:text-white transition-all cursor-pointer"
+                  />
+                  
+                  {/* Invisible Native Date Picker */}
+                  <input
+                    type="date"
+                    name="dob"
+                    value={formData.dob}
+                    onChange={handleChange}
+                    onClick={(e) => {
+                      try {
+                        if ('showPicker' in HTMLInputElement.prototype) {
+                          e.currentTarget.showPicker();
+                        } else {
+                          e.currentTarget.focus();
+                        }
+                      } catch (err) {}
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-50"
+                  />
+                  
+                  <Calendar size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+                </div>
               </div>
             </div>
 

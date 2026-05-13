@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, User, TrendingUp, TrendingDown, IndianRupee, FileText, Clock, ChevronDown, CheckCircle2, Check, X, Users } from "lucide-react";
+import { ArrowLeft, User, TrendingUp, TrendingDown, IndianRupee, FileText, Clock, ChevronDown, CheckCircle2, Check, X, Users, CalendarDays } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
 
@@ -23,6 +23,7 @@ const AddTransaction: React.FC = () => {
   });
   const [txLoading, setTxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<{ person?: string; amount?: string; reason?: string }>({});
 
   const [searchQuery, setSearchQuery] = useState(preSelectedPersonName || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -31,10 +32,17 @@ const AddTransaction: React.FC = () => {
   const [selectedPersons, setSelectedPersons] = useState<{ id: string; name: string }[]>([]);
   const [paidBy, setPaidBy] = useState<string>("me");
 
-  // Calculate per person amount
   const totalAmountValue = parseFloat(txForm.amount) || 0;
   const totalParticipants = selectedPersons.length + 1; // Always include the user
   const perPersonAmount = totalParticipants > 0 ? (totalAmountValue / totalParticipants).toFixed(2) : "0.00";
+
+  // Helper to format YYYY-MM-DD to DD/MM/YYYY
+  const formatDateToDDMMYYYY = (isoDate: string) => {
+    if (!isoDate) return "";
+    const [year, month, day] = isoDate.split("-");
+    if (!year || !month || !day) return isoDate;
+    return `${day}/${month}/${year}`;
+  };
 
   // Filter persons based on search query
   const filteredPersons = persons.filter(p =>
@@ -70,11 +78,29 @@ const AddTransaction: React.FC = () => {
     if (e) e.preventDefault();
     
     // Validation
-    if (mode === "single") {
-      if (!txForm.person_id || !txForm.amount) return;
-    } else {
-      if (selectedPersons.length === 0 || !txForm.amount) return;
+    const newErrors: { person?: string; amount?: string; reason?: string } = {};
+    let isValid = true;
+
+    if (mode === "single" && !txForm.person_id) {
+      newErrors.person = "Please select a person";
+      isValid = false;
+    } else if (mode === "group" && selectedPersons.length === 0) {
+      newErrors.person = "Please select at least one person";
+      isValid = false;
     }
+
+    if (!txForm.amount || parseFloat(txForm.amount) <= 0) {
+      newErrors.amount = "Please enter a valid amount";
+      isValid = false;
+    }
+
+    if (!txForm.reason || txForm.reason.trim() === "") {
+      newErrors.reason = "Please enter a description";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    if (!isValid) return;
 
     try {
       setTxLoading(true);
@@ -217,12 +243,14 @@ const AddTransaction: React.FC = () => {
                         setSearchQuery(e.target.value);
                         setIsDropdownOpen(true);
                         setTxForm({ ...txForm, person_id: "" }); // Reset selected person when typing
+                        if (errors.person) setErrors({ ...errors, person: undefined });
                       }}
                       onFocus={() => setIsDropdownOpen(true)}
-                      className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm"
+                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm`}
                     />
                     <ChevronDown size={18} className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''} pointer-events-none`} />
                   </div>
+                  {errors.person && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.person}</p>}
 
                   {/* Dropdown Menu */}
                   {isDropdownOpen && (
@@ -311,9 +339,10 @@ const AddTransaction: React.FC = () => {
                 <div className="relative">
                   <IndianRupee size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input type="number" placeholder="0.00" required value={txForm.amount}
-                    onChange={e => setTxForm({ ...txForm, amount: e.target.value })}
-                    className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm" />
+                    onChange={e => { setTxForm({ ...txForm, amount: e.target.value }); if (errors.amount) setErrors({ ...errors, amount: undefined }); }}
+                    className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm`} />
                 </div>
+                {errors.amount && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.amount}</p>}
               </div>
 
               {/* Reason */}
@@ -321,20 +350,46 @@ const AddTransaction: React.FC = () => {
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Description</label>
                 <div className="relative">
                   <FileText size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="text" placeholder="What was this for? (Optional)" value={txForm.reason}
-                    onChange={e => setTxForm({ ...txForm, reason: e.target.value })}
-                    className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm" />
+                  <input type="text" placeholder="What was this for?" value={txForm.reason}
+                    onChange={e => { setTxForm({ ...txForm, reason: e.target.value }); if (errors.reason) setErrors({ ...errors, reason: undefined }); }}
+                    className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.reason ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm`} />
                 </div>
+                {errors.reason && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.reason}</p>}
               </div>
 
               {/* Date */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Date</label>
                 <div className="relative">
-                  <Clock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="date" value={txForm.date}
+                  <Clock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                  
+                  {/* Visible Formatted Text Input */}
+                  <input 
+                    type="text" 
+                    placeholder="dd/mm/yyyy"
+                    value={formatDateToDDMMYYYY(txForm.date)}
+                    readOnly
+                    className="w-full pl-11 pr-12 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm cursor-pointer" 
+                  />
+                  
+                  {/* Invisible Native Date Picker */}
+                  <input 
+                    type="date" 
+                    value={txForm.date}
                     onChange={e => setTxForm({ ...txForm, date: e.target.value })}
-                    className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm" />
+                    onClick={(e) => {
+                      try {
+                        if ('showPicker' in HTMLInputElement.prototype) {
+                          e.currentTarget.showPicker();
+                        } else {
+                          e.currentTarget.focus();
+                        }
+                      } catch (err) {}
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-50" 
+                  />
+                  
+                  <CalendarDays size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
                 </div>
               </div>
 
@@ -418,10 +473,11 @@ const AddTransaction: React.FC = () => {
                         setIsDropdownOpen(true);
                       }}
                       onFocus={() => setIsDropdownOpen(true)}
-                      className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm"
+                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm`}
                     />
                     <ChevronDown size={18} className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''} pointer-events-none`} />
                   </div>
+                  {errors.person && <p className="text-amber-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.person}</p>}
 
                   {/* Selected Persons Chips */}
                   {selectedPersons.length > 0 && (
@@ -481,10 +537,11 @@ const AddTransaction: React.FC = () => {
                       placeholder="0.00"
                       required
                       value={txForm.amount}
-                      onChange={e => setTxForm({ ...txForm, amount: e.target.value })}
-                      className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm"
+                      onChange={e => { setTxForm({ ...txForm, amount: e.target.value }); if (errors.amount) setErrors({ ...errors, amount: undefined }); }}
+                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm`}
                     />
                   </div>
+                  {errors.amount && <p className="text-amber-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.amount}</p>}
                 </div>
 
                 {/* Who Paid Selection */}
@@ -560,20 +617,46 @@ const AddTransaction: React.FC = () => {
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Description</label>
                   <div className="relative">
                     <FileText size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input type="text" placeholder="What was this for? (Optional)" value={txForm.reason}
-                      onChange={e => setTxForm({ ...txForm, reason: e.target.value })}
-                      className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm" />
+                    <input type="text" placeholder="What was this for?" value={txForm.reason}
+                      onChange={e => { setTxForm({ ...txForm, reason: e.target.value }); if (errors.reason) setErrors({ ...errors, reason: undefined }); }}
+                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.reason ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm`} />
                   </div>
+                  {errors.reason && <p className="text-amber-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.reason}</p>}
                 </div>
 
                 {/* Date (Group Mode) */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Date</label>
                   <div className="relative">
-                    <Clock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input type="date" value={txForm.date}
+                    <Clock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                    
+                    {/* Visible Formatted Text Input */}
+                    <input 
+                      type="text" 
+                      placeholder="dd/mm/yyyy"
+                      value={formatDateToDDMMYYYY(txForm.date)}
+                      readOnly
+                      className="w-full pl-11 pr-12 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm cursor-pointer" 
+                    />
+                    
+                    {/* Invisible Native Date Picker */}
+                    <input 
+                      type="date" 
+                      value={txForm.date}
                       onChange={e => setTxForm({ ...txForm, date: e.target.value })}
-                      className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm" />
+                      onClick={(e) => {
+                        try {
+                          if ('showPicker' in HTMLInputElement.prototype) {
+                            e.currentTarget.showPicker();
+                          } else {
+                            e.currentTarget.focus();
+                          }
+                        } catch (err) {}
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-50" 
+                    />
+                    
+                    <CalendarDays size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
                   </div>
                 </div>
 
@@ -597,7 +680,7 @@ const AddTransaction: React.FC = () => {
       <div className="sticky bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#0a0a1a]/80 backdrop-blur-xl border-t border-indigo-100/50 dark:border-gray-800 z-40 mt-auto">
         <button
           onClick={handleAddTransaction}
-          disabled={txLoading || (mode === "single" && (!txForm.person_id || !txForm.amount)) || (mode === "group" && (selectedPersons.length === 0 || !txForm.amount))}
+          disabled={txLoading}
           className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98] tracking-wide"
         >
           {txLoading ? (
