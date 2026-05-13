@@ -515,7 +515,9 @@ function AppContent() {
 
     if (d.toDateString() === today.toDateString()) return 'Today';
     if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-    return 'Earlier';
+    
+    // Return formatted date like "12 May 2024" instead of "Earlier"
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   // Map notifications to requests (only those received by the user)
