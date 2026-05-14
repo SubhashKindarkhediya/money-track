@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft, CheckCircle2, SquarePen, Trash2, MoreVertical, Eye } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import api from "../services/api";
 
 interface Transaction {
@@ -29,7 +31,6 @@ const TransactionHistory: React.FC = () => {
   const [filterType, setFilterType] = useState<"all" | "credit" | "debit">("all");
   const [statusFilter, setStatusFilter] = useState<"pending" | "completed">("pending");
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  const [activeTxMenuId, setActiveTxMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -49,36 +50,6 @@ const TransactionHistory: React.FC = () => {
     };
     fetchTransactions();
   }, []);
-
-  const handleStatusChange = async (txId: string, newStatus: "pending" | "completed") => {
-    try {
-      await api.put(`/transactions/${txId}`, { status: newStatus });
-      setTransactions(prev => prev.map(tx => tx.id === txId ? { ...tx, status: newStatus } : tx));
-    } catch (err) {
-      console.error("Failed to update status", err);
-    }
-  };
-
-  const handleDeleteTransaction = async (txId: string) => {
-    if (!window.confirm("Are you sure you want to delete this transaction?")) return;
-    try {
-      await api.delete(`/transactions/${txId}`);
-      setTransactions(prev => prev.filter(tx => tx.id !== txId));
-      setSelectedTx(null);
-    } catch (err) {
-      console.error("Failed to delete transaction", err);
-    }
-  };
-
-  const handleEditTransaction = (tx: Transaction) => {
-    navigate("/add-transaction", { 
-      state: { 
-        editingTx: tx,
-        personId: tx.Person?.id,
-        personName: tx.Person?.name
-      } 
-    });
-  };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -132,20 +103,115 @@ const TransactionHistory: React.FC = () => {
     return { credit, debit };
   }, [filteredTransactions]);
 
+  const generatePDF = () => {
+    if (filteredTransactions.length === 0) {
+      alert("No transactions found to generate report.");
+      return;
+    }
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(40);
+    const reportTitle = `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Transactions Report`;
+    doc.text(reportTitle, 14, 22);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 30);
+
+    const showCredit = filterType === "all" || filterType === "credit";
+    const showDebit = filterType === "all" || filterType === "debit";
+
+    // Table data
+    const tableColumn = ["Sr. No.", "Date", "Person", "Reason / Note"];
+    if (showCredit) tableColumn.push("Credit (Rs.)");
+    if (showDebit) tableColumn.push("Debit (Rs.)");
+
+    const tableRows: any[] = [];
+
+    filteredTransactions.forEach((tx, index) => {
+      const txData = [
+        index + 1,
+        formatDate(tx.date || tx.createdAt),
+        tx.Person?.name || "Unknown",
+        tx.reason || tx.note || "-"
+      ];
+      if (showCredit) {
+        txData.push(tx.type === "credit" ? Number(tx.amount).toLocaleString("en-IN") : "-");
+      }
+      if (showDebit) {
+        txData.push(tx.type === "debit" ? Number(tx.amount).toLocaleString("en-IN") : "-");
+      }
+      tableRows.push(txData);
+    });
+
+    // Add total row at the bottom
+    const totalRow = ["", "", "", "Total"];
+    if (showCredit) totalRow.push(summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 }));
+    if (showDebit) totalRow.push(summary.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 }));
+    tableRows.push(totalRow);
+
+    // Dynamic column styles for amount alignment
+    const colStyles: any = { 0: { cellWidth: 15 } };
+    if (showCredit && showDebit) {
+      colStyles[4] = { halign: 'right' };
+      colStyles[5] = { halign: 'right' };
+    } else if (showCredit || showDebit) {
+      colStyles[4] = { halign: 'right' };
+    }
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 38,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 4, halign: 'center' },
+      columnStyles: colStyles,
+      headStyles: { fillColor: [79, 70, 229], halign: 'center' }, // indigo-600
+      alternateRowStyles: { fillColor: [249, 250, 251] }, // gray-50
+      didParseCell: function (data) {
+        // Highlight the Total row
+        if (data.row.index === tableRows.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fillColor = [240, 245, 255]; // slight indigo tint for total row
+          
+          // Right-align the "Total" text as well
+          if (data.column.index === 3) {
+            data.cell.styles.halign = 'right';
+          }
+        }
+      }
+    });
+
+    doc.save("Transaction_Report.pdf");
+  };
+
   return (
     <div className="max-w-4xl mx-auto w-full font-sans pb-24 animate-in slide-in-from-bottom-6 duration-300">
       {/* Header */}
       <div className="sticky top-0 z-30 px-6 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
-        <div className="flex items-center justify-start gap-4 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-start gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2.5 rounded-2xl bg-gray-50 dark:bg-[#151624] hover:bg-gray-100 dark:hover:bg-[#1e1f30] transition-colors border border-gray-100 dark:border-gray-800"
+            >
+              <ArrowLeft size={20} className="text-gray-600 dark:text-gray-300" />
+            </button>
+            <h2 className="text-base font-black text-gray-900 dark:text-white tracking-widest">
+              Transaction History
+            </h2>
+          </div>
+          
           <button
-            onClick={() => navigate(-1)}
-            className="p-2.5 rounded-2xl bg-gray-50 dark:bg-[#151624] hover:bg-gray-100 dark:hover:bg-[#1e1f30] transition-colors border border-gray-100 dark:border-gray-800"
+            onClick={generatePDF}
+            className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors border border-indigo-100 dark:border-indigo-500/20 flex items-center gap-2 shadow-sm"
+            title="Download PDF Report"
           >
-            <ArrowLeft size={20} className="text-gray-600 dark:text-gray-300" />
+            <Download size={18} />
+            <span className="text-sm font-bold hidden sm:block pr-1">Report</span>
           </button>
-          <h2 className="text-base font-black text-gray-900 dark:text-white tracking-widest">
-            Transaction History
-          </h2>
         </div>
 
         {/* Status Tabs */}
@@ -315,13 +381,9 @@ const TransactionHistory: React.FC = () => {
                           {tx.type === "credit" ? "+" : "-"}₹{Number(tx.amount).toLocaleString("en-IN")}
                         </span>
                         <div 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveTxMenuId(tx.id);
-                          }}
-                          className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
                         >
-                          <MoreVertical size={16} />
+                          <ChevronRight size={16} />
                         </div>
                       </div>
                     </div>
@@ -381,94 +443,16 @@ const TransactionHistory: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setSelectedTx(null)}
-                  className="flex-1 py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-black text-xs uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-[0.98]"
+                  className="w-full py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-black text-xs uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-[0.98]"
                 >
                   Close
                 </button>
-                {selectedTx.status === "pending" && (
-                  <button
-                    onClick={() => {
-                      handleStatusChange(selectedTx.id, "completed");
-                      setSelectedTx(null);
-                    }}
-                    className="flex-[2] py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
-                  >
-                    <CheckCircle2 size={18} strokeWidth={3} />
-                    Mark as Complete
-                  </button>
-                )}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Transaction Action Bottom Drawer */}
-      {activeTxMenuId && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] animate-in fade-in duration-300 flex flex-col justify-end"
-          onClick={() => setActiveTxMenuId(null)}
-        >
-          <div
-            className="bg-white dark:bg-[#151624] rounded-t-[2.5rem] p-5 sm:p-6 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full duration-300 sm:max-w-md sm:mx-auto sm:w-full sm:rounded-[2.5rem] sm:mb-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6"></div>
-
-            <div className="space-y-2">
-              <button
-                onClick={() => {
-                  const tx = transactions.find(t => t.id === activeTxMenuId);
-                  if (tx) setSelectedTx(tx);
-                  setActiveTxMenuId(null);
-                }}
-                className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
-              >
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600">
-                  <Eye size={20} />
-                </div>
-                Transaction Details
-              </button>
-
-              <button
-                onClick={() => {
-                  const tx = transactions.find(t => t.id === activeTxMenuId);
-                  if (tx) handleEditTransaction(tx);
-                  setActiveTxMenuId(null);
-                }}
-                className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
-              >
-                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
-                  <SquarePen size={20} />
-                </div>
-                Edit Transaction
-              </button>
-
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    handleDeleteTransaction(activeTxMenuId!);
-                    setActiveTxMenuId(null);
-                  }}
-                  className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
-                    <Trash2 size={20} />
-                  </div>
-                  Delete Transaction
-                </button>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setActiveTxMenuId(null)}
-              className="w-full mt-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
