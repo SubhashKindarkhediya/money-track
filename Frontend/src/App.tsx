@@ -328,7 +328,7 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white/80 backdrop-blur-md dark:bg-gray-800/40 rounded-[2.5rem] p-8 border border-indigo-50 dark:border-gray-700/50 shadow-xl shadow-indigo-900/5">
+        <div className="bg-white/80 backdrop-blur-md dark:bg-gray-800/40 rounded-[2.5rem] p-5 md:p-8 border border-indigo-50 dark:border-gray-700/50 shadow-xl shadow-indigo-900/5">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-bold tracking-tight text-gray-800 dark:text-white">Recent Activity</h3>
             <button onClick={() => navigate('/transactions')} className="text-sm font-bold text-indigo-600 hover:underline">View All</button>

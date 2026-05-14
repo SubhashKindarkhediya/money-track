@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft, Download } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft, Download, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -402,50 +402,58 @@ const TransactionHistory: React.FC = () => {
           onClick={() => setSelectedTx(null)}
         >
           <div
-            className="bg-white dark:bg-[#0a0a1a] rounded-t-[2.5rem] p-6 sm:p-8 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-300 sm:max-w-md sm:mx-auto sm:w-full sm:rounded-[2.5rem] sm:mb-8 border-t border-indigo-100/50 dark:border-gray-800 translate-y-0"
+            className="bg-white dark:bg-[#0a0a1a] rounded-t-[2.5rem] p-5 sm:p-6 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-300 sm:max-w-md sm:mx-auto sm:w-full sm:rounded-[2.5rem] sm:mb-8 border-t border-indigo-100/50 dark:border-gray-800 translate-y-0 relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drawer Handle */}
-            <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto mb-8"></div>
+            {/* Close Button X */}
+            <button
+              onClick={() => setSelectedTx(null)}
+              className="absolute right-6 top-6 p-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-rose-500 transition-colors"
+            >
+              <X size={20} />
+            </button>
 
-            <div className="flex flex-col items-center mb-8">
-              <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-4 ${selectedTx.type === "credit" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10" : "bg-rose-50 text-rose-600 dark:bg-rose-500/10"}`}>
-                {selectedTx.type === "credit" ? <TrendingUp size={32} /> : <TrendingDown size={32} />}
+            {/* Drawer Handle */}
+            <div className="w-10 h-1 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto mb-6"></div>
+
+            <div className="flex flex-col items-center mb-6">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${selectedTx.type === "credit" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10" : "bg-rose-50 text-rose-600 dark:bg-rose-500/10"}`}>
+                {selectedTx.type === "credit" ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
               </div>
-              <h3 className="text-xl font-black text-gray-900 dark:text-white">Transaction Details</h3>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">ID: {selectedTx.id.slice(0, 8)}</p>
+              <h3 className="text-lg font-black text-gray-900 dark:text-white">Transaction Details</h3>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">ID: {selectedTx.id.slice(0, 8)}</p>
             </div>
 
-            <div className="space-y-4 mb-10">
-              <div className="flex justify-between items-center p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Person</span>
-                <span className="font-bold text-gray-900 dark:text-white">{selectedTx.Person?.name || "Unknown"}</span>
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between items-center p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Person</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">{selectedTx.Person?.name || "Unknown"}</span>
               </div>
-              <div className="flex justify-between items-center p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</span>
-                <span className={`text-lg font-black ${selectedTx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+              <div className="flex justify-between items-center p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Amount</span>
+                <span className={`text-base font-black ${selectedTx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                   ₹{Number(selectedTx.amount).toLocaleString("en-IN")}
                 </span>
               </div>
-              <div className="flex justify-between items-center p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Date & Time</span>
+              <div className="flex justify-between items-center p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Date & Time</span>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{formatDate(selectedTx.date || selectedTx.createdAt)}</p>
-                  <p className="text-[10px] font-bold text-gray-400">{formatTime(selectedTx.date || selectedTx.createdAt)}</p>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white">{formatDate(selectedTx.date || selectedTx.createdAt)}</p>
+                  <p className="text-[9px] font-bold text-gray-400">{formatTime(selectedTx.date || selectedTx.createdAt)}</p>
                 </div>
               </div>
               {selectedTx.reason && (
-                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Description</span>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{selectedTx.reason}</p>
+                <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Description</span>
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed">{selectedTx.reason}</p>
                 </div>
               )}
-              <div className="flex gap-3">
+              <div className="pt-2">
                 <button
                   onClick={() => setSelectedTx(null)}
-                  className="w-full py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-black text-xs uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-[0.98]"
+                  className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-[0.98]"
                 >
-                  Close
+                  Done
                 </button>
               </div>
             </div>
