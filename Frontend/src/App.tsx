@@ -35,6 +35,7 @@ import {
   RefreshCw,
   UserCheck,
   UserX,
+  BarChart3,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -45,6 +46,7 @@ import Profile from "./pages/Profile";
 import Person from "./pages/Person";
 import AddTransaction from "./pages/AddTransaction";
 import TransactionHistory from "./pages/TransactionHistory";
+import Analytics from "./pages/Analytics";
 // import { Sun, Moon } from "lucide-react";
 import { useTheme } from "./context/ThemeContext";
 
@@ -610,17 +612,18 @@ function AppContent() {
   const isPersonPage = location.pathname.startsWith("/person");
   const isAddTransactionPage = location.pathname === "/add-transaction";
   const isLogPage = location.pathname === "/transactions";
-  const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage;
+  const isAnalyticsPage = location.pathname === "/analytics";
+  const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage;
 
   // Show bottom nav only on exact main tab paths
-  const mainTabs = ["/", "/person", "/transactions", "/profile"];
+  const mainTabs = ["/", "/person", "/transactions", "/analytics"];
   const showBottomNav = mainTabs.includes(location.pathname);
 
   const navigation = [
     { name: "Home", icon: Home, path: "/", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
     { name: "Person List", icon: Users, path: "/person", color: "from-emerald-500 to-teal-600", lightBg: "bg-emerald-50", darkBg: "dark:bg-emerald-500/10" },
     { name: "History", icon: History, path: "/transactions", color: "from-amber-500 to-orange-600", lightBg: "bg-amber-50", darkBg: "dark:bg-amber-500/10" },
-    { name: "Profile", icon: UserCircle, path: "/profile", color: "from-purple-500 to-pink-600", lightBg: "bg-purple-50", darkBg: "dark:bg-purple-500/10" },
+    { name: "Analytics", icon: BarChart3, path: "/analytics", color: "from-indigo-500 to-purple-600", lightBg: "bg-indigo-50", darkBg: "dark:bg-indigo-500/10" },
   ];
   const { theme, toggleTheme } = useTheme();
 
@@ -906,6 +909,14 @@ function AppContent() {
               element={
                 <ProtectedRoute>
                   <AddTransaction />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <Analytics />
                 </ProtectedRoute>
               }
             />

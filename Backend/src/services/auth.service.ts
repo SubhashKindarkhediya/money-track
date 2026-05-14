@@ -13,10 +13,17 @@ export class AuthService {
   async signup(data: any) {
     const { first_name, last_name, email, phone_number, password } = data;
 
-    // 1. Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
+    // 1. Check if user already exists (Email or Phone)
+    const existingEmail = await User.findOne({ where: { email } });
+    if (existingEmail) {
       throw new Error("User already exists with this email");
+    }
+
+    if (phone_number) {
+      const existingPhone = await User.findOne({ where: { phone_number } });
+      if (existingPhone) {
+        throw new Error("Mobile number already registered with another account");
+      }
     }
 
     // 2. Hash the password (security step)
@@ -111,6 +118,13 @@ export class AuthService {
     }
 
     if (phone_number !== undefined && phone_number !== user.phone_number) {
+      // Check if the new phone number is already taken
+      if (phone_number) {
+        const existingPhone = await User.findOne({ where: { phone_number } });
+        if (existingPhone) {
+          throw new Error("This mobile number is already in use by another user");
+        }
+      }
       user.phone_number = phone_number;
       
       // Re-link MoneyTrail connection for the new phone number

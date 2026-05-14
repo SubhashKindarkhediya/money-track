@@ -66,6 +66,7 @@ User.init(
     phone_number: {
       type: DataTypes.STRING,
       allowNull: true,
+      unique: true,
     },
     gender: {
       type: DataTypes.STRING,
