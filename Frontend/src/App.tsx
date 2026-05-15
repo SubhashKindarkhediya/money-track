@@ -455,6 +455,18 @@ function AppContent() {
   const [notifScreenOpen, setNotifScreenOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'requests' | 'activity'>('requests');
 
+  // Hide Splash Screen once app is loaded
+  useEffect(() => {
+    const splash = document.getElementById('splash-screen');
+    if (splash) {
+      setTimeout(() => {
+        splash.style.opacity = '0';
+        setTimeout(() => splash.remove(), 500);
+      }, 500);
+    }
+  }, []);
+
+
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
