@@ -529,7 +529,7 @@ function AppContent() {
 
     if (d.toDateString() === today.toDateString()) return 'Today';
     if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-    
+
     // Return formatted date like "12 May 2024" instead of "Earlier"
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
@@ -663,18 +663,18 @@ function AppContent() {
         className={`
         fixed inset-y-0 left-0 z-[70] transform transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) lg:relative lg:translate-x-0
         ${isSidebarOpen ? "translate-x-0 w-[280px]" : "-translate-x-full lg:w-24 lg:translate-x-0"}
-        bg-white/90 backdrop-blur-2xl dark:bg-gray-800 border-r border-indigo-100/50 dark:border-gray-700 flex flex-col p-5 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] dark:shadow-none
+        bg-white/90 backdrop-blur-2xl dark:bg-gray-800 border-r border-indigo-100/50 dark:border-gray-700 flex flex-col p-4 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] dark:shadow-none
       `}
       >
         <div className="flex items-center justify-between mb-10 px-2">
           <div
-            className={`flex items-center gap-3 ${!isSidebarOpen && "lg:justify-center w-full"}`}
+            className={`flex items-center gap-4 ${!isSidebarOpen && "lg:justify-center w-full"}`}
           >
-            <div className="min-w-[48px] h-[48px] flex items-center justify-center transform hover:scale-110 transition-transform">
-              <img 
-                src="/logo.png" 
-                alt="MT" 
-                className="w-full h-full object-contain main-logo"
+            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#1e293b] flex items-center justify-center shadow-md hover:scale-110 transition-transform main-logo-container overflow-hidden">
+              <img
+                src="/logo.png"
+                alt="MT"
+                className="w-11 h-11 object-contain main-logo-img"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                   (e.target as HTMLImageElement).parentElement!.classList.add('bg-indigo-600', 'rounded-2xl', 'p-2');
@@ -1109,63 +1109,61 @@ function AppContent() {
                       {requests.filter(r => r.date === 'Today').map(req => {
                         const cardStatus = req.subType === 'response' ? req.responseStatus : req.status;
                         return (
-                        <div
-                          key={req.id}
-                          onClick={() => req.subType === 'response' && !req.isRead && markAsRead(req.id)}
-                          className={`relative bg-white dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 flex items-center justify-between gap-4 transition-all group overflow-hidden ${
-                            req.subType === 'response'
+                          <div
+                            key={req.id}
+                            onClick={() => req.subType === 'response' && !req.isRead && markAsRead(req.id)}
+                            className={`relative bg-white dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 flex items-center justify-between gap-4 transition-all group overflow-hidden ${req.subType === 'response'
                               ? `cursor-pointer ${!req.isRead ? 'hover:bg-indigo-50/30 dark:hover:bg-indigo-500/5' : 'opacity-70'} ${cardStatus === 'accepted' ? 'bg-emerald-50/30 dark:bg-emerald-500/5' : 'bg-rose-50/30 dark:bg-rose-500/5'}`
                               : ''
-                          }`}>
-                          {/* Left Accent Strip - Only for Responses */}
-                          {req.subType === 'response' && (cardStatus === 'accepted' || cardStatus === 'rejected') && (
-                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                              cardStatus === 'accepted' ? 'bg-emerald-500' : 'bg-rose-500'
-                            }`} />
-                          )}
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black">{req.initial}</div>
-                            <div>
-                              <p className={`text-sm tracking-tight ${!req.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>{req.name}</p>
-                              <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
-                                {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Wants to connect'}
-                              </p>
-                              <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
+                              }`}>
+                            {/* Left Accent Strip - Only for Responses */}
+                            {req.subType === 'response' && (cardStatus === 'accepted' || cardStatus === 'rejected') && (
+                              <div className={`absolute left-0 top-0 bottom-0 w-1 ${cardStatus === 'accepted' ? 'bg-emerald-500' : 'bg-rose-500'
+                                }`} />
+                            )}
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black">{req.initial}</div>
+                              <div>
+                                <p className={`text-sm tracking-tight ${!req.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>{req.name}</p>
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                                  {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Wants to connect'}
+                                </p>
+                                <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              {(req.subType === 'incoming' && (req.status === 'pending' || req.status === 'read')) ? (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleAccept(req.id)}
+                                    className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20"
+                                  >
+                                    Accept
+                                  </button>
+                                  <button
+                                    onClick={() => handleReject(req.id)}
+                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              ) : req.status === 'accepted' ? (
+                                <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100 dark:border-emerald-500/20 animate-in zoom-in duration-300">
+                                  ✓ Accepted
+                                </div>
+                              ) : req.status === 'rejected' ? (
+                                <div className="px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-rose-100 dark:border-rose-500/20 animate-in zoom-in duration-300">
+                                  ✕ Rejected
+                                </div>
+                              ) : null}
+
+                              {/* Unread dot for response notifications */}
+                              {req.subType === 'response' && !req.isRead && (
+                                <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.6)] animate-pulse shrink-0" />
+                              )}
                             </div>
                           </div>
-                          
-                          <div className="flex items-center gap-3">
-                            {(req.subType === 'incoming' && (req.status === 'pending' || req.status === 'read')) ? (
-                              <div className="flex gap-2">
-                                <button 
-                                  onClick={() => handleAccept(req.id)}
-                                  className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20"
-                                >
-                                  Accept
-                                </button>
-                                <button 
-                                  onClick={() => handleReject(req.id)}
-                                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            ) : req.status === 'accepted' ? (
-                              <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100 dark:border-emerald-500/20 animate-in zoom-in duration-300">
-                                ✓ Accepted
-                              </div>
-                            ) : req.status === 'rejected' ? (
-                              <div className="px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-rose-100 dark:border-rose-500/20 animate-in zoom-in duration-300">
-                                ✕ Rejected
-                              </div>
-                            ) : null}
-
-                            {/* Unread dot for response notifications */}
-                            {req.subType === 'response' && !req.isRead && (
-                              <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.6)] animate-pulse shrink-0" />
-                            )}
-                          </div>
-                        </div>
                         );
                       })}
                       {requests.filter(r => r.date === 'Today').length === 0 && (
@@ -1181,58 +1179,56 @@ function AppContent() {
                       {requests.filter(r => r.date !== 'Today').map(req => {
                         const cardStatus = req.subType === 'response' ? req.responseStatus : req.status;
                         return (
-                        <div
-                          key={req.id}
-                          onClick={() => req.subType === 'response' && !req.isRead && markAsRead(req.id)}
-                          className={`bg-white dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 flex items-center justify-between gap-4 transition-all opacity-80 overflow-hidden relative ${
-                            req.subType === 'response'
+                          <div
+                            key={req.id}
+                            onClick={() => req.subType === 'response' && !req.isRead && markAsRead(req.id)}
+                            className={`bg-white dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 flex items-center justify-between gap-4 transition-all opacity-80 overflow-hidden relative ${req.subType === 'response'
                               ? `cursor-pointer ${!req.isRead ? 'hover:bg-indigo-50/30 dark:hover:bg-indigo-500/5' : ''} ${cardStatus === 'accepted' ? 'bg-emerald-50/20 dark:bg-emerald-500/5' : 'bg-rose-50/20 dark:bg-rose-500/5'}`
                               : ''
-                          }`}>
-                          {/* Left Accent Strip - Only for Responses */}
-                          {req.subType === 'response' && (cardStatus === 'accepted' || cardStatus === 'rejected') && (
-                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                              cardStatus === 'accepted' ? 'bg-emerald-500' : 'bg-rose-500'
-                            }`} />
-                          )}
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 font-black">{req.initial}</div>
-                            <div>
-                              <p className="font-black text-gray-900 dark:text-white text-sm">{req.name}</p>
-                              <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
-                                {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Sent request'}
-                              </p>
-                              <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
+                              }`}>
+                            {/* Left Accent Strip - Only for Responses */}
+                            {req.subType === 'response' && (cardStatus === 'accepted' || cardStatus === 'rejected') && (
+                              <div className={`absolute left-0 top-0 bottom-0 w-1 ${cardStatus === 'accepted' ? 'bg-emerald-500' : 'bg-rose-500'
+                                }`} />
+                            )}
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 font-black">{req.initial}</div>
+                              <div>
+                                <p className="font-black text-gray-900 dark:text-white text-sm">{req.name}</p>
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                                  {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Sent request'}
+                                </p>
+                                <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {(req.subType === 'incoming' && (req.status === 'pending' || req.status === 'read')) ? (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleAccept(req.id)}
+                                    className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg"
+                                  >
+                                    Accept
+                                  </button>
+                                  <button
+                                    onClick={() => handleReject(req.id)}
+                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              ) : req.status === 'accepted' ? (
+                                <div className="px-4 py-2 text-emerald-500 text-[10px] font-black uppercase tracking-widest">✓ Accepted</div>
+                              ) : req.status === 'rejected' ? (
+                                <div className="px-4 py-2 text-rose-500 text-[10px] font-black uppercase tracking-widest">✕ Rejected</div>
+                              ) : null}
+
+                              {/* Unread dot for response notifications */}
+                              {req.subType === 'response' && !req.isRead && (
+                                <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.6)] animate-pulse shrink-0" />
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            {(req.subType === 'incoming' && (req.status === 'pending' || req.status === 'read')) ? (
-                              <div className="flex gap-2">
-                                <button 
-                                  onClick={() => handleAccept(req.id)}
-                                  className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg"
-                                >
-                                  Accept
-                                </button>
-                                <button 
-                                  onClick={() => handleReject(req.id)}
-                                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            ) : req.status === 'accepted' ? (
-                              <div className="px-4 py-2 text-emerald-500 text-[10px] font-black uppercase tracking-widest">✓ Accepted</div>
-                            ) : req.status === 'rejected' ? (
-                              <div className="px-4 py-2 text-rose-500 text-[10px] font-black uppercase tracking-widest">✕ Rejected</div>
-                            ) : null}
-
-                            {/* Unread dot for response notifications */}
-                            {req.subType === 'response' && !req.isRead && (
-                              <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.6)] animate-pulse shrink-0" />
-                            )}
-                          </div>
-                        </div>
                         );
                       })}
                       {requests.filter(r => r.date !== 'Today').length === 0 && (
@@ -1248,18 +1244,16 @@ function AppContent() {
                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2">Today</h3>
                     <div className="space-y-3">
                       {activities.filter(a => a.date === 'Today').map(act => (
-                        <div 
-                          key={act.id} 
+                        <div
+                          key={act.id}
                           onClick={() => !act.isRead && markAsRead(act.id)}
-                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${
-                          !act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
-                        }`}>
+                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${!act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
+                            }`}>
                           {/* Icon — connection response or transaction */}
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                            act.subType === 'response'
-                              ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
-                              : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
-                          }`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'response'
+                            ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                            : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                            }`}>
                             {act.subType === 'response'
                               ? (act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />)
                               : (act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />)
@@ -1267,7 +1261,7 @@ function AppContent() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
-                               {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ₹${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
+                              {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ₹${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{act.time}</span>
@@ -1296,18 +1290,16 @@ function AppContent() {
                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2 mt-8">Earlier</h3>
                     <div className="space-y-3">
                       {activities.filter(a => a.date !== 'Today').map(act => (
-                        <div 
-                          key={act.id} 
+                        <div
+                          key={act.id}
                           onClick={() => !act.isRead && markAsRead(act.id)}
-                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${
-                          !act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
-                        }`}>
+                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${!act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
+                            }`}>
                           {/* Icon — connection response or transaction */}
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                            act.subType === 'response'
-                              ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
-                              : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
-                          }`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'response'
+                            ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                            : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                            }`}>
                             {act.subType === 'response'
                               ? (act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />)
                               : (act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />)
@@ -1315,7 +1307,7 @@ function AppContent() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
-                               {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ₹${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
+                              {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ₹${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{act.time}</span>

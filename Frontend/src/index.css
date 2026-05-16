@@ -7,7 +7,7 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -30,23 +30,57 @@ body {
 }
 
 @keyframes shine {
-  0% { transform: translateX(-150%) skewX(-30deg); }
-  100% { transform: translateX(200%) skewX(-30deg); }
+  0% {
+    transform: translateX(-150%) skewX(-30deg);
+  }
+
+  100% {
+    transform: translateX(200%) skewX(-30deg);
+  }
 }
 
 /* Hide scrollbar */
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* Email marquee scroll */
 /* Email marquee — left only, no reverse */
 @keyframes email-scroll {
-  0%    { transform: translateX(0);                      opacity: 1; }
-  8%    { transform: translateX(0);                      opacity: 1; }
-  78%   { transform: translateX(var(--scroll-distance)); opacity: 1; }
-  90%   { transform: translateX(var(--scroll-distance)); opacity: 0; }
-  91%   { transform: translateX(0);                      opacity: 0; }
-  100%  { transform: translateX(0);                      opacity: 1; }
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  8% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  78% {
+    transform: translateX(var(--scroll-distance));
+    opacity: 1;
+  }
+
+  90% {
+    transform: translateX(var(--scroll-distance));
+    opacity: 0;
+  }
+
+  91% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .email-marquee {
@@ -56,17 +90,49 @@ body {
 
 /* Bell Ringing Animation */
 @keyframes bell-ring {
-  0% { transform: rotate(0); }
-  10% { transform: rotate(15deg); }
-  20% { transform: rotate(-15deg); }
-  30% { transform: rotate(12deg); }
-  40% { transform: rotate(-12deg); }
-  50% { transform: rotate(10deg); }
-  60% { transform: rotate(-10deg); }
-  70% { transform: rotate(5deg); }
-  80% { transform: rotate(-5deg); }
-  90% { transform: rotate(2deg); }
-  100% { transform: rotate(0); }
+  0% {
+    transform: rotate(0);
+  }
+
+  10% {
+    transform: rotate(15deg);
+  }
+
+  20% {
+    transform: rotate(-15deg);
+  }
+
+  30% {
+    transform: rotate(12deg);
+  }
+
+  40% {
+    transform: rotate(-12deg);
+  }
+
+  50% {
+    transform: rotate(10deg);
+  }
+
+  60% {
+    transform: rotate(-10deg);
+  }
+
+  70% {
+    transform: rotate(5deg);
+  }
+
+  80% {
+    transform: rotate(-5deg);
+  }
+
+  90% {
+    transform: rotate(2deg);
+  }
+
+  100% {
+    transform: rotate(0);
+  }
 }
 
 .animate-bell-ring {
@@ -82,23 +148,68 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 input[type="number"] {
-  -moz-appearance: textfield; /* Firefox */
+  -moz-appearance: textfield;
+  /* Firefox */
 }
 
 /* Logo Styling */
-.main-logo {
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  object-fit: cover;
+.main-logo-container {
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: logo-shine 3s infinite ease-in-out;
+  overflow: hidden;
 }
 
-:where(.dark) .main-logo {
-  filter: drop-shadow(0 0 15px rgba(79, 70, 229, 0.3));
+/* Shimmer / Signing Effect */
+.main-logo-container::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: rotate(45deg);
+  animation: logo-shimmer 3s infinite ease-in-out;
+  pointer-events: none;
 }
 
-:root:not(.dark) .main-logo {
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
+@keyframes logo-shimmer {
+  0% { transform: translateX(-150%) rotate(45deg); }
+  100% { transform: translateX(150%) rotate(45deg); }
 }
 
+@keyframes logo-shine {
+  0%, 100% { 
+    filter: drop-shadow(0 0 8px rgba(79, 70, 229, 0.3)) brightness(1); 
+  }
+  50% { 
+    filter: drop-shadow(0 0 25px rgba(99, 102, 241, 0.6)) brightness(1.2); 
+  }
+}
 
+/* Light Theme Logo Container */
+:root:not(.dark) .main-logo-container {
+  background-color: white !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
 
+/* Dark Theme Logo Container */
+:where(.dark) .main-logo-container {
+  background-color: #1e293b !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.main-logo-container:hover {
+  transform: scale(1.1) translateY(-3px);
+  filter: brightness(1.2) drop-shadow(0 0 25px rgba(99, 102, 241, 0.7));
+}
+
+.main-logo-img {
+  object-fit: contain;
+}
