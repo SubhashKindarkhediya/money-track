@@ -76,10 +76,15 @@ const SettingsPage: React.FC = () => {
       showMessage("error", "Passwords do not match");
       return;
     }
+
+    if (passData.currentPassword === passData.newPassword) {
+      showMessage("error", "New password must be different from current password");
+      return;
+    }
     
     setIsLoading(true);
     try {
-      await api.patch("/auth/change-password", {
+      await api.post("/auth/change-password", {
         currentPassword: passData.currentPassword,
         newPassword: passData.newPassword
       });
@@ -87,6 +92,19 @@ const SettingsPage: React.FC = () => {
       setPassData({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err: any) {
       showMessage("error", err.response?.data?.error || "Failed to change password");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsLoading(true);
+    try {
+      await api.delete("/auth/delete-account");
+      logout();
+      navigate("/");
+    } catch (err: any) {
+      showMessage("error", err.response?.data?.error || "Failed to delete account");
     } finally {
       setIsLoading(false);
     }
@@ -168,8 +186,8 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <div className="px-6">
-        {/* Message Banner */}
-        {message && (
+        {/* Message Banner (Global, except Security and Delete Confirm) */}
+        {message && view !== "security" && !showDeleteConfirm && (
           <div className={`mt-6 p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${
             message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
           }`}>
@@ -393,6 +411,16 @@ const SettingsPage: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleChangePassword} className="space-y-8 px-2">
+                  {/* Local Message Banner for Security View */}
+                  {message && view === "security" && (
+                    <div className={`p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${
+                      message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
+                    }`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${message.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
+                      {message.text}
+                    </div>
+                  )}
+
                   {/* Current Password */}
                   <div className="relative group">
                     <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors z-10 pointer-events-none">
@@ -550,7 +578,19 @@ const SettingsPage: React.FC = () => {
               <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-8 max-w-[280px]">
                 This action is <span className="text-rose-600 font-bold">permanent</span>. All your transactions, contacts, and settings will be wiped forever.
               </p>
+
+              {/* Local Message Banner for Delete Account Drawer (Top) */}
+              {message && showDeleteConfirm && (
+                <div className={`w-full mb-6 p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${
+                  message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${message.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
+                  {message.text}
+                </div>
+              )}
               
+
+
               <div className="w-full flex flex-row gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
@@ -560,14 +600,16 @@ const SettingsPage: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    showMessage("error", "Deletion is currently restricted for demo purposes.");
-                  }}
-                  className="flex-[1.5] h-16 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl shadow-xl shadow-rose-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                  onClick={handleDeleteAccount}
+                  disabled={isLoading}
+                  className="flex-[1.5] h-16 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-rose-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
-                  <Trash2 size={16} />
-                  <span className="uppercase tracking-widest text-xs">Delete</span>
+                  {isLoading ? <Loader2 size={16} className="animate-spin" /> : (
+                    <>
+                      <Trash2 size={16} />
+                      <span className="uppercase tracking-widest text-xs">Delete</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

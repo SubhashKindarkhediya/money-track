@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ArrowLeft, User, TrendingUp, TrendingDown, IndianRupee, FileText, Clock, ChevronDown, CheckCircle2, Check, X, Users, CalendarDays } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
+import MarqueeText from "../components/MarqueeText";
 
 const AddTransaction: React.FC = () => {
   const navigate = useNavigate();
@@ -291,9 +292,12 @@ const AddTransaction: React.FC = () => {
                   <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-xl">
                     {preSelectedPersonName?.charAt(0).toUpperCase()}
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Adding transaction for</p>
-                    <p className="text-lg font-black text-gray-900 dark:text-white">{preSelectedPersonName}</p>
+                    <MarqueeText 
+                      text={preSelectedPersonName || ""} 
+                      className="text-lg font-black text-gray-900 dark:text-white"
+                    />
                   </div>
                 </div>
               )}
@@ -483,8 +487,11 @@ const AddTransaction: React.FC = () => {
                   {selectedPersons.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3 px-1">
                       {selectedPersons.map(p => (
-                        <div key={p.id} className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl animate-in zoom-in-95 duration-200">
-                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400">{p.name}</span>
+                        <div key={p.id} className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl animate-in zoom-in-95 duration-200 max-w-[150px]">
+                          <MarqueeText 
+                            text={p.name} 
+                            className="text-xs font-bold text-amber-700 dark:text-amber-400"
+                          />
                           <button
                             type="button"
                             onClick={() => setSelectedPersons(selectedPersons.filter(sp => sp.id !== p.id))}

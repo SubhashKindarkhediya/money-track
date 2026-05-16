@@ -52,6 +52,7 @@ import SettingsPage from "./pages/Settings";
 // import { Sun, Moon } from "lucide-react";
 import { useTheme } from "./context/ThemeContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import MarqueeText from "./components/MarqueeText";
 
 // inside component
 // Protected Route Component
@@ -353,25 +354,29 @@ const Dashboard = () => {
             <div className="space-y-4">
               {recentTransactions.map((tx) => (
                 <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 hover:border-indigo-100 dark:hover:border-indigo-500/30 transition-all cursor-pointer">
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="flex items-center gap-4 flex-1 min-w-0 mr-3">
                     <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 ${tx.type === "credit"
                       ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
                       : "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400"
                       }`}>
                       {tx.type === "credit" ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
                     </div>
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <h4 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
-                        {tx.Person ? tx.Person.name : "Unknown"}
-                      </h4>
+                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                      <MarqueeText 
+                        text={tx.Person ? tx.Person.name : "Unknown"} 
+                        className="text-sm font-bold text-gray-900 dark:text-white"
+                      />
                       <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         {new Date(tx.date || tx.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
                   </div>
-                  <div className={`text-base font-black shrink-0 whitespace-nowrap ml-3 ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                    }`}>
-                    {tx.type === "credit" ? "+" : "-"}{currencySymbol}{Number(tx.amount).toLocaleString("en-IN")}
+                  <div className="ml-3 shrink-0">
+                    <MarqueeText 
+                      text={`${tx.type === "credit" ? "+" : "-"}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN")}`}
+                      className={`text-base font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                      containerClassName="justify-end min-w-[60px]"
+                    />
                   </div>
                 </div>
               ))}
@@ -633,7 +638,7 @@ function AppContent() {
   const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage || isSettingsPage;
 
   // Show bottom nav only on exact main tab paths
-  const mainTabs = ["/", "/person", "/transactions", "/analytics"];
+  const mainTabs = ["/", "/person", "/transactions"];
   const showBottomNav = mainTabs.includes(location.pathname);
 
   const navigation = [
@@ -884,11 +889,15 @@ function AppContent() {
                     Premium Tier
                   </p>
                 </div>
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1rem] bg-gradient-to-br from-indigo-500 to-purple-600 p-0.5 shadow-lg transform group-hover:-rotate-12 group-hover:scale-105 transition-all cursor-pointer">
-                  <div className="w-full h-full rounded-[0.8rem] sm:rounded-[0.85rem] bg-indigo-50 dark:bg-gray-900 flex items-center justify-center border-2 border-white dark:border-gray-900">
-                    <span className="font-black text-indigo-600 text-base sm:text-lg">
-                      {user?.name ? user.name[0].toUpperCase() : "U"}
-                    </span>
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${user?.profile_picture ? "border border-indigo-100 dark:border-gray-700" : "bg-gradient-to-br from-indigo-500 to-purple-600 p-0.5"} shadow-lg transform group-hover:-rotate-12 group-hover:scale-105 transition-all cursor-pointer`}>
+                  <div className={`w-full h-full rounded-full bg-indigo-50 dark:bg-gray-900 flex items-center justify-center ${user?.profile_picture ? "" : "border-2 border-white dark:border-gray-900"} overflow-hidden`}>
+                    {user?.profile_picture ? (
+                      <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="font-black text-indigo-600 text-base sm:text-lg">
+                        {user?.name ? user.name[0].toUpperCase() : "U"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </button>

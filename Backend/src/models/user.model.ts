@@ -18,6 +18,7 @@ interface UserAttributes {
   reset_otp_expires?: Date;
   currency?: string;
   monthly_budget?: number;
+  profile_picture?: string;
 }
 
 interface UserCreationAttributes extends Optional<UserAttributes, "id"> { }
@@ -41,6 +42,7 @@ class User
   public reset_otp_expires?: Date;
   public currency?: string;
   public monthly_budget?: number;
+  public profile_picture?: string;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -115,6 +117,10 @@ User.init(
     },
     monthly_budget: {
       type: DataTypes.FLOAT,
+      allowNull: true,
+    },
+    profile_picture: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

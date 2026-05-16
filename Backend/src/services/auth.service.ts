@@ -1,8 +1,11 @@
 import { singleton } from "tsyringe";
+import { Op } from "sequelize";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model";
 import Person from "../models/person.model";
+import Transaction from "../models/transaction.model";
+import Notification from "../models/notification.model";
 import { MailService } from "./mail.service";
 
 @singleton()
@@ -169,7 +172,7 @@ export class AuthService {
     const { 
       name, phone_number, gender, address, 
       first_name, last_name, dob, id_card_no,
-      currency, monthly_budget
+      currency, monthly_budget, profile_picture
     } = data;
 
     const user = await User.findByPk(userId);
@@ -210,6 +213,7 @@ export class AuthService {
     if (id_card_no !== undefined) user.id_card_no = id_card_no;
     if (currency !== undefined) user.currency = currency;
     if (monthly_budget !== undefined) user.monthly_budget = monthly_budget;
+    if (profile_picture !== undefined) user.profile_picture = profile_picture;
     
     await user.save();
 
@@ -235,6 +239,12 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
       throw new Error("Incorrect current password");
+    }
+
+    // Check if new password is same as current password
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      throw new Error("New password must be different from the current password");
     }
 
     // Hash new password
@@ -330,5 +340,33 @@ export class AuthService {
     await user.save();
 
     return { message: "Password reset successful" };
+  }
+
+  /**
+   * Delete user account and all associated data
+   * @param userId {string}
+   */
+  async deleteAccount(userId: string) {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Delete all related data
+    await Transaction.destroy({ where: { uid: userId } });
+    await Person.destroy({ where: { uid: userId } });
+    await Notification.destroy({ 
+      where: { 
+        [Op.or]: [
+          { recipient_id: userId },
+          { sender_id: userId }
+        ]
+      } 
+    });
+
+    // Delete user
+    await user.destroy();
+
+    return { message: "Account deleted successfully" };
   }
 }

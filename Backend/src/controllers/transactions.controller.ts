@@ -186,27 +186,76 @@ export class TransactionsController {
       doc.text(`Total Personal Expense: ${currencySymbol}${totalExpense.toFixed(2)}`);
       doc.moveDown(2);
 
-      // Transactions List
+      // Transactions Table
       doc.fontSize(14).text('Detailed Transactions', { underline: true });
       doc.moveDown();
 
       if (transactions.length === 0) {
         doc.fontSize(10).text('No transactions found.');
       } else {
+        const tableTop = doc.y;
+        const colWidths = {
+          date: 65,
+          name: 110,
+          type: 60,
+          amount: 80,
+          remarks: 180
+        };
+        const colPositions = {
+          date: 50,
+          name: 115,
+          type: 225,
+          amount: 285,
+          remarks: 365
+        };
+
+        // Table Header
+        doc.font('Helvetica-Bold').fontSize(10);
+        doc.rect(50, tableTop - 5, 495, 20).fill('#f3f4f6');
+        doc.fillColor('#374151');
+        doc.text('Date', colPositions.date, tableTop);
+        doc.text('Entity/Category', colPositions.name, tableTop);
+        doc.text('Type', colPositions.type, tableTop);
+        doc.text('Amount', colPositions.amount, tableTop);
+        doc.text('Remarks', colPositions.remarks, tableTop);
+        
+        doc.moveDown();
+        doc.fillColor('black').font('Helvetica').fontSize(9);
+
+        let currentY = tableTop + 20;
+
         transactions.forEach((t: any, index: number) => {
-          const dateStr = new Date(t.date).toLocaleDateString();
-          const personName = t.Person ? t.Person.name : 'Personal';
+          // Check for page break
+          if (currentY > 700) {
+            doc.addPage();
+            currentY = 50;
+          }
+
+          const dateStr = new Date(t.date || t.createdAt).toLocaleDateString('en-IN');
+          const nameStr = t.Person ? t.Person.name : (t.type === 'income' || t.type === 'expense' ? 'Personal' : '-');
           const typeStr = t.type.toUpperCase();
+          const amountStr = `${currencySymbol}${Number(t.amount).toLocaleString('en-IN')}`;
+          const remarkStr = t.reason || t.note || '-';
+
+          // Draw row line
+          doc.moveTo(50, currentY - 5).lineTo(545, currentY - 5).stroke('#e5e7eb');
+
+          doc.text(dateStr, colPositions.date, currentY);
+          doc.text(nameStr, colPositions.name, currentY, { width: colWidths.name });
+          doc.text(typeStr, colPositions.type, currentY);
+          doc.text(amountStr, colPositions.amount, currentY);
+          doc.text(remarkStr, colPositions.remarks, currentY, { width: colWidths.remarks });
+
+          // Calculate height based on wrapped text
+          const remarkHeight = doc.heightOfString(remarkStr, { width: colWidths.remarks });
+          const nameHeight = doc.heightOfString(nameStr, { width: colWidths.name });
+          const rowHeight = Math.max(remarkHeight, nameHeight, 15) + 10;
           
-          doc.fontSize(10).font('Helvetica-Bold')
-             .text(`${index + 1}. ${dateStr} - ${personName} - ${typeStr} - ${currencySymbol}${t.amount}`);
-             
-          doc.font('Helvetica').fontSize(9);
-          if (t.reason) doc.text(`Reason: ${t.reason}`);
-          if (t.note) doc.text(`Note: ${t.note}`);
-          doc.text(`Status: ${t.status}`);
-          doc.moveDown(0.5);
+          currentY += rowHeight;
         });
+
+        // Bottom border
+        doc.moveTo(50, currentY - 5).lineTo(545, currentY - 5).stroke('#e5e7eb');
       }
 
       // Finalize the PDF and end the stream

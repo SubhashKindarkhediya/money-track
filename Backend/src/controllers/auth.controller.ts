@@ -104,7 +104,7 @@ export class AuthController {
       const { 
         name, phone_number, gender, address,
         first_name, last_name, dob, id_card_no,
-        currency, monthly_budget
+        currency, monthly_budget, profile_picture
       } = req.body;
 
       const updatedUser = await this.authService.updateProfile(userId, { 
@@ -117,7 +117,8 @@ export class AuthController {
         dob,
         id_card_no,
         currency,
-        monthly_budget
+        monthly_budget,
+        profile_picture
       });
 
       res.status(200).json({
@@ -220,6 +221,19 @@ export class AuthController {
       }
 
       const result = await this.authService.resetPassword({ email, otp, newPassword });
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Delete user account
+   */
+  deleteAccount = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.uid;
+      const result = await this.authService.deleteAccount(userId);
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ error: error.message });

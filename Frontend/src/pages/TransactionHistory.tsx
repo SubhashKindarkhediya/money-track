@@ -5,6 +5,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import MarqueeText from "../components/MarqueeText";
 
 interface Transaction {
   id: string;
@@ -291,19 +292,19 @@ const TransactionHistory: React.FC = () => {
 
       <div className="px-5 mt-6 space-y-6">
         {/* Quick Summary */}
-        <div className="bg-white dark:bg-[#151624] p-5 rounded-[1.5rem] border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-[#151624] p-4 sm:p-5 rounded-[1.5rem] border border-gray-100 dark:border-gray-800 shadow-sm flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Found</span>
-            <span className="text-xl font-black text-gray-900 dark:text-white">{filteredTransactions.length}</span>
+            <span className="text-lg sm:text-xl font-black text-gray-900 dark:text-white">{filteredTransactions.length}</span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-8">
             <div className="flex flex-col items-end">
               <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Total Credit</span>
               <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                 {currencySymbol}{summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
             </div>
-            <div className="w-px h-8 bg-gray-200 dark:bg-gray-800"></div>
+            <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0"></div>
             <div className="flex flex-col items-end">
               <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Total Debit</span>
               <span className="text-sm font-black text-rose-600 dark:text-rose-400">
@@ -347,7 +348,7 @@ const TransactionHistory: React.FC = () => {
                       }}
                       className="bg-white dark:bg-[#151624] p-4 rounded-[1.2rem] border border-gray-100 dark:border-gray-800/80 shadow-sm flex items-center justify-between group hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all cursor-pointer"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 min-w-0 flex-1 mr-3">
                         <div
                           className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${tx.type === "credit"
                             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
@@ -357,14 +358,16 @@ const TransactionHistory: React.FC = () => {
                           {tx.type === "credit" ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
                         </div>
 
-                        <div className="flex flex-col gap-0.5">
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[140px] sm:max-w-[200px]">
-                            {tx.Person ? tx.Person.name : "Unknown"}
-                          </h4>
+                        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                          <MarqueeText 
+                            text={tx.Person ? tx.Person.name : "Unknown"} 
+                            className="text-sm font-bold text-gray-900 dark:text-white"
+                          />
                           {tx.reason && (
-                            <p className="text-[11px] font-semibold text-indigo-600/80 dark:text-indigo-400/80 truncate max-w-[150px]">
-                              {tx.reason}
-                            </p>
+                            <MarqueeText 
+                              text={tx.reason} 
+                              className="text-[11px] font-semibold text-indigo-600/80 dark:text-indigo-400/80"
+                            />
                           )}
                           <div className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
                             <Clock size={10} />
@@ -374,14 +377,11 @@ const TransactionHistory: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
-                        <span
-                          className={`text-base font-black whitespace-nowrap ${tx.type === "credit"
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-rose-600 dark:text-rose-400"
-                            }`}
-                        >
-                          {tx.type === "credit" ? "+" : "-"}{currencySymbol}{Number(tx.amount).toLocaleString("en-IN")}
-                        </span>
+                        <MarqueeText 
+                          text={`${tx.type === "credit" ? "+" : "-"}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN")}`}
+                          className={`text-base font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                          containerClassName="justify-end min-w-[70px]"
+                        />
                         <div 
                           className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
                         >

@@ -14,43 +14,16 @@ import {
   ChevronRight,
   ChevronDown,
   Check,
+  Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import MarqueeText from "../components/MarqueeText";
 
 // Tap to copy email + auto-scroll if overflow — works on mobile & desktop
 const TruncatedEmail: React.FC<{ email: string; className?: string }> = ({ email, className = "" }) => {
   const [copied, setCopied] = React.useState(false);
-  const [isOverflow, setIsOverflow] = React.useState(false);
-  const wrapRef = React.useRef<HTMLDivElement>(null);
-  const spanRef = React.useRef<HTMLSpanElement>(null);
-
-  const checkOverflow = React.useCallback(() => {
-    const wrap = wrapRef.current;
-    const span = spanRef.current;
-    if (wrap && span) {
-      // Temporarily remove animation to measure real width
-      span.style.animation = "none";
-      span.style.transform = "translateX(0)";
-      const overflow = span.scrollWidth > wrap.clientWidth;
-      setIsOverflow(overflow);
-      if (overflow) {
-        const dist = wrap.clientWidth - span.scrollWidth;
-        span.style.setProperty("--scroll-distance", `${dist}px`);
-      }
-      // Restore animation
-      span.style.animation = "";
-      span.style.transform = "";
-    }
-  }, [email]);
-
-  React.useEffect(() => {
-    checkOverflow();
-    const observer = new ResizeObserver(checkOverflow);
-    if (wrapRef.current) observer.observe(wrapRef.current);
-    return () => observer.disconnect();
-  }, [checkOverflow]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(email).then(() => {
@@ -61,16 +34,13 @@ const TruncatedEmail: React.FC<{ email: string; className?: string }> = ({ email
 
   return (
     <div
-      ref={wrapRef}
       onClick={handleCopy}
       className={`relative overflow-hidden min-w-0 cursor-pointer`}
     >
-      <span
-        ref={spanRef}
-        className={`text-sm font-bold whitespace-nowrap ${isOverflow ? "email-marquee" : "block truncate"} ${className}`}
-      >
-        {email}
-      </span>
+      <MarqueeText 
+        text={email} 
+        className={`text-sm font-bold ${className}`} 
+      />
       {copied && (
         <span className="absolute -top-8 right-0 bg-gray-900 dark:bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-lg whitespace-nowrap animate-in fade-in zoom-in-95 duration-200 z-50">
           ✓ Copied!
@@ -95,6 +65,7 @@ const Profile: React.FC = () => {
     gender: user?.gender || "",
     address: user?.address || "",
     dob: user?.dob || "",
+    profile_picture: user?.profile_picture || "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{
@@ -118,6 +89,7 @@ const Profile: React.FC = () => {
         gender: user.gender || "",
         address: user.address || "",
         dob: user.dob || "",
+        profile_picture: user.profile_picture || "",
       });
     }
   }, [user]);
@@ -148,6 +120,21 @@ const Profile: React.FC = () => {
     >,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setMessage({ type: "error", text: "File size should be less than 2MB" });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, profile_picture: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleCancel = () => {
@@ -226,16 +213,20 @@ const Profile: React.FC = () => {
           <div className="flex items-start gap-4 p-5 rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-indigo-500/20 shadow-lg shadow-indigo-900/5 dark:shadow-none">
             {/* Avatar */}
             <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-indigo-500 shrink-0 bg-[#1e1a3b] flex items-center justify-center">
-              <User className="text-indigo-500" size={28} />
+              {user?.profile_picture ? (
+                <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <User className="text-indigo-500" size={28} />
+              )}
             </div>
-            <div className="flex flex-col gap-1 min-w-0 flex-1">
-              <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight break-words">
-                {user?.name || "User"}
-              </h1>
-              <TruncatedEmail
-                email={user?.email || "-"}
-                className="text-gray-500 dark:text-gray-400 font-medium"
+            <div className="min-w-0 flex-1">
+              <MarqueeText 
+                text={user?.name || "User"} 
+                className="text-2xl font-black text-gray-900 dark:text-white tracking-tight"
               />
+              <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-widest mt-1 uppercase">
+                Premium Account
+              </p>
             </div>
           </div>
 
@@ -345,17 +336,37 @@ const Profile: React.FC = () => {
             {/* Avatar Section */}
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="w-32 h-32 rounded-[3rem] overflow-hidden border-4 border-indigo-50 dark:border-gray-800 shadow-xl shadow-indigo-500/10">
-                  <div className="w-full h-full bg-[#1e1a3b] flex items-center justify-center">
-                    <User className="text-indigo-500" size={64} />
-                  </div>
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-indigo-50 dark:border-gray-800 shadow-xl shadow-indigo-500/10 bg-[#1e1a3b]">
+                  {formData.profile_picture ? (
+                    <img src={formData.profile_picture} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User className="text-indigo-500" size={64} />
+                    </div>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  className="absolute -bottom-2 -right-2 w-12 h-12 bg-indigo-600 text-white rounded-2xl border-4 border-white dark:border-gray-900 flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                >
+
+                {/* Remove Photo Button */}
+                {formData.profile_picture && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, profile_picture: "" })}
+                    className="absolute -top-1 -left-1 w-10 h-10 bg-rose-500 text-white rounded-2xl border-4 border-white dark:border-gray-900 flex items-center justify-center shadow-lg hover:scale-110 hover:bg-rose-600 transition-all active:scale-95 z-10"
+                    title="Remove Photo"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
+
+                <label className="absolute -bottom-2 -right-2 w-12 h-12 bg-indigo-600 text-white rounded-2xl border-4 border-white dark:border-gray-900 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer">
                   <SquarePen size={20} />
-                </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
               </div>
               <p className="mt-4 text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
                 Change Photo

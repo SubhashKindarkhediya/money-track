@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import MarqueeText from "../components/MarqueeText";
 
 const Analytics: React.FC = () => {
   const { currencySymbol } = useAuth();
@@ -190,12 +191,13 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Text Container */}
-        <div className="flex flex-col">
-          <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{title}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <h4 className="text-2xl font-black text-gray-900 dark:text-white leading-none">
-              {currencySymbol}{value.toLocaleString("en-IN")}
-            </h4>
+        <div className="flex flex-col min-w-0 w-full">
+          <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest truncate">{title}</p>
+          <div className="flex items-center gap-2 mt-1 min-w-0 w-full">
+            <MarqueeText 
+              text={`${currencySymbol}${value.toLocaleString("en-IN")}`}
+              className="text-2xl font-black text-gray-900 dark:text-white leading-none"
+            />
           </div>
         </div>
       </div>
@@ -387,24 +389,30 @@ const Analytics: React.FC = () => {
 
                 <div className="flex items-center justify-between flex-1 mt-4">
                   {/* Left Side: Stats */}
-                  <div className="flex flex-col gap-6 z-10 shrink-0">
-                    <div className="flex items-center gap-4 group">
-                      <div className="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 p-2.5 rounded-[1rem] shadow-inner shadow-indigo-500/20 transition-all group-hover:scale-110">
+                  <div className="flex flex-col gap-6 z-10 min-w-0 flex-1 mr-4">
+                    <div className="flex items-center gap-4 group min-w-0">
+                      <div className="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 p-2.5 rounded-[1rem] shadow-inner shadow-indigo-500/20 transition-all group-hover:scale-110 shrink-0">
                         <TrendingUp size={18} strokeWidth={3} />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Credit</p>
-                        <p className="text-base font-black text-gray-900 dark:text-white leading-none mt-1">{currencySymbol}{(summaryData?.udhar?.totalCredit || 0).toLocaleString("en-IN")}</p>
+                        <MarqueeText 
+                          text={`${currencySymbol}${(summaryData?.udhar?.totalCredit || 0).toLocaleString("en-IN")}`}
+                          className="text-base font-black text-gray-900 dark:text-white leading-none mt-1"
+                        />
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 group">
-                      <div className="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 p-2.5 rounded-[1rem] shadow-inner shadow-amber-500/20 transition-all group-hover:scale-110">
+                    <div className="flex items-center gap-4 group min-w-0">
+                      <div className="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 p-2.5 rounded-[1rem] shadow-inner shadow-amber-500/20 transition-all group-hover:scale-110 shrink-0">
                         <TrendingDown size={18} strokeWidth={3} />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Debit</p>
-                        <p className="text-base font-black text-gray-900 dark:text-white leading-none mt-1">{currencySymbol}{(summaryData?.udhar?.totalDebit || 0).toLocaleString("en-IN")}</p>
+                        <MarqueeText 
+                          text={`${currencySymbol}${(summaryData?.udhar?.totalDebit || 0).toLocaleString("en-IN")}`}
+                          className="text-base font-black text-gray-900 dark:text-white leading-none mt-1"
+                        />
                       </div>
                     </div>
                   </div>
@@ -449,9 +457,11 @@ const Analytics: React.FC = () => {
                     {/* Center Text & Glow */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <div className="absolute w-20 h-20 bg-gradient-to-br from-indigo-500/20 to-amber-500/20 dark:from-indigo-500/30 dark:to-amber-500/30 blur-xl rounded-full"></div>
-                      <span className="text-xl font-black text-gray-900 dark:text-white relative z-10 tracking-tight">
-                        {Math.abs((summaryData?.udhar?.totalCredit || 0) - (summaryData?.udhar?.totalDebit || 0)).toLocaleString("en-IN")}
-                      </span>
+                      <MarqueeText 
+                        text={Math.abs((summaryData?.udhar?.totalCredit || 0) - (summaryData?.udhar?.totalDebit || 0)).toLocaleString("en-IN")}
+                        className="text-xl font-black text-gray-900 dark:text-white relative z-10 tracking-tight"
+                        containerClassName="max-w-[80px]"
+                      />
                       <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest relative z-10 mt-0.5">Net Bal</span>
                     </div>
                   </div>
@@ -481,79 +491,7 @@ const Analytics: React.FC = () => {
                     <ChevronDown size={16} className={`text-gray-400 ml-1 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`} />
                   </button>
 
-                  {isDatePickerOpen && (
-                    <div className="absolute top-full mt-2 right-0 bg-white dark:bg-[#1a1b2e] p-4 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 z-50 flex flex-col gap-3 min-w-[220px] animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-[11px] font-black text-gray-800 dark:text-gray-200 uppercase tracking-widest">Select Range</span>
-                        <button
-                          onClick={() => setIsDatePickerOpen(false)}
-                          className="p-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 rounded-full transition-all"
-                        >
-                          <X size={14} strokeWidth={3} />
-                        </button>
-                      </div>
 
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Start Date</label>
-                        <div className="relative group">
-                          <div className="p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 w-full group-hover:border-indigo-500 transition-colors flex items-center justify-between">
-                            <span>{startDate ? formatDateString(startDate) : "dd/mm/yy"}</span>
-                            <Calendar size={14} className="text-gray-400" />
-                          </div>
-                          <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            onClick={(e) => {
-                              if ('showPicker' in HTMLInputElement.prototype) {
-                                try { (e.target as any).showPicker(); } catch (err) { }
-                              }
-                            }}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">End Date</label>
-                        <div className="relative group">
-                          <div className="p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 w-full group-hover:border-indigo-500 transition-colors flex items-center justify-between">
-                            <span>{endDate ? formatDateString(endDate) : "dd/mm/yy"}</span>
-                            <Calendar size={14} className="text-gray-400" />
-                          </div>
-                          <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            onClick={(e) => {
-                              if ('showPicker' in HTMLInputElement.prototype) {
-                                try { (e.target as any).showPicker(); } catch (err) { }
-                              }
-                            }}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center mt-2 pt-3 border-t border-gray-100 dark:border-gray-800">
-                        <button
-                          onClick={() => {
-                            setStartDate("");
-                            setEndDate("");
-                            setChartSummaryData(summaryData);
-                            setIsDatePickerOpen(false);
-                          }}
-                          className="text-[10px] font-bold text-rose-500 hover:text-rose-600 px-2 py-1 transition-colors"
-                        >
-                          Clear
-                        </button>
-                        <button
-                          onClick={() => setIsDatePickerOpen(false)}
-                          className="text-[10px] font-bold bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-500/20"
-                        >
-                          Apply
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -610,6 +548,99 @@ const Analytics: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Date Range Picker Bottom Drawer */}
+      {isDatePickerOpen && (
+        <div className="fixed inset-0 z-[100] flex flex-col justify-end">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => setIsDatePickerOpen(false)}
+          ></div>
+          <div className="relative w-full max-w-lg mx-auto bg-white dark:bg-[#0a0a1a] rounded-t-[2rem] shadow-2xl border-t border-gray-100 dark:border-gray-800 animate-in slide-in-from-bottom-full duration-300">
+            <div className="p-6 pb-8">
+              <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto mb-6"></div>
+              
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-black text-gray-900 dark:text-white">Select Date Range</h3>
+                <button 
+                  onClick={() => setIsDatePickerOpen(false)}
+                  className="p-2 bg-gray-50 dark:bg-gray-800 text-gray-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              
+              <div className="space-y-5">
+                <div className="space-y-2 text-left">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Start Date</label>
+                  <div className="relative group">
+                    <div className="p-3.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl text-base font-bold text-gray-900 dark:text-white w-full group-hover:border-indigo-500 transition-colors flex items-center justify-between">
+                      <span>{startDate ? formatDateString(startDate) : "Select..."}</span>
+                      <Calendar size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      max={endDate || undefined}
+                      onClick={(e) => {
+                        if ('showPicker' in HTMLInputElement.prototype) {
+                          try { (e.target as any).showPicker(); } catch (err) { }
+                        }
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 text-left">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">End Date</label>
+                  <div className="relative group">
+                    <div className="p-3.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl text-base font-bold text-gray-900 dark:text-white w-full group-hover:border-indigo-500 transition-colors flex items-center justify-between">
+                      <span>{endDate ? formatDateString(endDate) : "Select..."}</span>
+                      <Calendar size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      min={startDate || undefined}
+                      onClick={(e) => {
+                        if ('showPicker' in HTMLInputElement.prototype) {
+                          try { (e.target as any).showPicker(); } catch (err) { }
+                        }
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <button
+                    onClick={() => {
+                      setStartDate("");
+                      setEndDate("");
+                      setChartSummaryData(summaryData);
+                      setIsDatePickerOpen(false);
+                    }}
+                    className="w-1/3 h-14 bg-gray-100 dark:bg-gray-800 text-rose-500 font-black uppercase tracking-widest rounded-2xl text-xs active:scale-95 transition-all"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsDatePickerOpen(false);
+                    }}
+                    disabled={!startDate || !endDate}
+                    className="flex-1 h-14 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black uppercase tracking-widest rounded-2xl text-sm disabled:opacity-50 active:scale-95 transition-transform flex items-center justify-center shadow-xl shadow-indigo-500/20"
+                  >
+                    Apply Filter
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

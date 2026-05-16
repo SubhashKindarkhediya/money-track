@@ -7,6 +7,7 @@ import {
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import MarqueeText from "../components/MarqueeText";
 
 interface Person {
   id: string;
@@ -71,47 +72,7 @@ const FloatingInput = ({
   );
 };
 
-// ─── Marquee Text Component ───────────────────────────────────────────────────
-const MarqueeText: React.FC<{ text: string; className?: string; containerClassName?: string }> = ({ text, className = "", containerClassName = "" }) => {
-  const [isOverflow, setIsOverflow] = React.useState(false);
-  const wrapRef = React.useRef<HTMLDivElement>(null);
-  const spanRef = React.useRef<HTMLSpanElement>(null);
 
-  const checkOverflow = React.useCallback(() => {
-    const wrap = wrapRef.current;
-    const span = spanRef.current;
-    if (wrap && span) {
-      span.style.animation = "none";
-      span.style.transform = "translateX(0)";
-      const overflow = span.scrollWidth > wrap.clientWidth;
-      setIsOverflow(overflow);
-      if (overflow) {
-        const dist = wrap.clientWidth - span.scrollWidth;
-        span.style.setProperty("--scroll-distance", `${dist}px`);
-      }
-      span.style.animation = "";
-      span.style.transform = "";
-    }
-  }, [text]);
-
-  React.useEffect(() => {
-    checkOverflow();
-    const observer = new ResizeObserver(checkOverflow);
-    if (wrapRef.current) observer.observe(wrapRef.current);
-    return () => observer.disconnect();
-  }, [checkOverflow]);
-
-  return (
-    <div ref={wrapRef} className={`relative overflow-hidden min-w-0 flex ${containerClassName}`}>
-      <span
-        ref={spanRef}
-        className={`whitespace-nowrap ${isOverflow ? "email-marquee" : "block truncate"} ${className}`}
-      >
-        {text}
-      </span>
-    </div>
-  );
-};
 
 // ─── Info Row (reusable for detail screen) ───────────────────────────────────
 const InfoRow = ({
@@ -677,14 +638,15 @@ Takes less than a minute. See you there! 😊
                         }}
                         className="flex items-center justify-between p-4 rounded-[1.2rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm group cursor-pointer hover:border-indigo-100 dark:hover:border-indigo-500/30 transition-all"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
                           <div className={`p-2.5 rounded-xl ${tx.type === "credit" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"}`}>
                             {tx.type === "credit" ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
                           </div>
-                          <div className="flex flex-col gap-0.5">
-                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
-                              {tx.reason || (tx.type === "credit" ? "Credit" : "Debit")}
-                            </p>
+                          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                            <MarqueeText 
+                              text={tx.reason || (tx.type === "credit" ? "Credit" : "Debit")} 
+                              className="text-sm font-bold text-gray-900 dark:text-white"
+                            />
                             <div className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
                               <Clock size={10} />
                               <span>{formatDate(tx.date || tx.createdAt)}</span>
@@ -692,9 +654,11 @@ Takes less than a minute. See you there! 😊
                           </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className={`text-sm font-black whitespace-nowrap ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                            {tx.type === "credit" ? "+" : "-"}₹{tx.amount}
-                          </span>
+                          <MarqueeText 
+                            text={`${tx.type === "credit" ? "+" : "-"}${currencySymbol}${tx.amount}`}
+                            className={`text-sm font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                            containerClassName="justify-end min-w-[60px]"
+                          />
                           <div 
                             onClick={(e) => {
                               e.stopPropagation();
