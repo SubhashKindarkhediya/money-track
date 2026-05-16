@@ -12,7 +12,12 @@ export class DashboardController {
   getSummary = async (req: Request, res: Response) => {
     try {
       const uid = (req as any).user.uid;
-      const summary = await this.dashboardService.getSummary(uid);
+      const { startDate, endDate } = req.query;
+      const summary = await this.dashboardService.getSummary(
+        uid, 
+        startDate as string, 
+        endDate as string
+      );
 
       res.status(200).json({
         success: true,

@@ -11,6 +11,8 @@ interface User {
   last_name?: string;
   dob?: string;
   id_card_no?: string;
+  currency?: string;
+  monthly_budget?: number;
 }
 
 interface AuthContextType {
@@ -21,6 +23,7 @@ interface AuthContextType {
   updateUser: (newUser: User) => void;
   loading: boolean;
   isWakingUp: boolean;
+  currencySymbol: string;
 }
 
 // Helper: check if a JWT token is expired (client-side, no secret needed)
@@ -122,8 +125,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(newUser);
   };
 
+  const currencySymbol = user?.currency === 'USD' ? '$' : user?.currency === 'EUR' ? '€' : '₹';
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading, isWakingUp }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading, isWakingUp, currencySymbol }}>
       {children}
     </AuthContext.Provider>
   );

@@ -67,9 +67,6 @@ const FloatingInput = ({
       >
         {label}
       </label>
-      <span className="absolute left-11 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 text-sm pointer-events-none opacity-0 peer-focus:opacity-100 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity duration-200 delay-75">
-        {placeholder}
-      </span>
     </div>
   );
 };
@@ -147,7 +144,7 @@ const InfoRow = ({
 
 const Person: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, currencySymbol } = useAuth();
   const location = useLocation();
   const [persons, setPersons] = useState<Person[]>([]);
   const [search, setSearch] = useState("");
@@ -532,7 +529,7 @@ Takes less than a minute. See you there! 😊
                     placeholder="Search transactions..."
                     value={txSearch}
                     onChange={(e) => setTxSearch(e.target.value)}
-                    className="w-full bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
+                    className="w-full bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all placeholder:transition-opacity focus:placeholder:opacity-0"
                   />
                   {txSearch && (
                     <button 
@@ -769,7 +766,7 @@ Takes less than a minute. See you there! 😊
                       rows={4}
                       value={editForm.notes}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditForm({ ...editForm, notes: e.target.value })}
-                      className="w-full px-5 py-4 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white transition-all resize-none shadow-sm"
+                      className="w-full px-5 py-4 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white transition-all resize-none shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0"
                       placeholder="Add some details about this person..."
                     />
                   </div>
@@ -830,7 +827,7 @@ Takes less than a minute. See you there! 😊
                   </div>
                   <div className="flex justify-between items-center p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</span>
-                    <span className={`text-lg font-black ${selectedTx.type === "credit" ? "text-emerald-600" : "text-rose-600"}`}>₹{selectedTx.amount}</span>
+                    <span className={`text-lg font-black ${selectedTx.type === "credit" ? "text-emerald-600" : "text-rose-600"}`}>{currencySymbol}{selectedTx.amount}</span>
                   </div>
                   <div className="flex justify-between items-center p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Date</span>
@@ -1156,7 +1153,7 @@ Takes less than a minute. See you there! 😊
                             <TrendingUp size={10} className="text-emerald-500" /> Credit
                           </span>
                           <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                            ₹{credit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {currencySymbol}{credit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                         <div className="flex flex-col gap-1 border-l border-gray-100 dark:border-gray-800/80 pl-3">
@@ -1164,7 +1161,7 @@ Takes less than a minute. See you there! 😊
                             <TrendingDown size={10} className="text-rose-500" /> Debit
                           </span>
                           <span className="text-sm font-black text-rose-600 dark:text-rose-400">
-                            ₹{debit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {currencySymbol}{debit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       </div>
@@ -1302,7 +1299,7 @@ Takes less than a minute. See you there! 😊
               </div>
               <div className="flex justify-between items-center p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</span>
-                <span className={`text-lg font-black ${selectedTx.type === "credit" ? "text-emerald-600" : "text-rose-600"}`}>₹{selectedTx.amount}</span>
+                <span className={`text-lg font-black ${selectedTx.type === "credit" ? "text-emerald-600" : "text-rose-600"}`}>{currencySymbol}{selectedTx.amount}</span>
               </div>
               <div className="flex justify-between items-center p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Date</span>

@@ -3,6 +3,7 @@ import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft, Downl
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
 interface Transaction {
@@ -22,6 +23,7 @@ interface Transaction {
 }
 
 const TransactionHistory: React.FC = () => {
+  const { currencySymbol } = useAuth();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -251,7 +253,7 @@ const TransactionHistory: React.FC = () => {
             placeholder="Search by name or reason..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-sm font-medium text-gray-900 dark:text-white transition-all shadow-sm"
+            className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-sm font-medium text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0"
           />
         </div>
 
@@ -298,14 +300,14 @@ const TransactionHistory: React.FC = () => {
             <div className="flex flex-col items-end">
               <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Total Credit</span>
               <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                ₹{summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                {currencySymbol}{summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="w-px h-8 bg-gray-200 dark:bg-gray-800"></div>
             <div className="flex flex-col items-end">
               <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Total Debit</span>
               <span className="text-sm font-black text-rose-600 dark:text-rose-400">
-                ₹{summary.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                {currencySymbol}{summary.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>
@@ -378,7 +380,7 @@ const TransactionHistory: React.FC = () => {
                             : "text-rose-600 dark:text-rose-400"
                             }`}
                         >
-                          {tx.type === "credit" ? "+" : "-"}₹{Number(tx.amount).toLocaleString("en-IN")}
+                          {tx.type === "credit" ? "+" : "-"}{currencySymbol}{Number(tx.amount).toLocaleString("en-IN")}
                         </span>
                         <div 
                           className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
@@ -432,7 +434,7 @@ const TransactionHistory: React.FC = () => {
               <div className="flex justify-between items-center p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Amount</span>
                 <span className={`text-base font-black ${selectedTx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  ₹{Number(selectedTx.amount).toLocaleString("en-IN")}
+                  {currencySymbol}{Number(selectedTx.amount).toLocaleString("en-IN")}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">

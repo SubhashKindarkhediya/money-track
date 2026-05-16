@@ -124,4 +124,99 @@ export class TransactionsController {
       res.status(500).json({ error: error.message });
     }
   };
+
+  /**
+   * Export transactions to PDF
+   */
+  exportPdf = async (req: Request, res: Response) => {
+    try {
+      const uid = (req as any).user.uid;
+      
+      // We need to dynamically import pdfkit to avoid top-level require issues
+      const PDFDocument = (await import('pdfkit')).default;
+      const { default: User } = await import('../models/user.model');
+      
+      const user = await User.findByPk(uid);
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const transactions = await this.transactionsService.getTransactionsByUid(uid);
+      const currencySymbol = user.currency === 'USD' ? '$' : user.currency === 'EUR' ? '€' : '₹';
+
+      // Initialize PDF document
+      const doc = new PDFDocument({ margin: 50 });
+
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=Transactions_History_${user.name.replace(/\s+/g, '_')}.pdf`);
+
+      // Pipe document to response
+      doc.pipe(res);
+
+      // --- PDF Content Generation ---
+      
+      // Header
+      doc.fontSize(20).text('Money Track - Transaction History', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12).text(`Generated for: ${user.name} (${user.email})`);
+      doc.text(`Generated on: ${new Date().toLocaleString()}`);
+      doc.moveDown();
+
+      // Summary
+      let totalCredit = 0;
+      let totalDebit = 0;
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      transactions.forEach((t: any) => {
+        const amt = Number(t.amount);
+        if (t.type === 'credit') totalCredit += amt;
+        if (t.type === 'debit') totalDebit += amt;
+        if (t.type === 'income') totalIncome += amt;
+        if (t.type === 'expense') totalExpense += amt;
+      });
+
+      doc.fontSize(14).text('Summary', { underline: true });
+      doc.fontSize(10);
+      doc.text(`Total You Gave (Credit): ${currencySymbol}${totalCredit.toFixed(2)}`);
+      doc.text(`Total You Got (Debit): ${currencySymbol}${totalDebit.toFixed(2)}`);
+      doc.text(`Total Personal Income: ${currencySymbol}${totalIncome.toFixed(2)}`);
+      doc.text(`Total Personal Expense: ${currencySymbol}${totalExpense.toFixed(2)}`);
+      doc.moveDown(2);
+
+      // Transactions List
+      doc.fontSize(14).text('Detailed Transactions', { underline: true });
+      doc.moveDown();
+
+      if (transactions.length === 0) {
+        doc.fontSize(10).text('No transactions found.');
+      } else {
+        transactions.forEach((t: any, index: number) => {
+          const dateStr = new Date(t.date).toLocaleDateString();
+          const personName = t.Person ? t.Person.name : 'Personal';
+          const typeStr = t.type.toUpperCase();
+          
+          doc.fontSize(10).font('Helvetica-Bold')
+             .text(`${index + 1}. ${dateStr} - ${personName} - ${typeStr} - ${currencySymbol}${t.amount}`);
+             
+          doc.font('Helvetica').fontSize(9);
+          if (t.reason) doc.text(`Reason: ${t.reason}`);
+          if (t.note) doc.text(`Note: ${t.note}`);
+          doc.text(`Status: ${t.status}`);
+          doc.moveDown(0.5);
+        });
+      }
+
+      // Finalize the PDF and end the stream
+      doc.end();
+
+    } catch (error: any) {
+      console.error("PDF Export Error:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to generate PDF" });
+      }
+    }
+  };
 }

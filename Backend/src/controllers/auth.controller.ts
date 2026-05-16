@@ -71,6 +71,29 @@ export class AuthController {
       res.status(401).json({ error: error.message });
     }
   };
+ 
+  /**
+   * Google Login
+   */
+  googleLogin = async (req: Request, res: Response) => {
+    try {
+      const { credential, isAccessToken } = req.body;
+      if (!credential) {
+        res.status(400).json({ error: "Google credential is required" });
+        return;
+      }
+
+      const { user, token } = await this.authService.googleLogin(credential, isAccessToken);
+
+      res.status(200).json({
+        message: "Logged in with Google successfully",
+        user,
+        token,
+      });
+    } catch (error: any) {
+      res.status(401).json({ error: error.message });
+    }
+  };
 
   /**
    * Update user profile
@@ -80,7 +103,8 @@ export class AuthController {
       const userId = (req as any).user.uid;
       const { 
         name, phone_number, gender, address,
-        first_name, last_name, dob, id_card_no
+        first_name, last_name, dob, id_card_no,
+        currency, monthly_budget
       } = req.body;
 
       const updatedUser = await this.authService.updateProfile(userId, { 
@@ -91,7 +115,9 @@ export class AuthController {
         first_name,
         last_name,
         dob,
-        id_card_no
+        id_card_no,
+        currency,
+        monthly_budget
       });
 
       res.status(200).json({
@@ -100,6 +126,26 @@ export class AuthController {
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Change user password
+   */
+  changePassword = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.uid;
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        res.status(400).json({ error: "Current and new passwords are required" });
+        return;
+      }
+
+      const result = await this.authService.changePassword(userId, { currentPassword, newPassword });
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
     }
   };
 
@@ -123,6 +169,60 @@ export class AuthController {
       res.status(200).json({ user });
     } catch (error: any) {
       res.status(401).json({ error: "Invalid session" });
+    }
+  };
+
+  /**
+   * Request OTP
+   */
+  requestOtp = async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        res.status(400).json({ error: "Email is required" });
+        return;
+      }
+
+      const result = await this.authService.requestOtp(email);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Verify OTP
+   */
+  verifyOtp = async (req: Request, res: Response) => {
+    try {
+      const { email, otp } = req.body;
+      if (!email || !otp) {
+        res.status(400).json({ error: "Email and OTP are required" });
+        return;
+      }
+
+      const result = await this.authService.verifyOtp(email, otp);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Reset Password
+   */
+  resetPassword = async (req: Request, res: Response) => {
+    try {
+      const { email, otp, newPassword } = req.body;
+      if (!email || !otp || !newPassword) {
+        res.status(400).json({ error: "Email, OTP and new password are required" });
+        return;
+      }
+
+      const result = await this.authService.resetPassword({ email, otp, newPassword });
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
     }
   };
 }

@@ -14,6 +14,10 @@ interface UserAttributes {
   last_name?: string;
   dob?: string;
   id_card_no?: string;
+  reset_otp?: string;
+  reset_otp_expires?: Date;
+  currency?: string;
+  monthly_budget?: number;
 }
 
 interface UserCreationAttributes extends Optional<UserAttributes, "id"> { }
@@ -33,6 +37,10 @@ class User
   public last_name?: string;
   public dob?: string;
   public id_card_no?: string;
+  public reset_otp?: string;
+  public reset_otp_expires?: Date;
+  public currency?: string;
+  public monthly_budget?: number;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -90,6 +98,23 @@ User.init(
     },
     id_card_no: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reset_otp: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reset_otp_expires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    currency: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'INR',
+    },
+    monthly_budget: {
+      type: DataTypes.FLOAT,
       allowNull: true,
     },
   },

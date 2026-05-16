@@ -68,10 +68,6 @@ const FloatingInput = ({
         {label}
       </label>
 
-      {/* Placeholder helper */}
-      <span className="absolute left-11 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 text-sm pointer-events-none opacity-0 peer-focus:opacity-100 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity duration-200 delay-75">
-        {placeholder}
-      </span>
     </div>
   );
 };
@@ -139,7 +135,7 @@ const Register: React.FC = () => {
       </div>
 
       <div className="w-full max-w-[480px] relative z-10 animate-in fade-in zoom-in-95 duration-500">
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none rounded-[2.5rem] p-8 md:p-10">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none rounded-[2.5rem] p-6 md:p-8">
           <div className="flex flex-col items-center text-center mb-10">
             <div className="w-14 h-14 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 border border-indigo-100 dark:border-slate-700 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm mb-6">
               <UserPlus size={28} />

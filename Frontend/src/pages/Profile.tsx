@@ -314,21 +314,6 @@ const Profile: React.FC = () => {
             </div>
           </div>
 
-          {/* 4. Account & Security */}
-          <div className="rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm overflow-hidden p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1b2a] transition-colors mt-4">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#1b1c2e] text-indigo-500 dark:text-indigo-400 shrink-0">
-                <Shield size={18} />
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">Account & Security</span>
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  Manage your account security
-                </span>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400 shrink-0" />
-          </div>
 
           </div>
         </div>
@@ -402,7 +387,7 @@ const Profile: React.FC = () => {
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleChange}
-                  className="w-full px-5 py-4 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all shadow-inner shadow-indigo-900/5 text-gray-900 dark:text-white"
+                  className="w-full px-5 py-4 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all shadow-inner shadow-indigo-900/5 text-gray-900 dark:text-white placeholder:transition-opacity focus:placeholder:opacity-0"
                 />
               </div>
 
@@ -416,7 +401,7 @@ const Profile: React.FC = () => {
                   name="last_name"
                   value={formData.last_name}
                   onChange={handleChange}
-                  className="w-full px-5 py-4 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all shadow-inner shadow-indigo-900/5 text-gray-900 dark:text-white"
+                  className="w-full px-5 py-4 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all shadow-inner shadow-indigo-900/5 text-gray-900 dark:text-white placeholder:transition-opacity focus:placeholder:opacity-0"
                 />
               </div>
 
@@ -453,8 +438,14 @@ const Profile: React.FC = () => {
                     type="tel"
                     name="phone_number"
                     value={formData.phone_number}
-                    onChange={handleChange}
-                    className="w-full pl-14 pr-5 py-4 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all shadow-inner shadow-indigo-900/5 text-gray-900 dark:text-white"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      if (val.length <= 10) {
+                        setFormData({ ...formData, phone_number: val });
+                      }
+                    }}
+                    maxLength={10}
+                    className="w-full pl-14 pr-5 py-4 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all shadow-inner shadow-indigo-900/5 text-gray-900 dark:text-white placeholder:transition-opacity focus:placeholder:opacity-0"
                   />
                 </div>
               </div>
@@ -469,7 +460,7 @@ const Profile: React.FC = () => {
                   value={formData.address}
                   onChange={handleChange}
                   rows={3}
-                  className="w-full px-5 py-4 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all shadow-inner shadow-indigo-900/5 resize-none text-gray-900 dark:text-white"
+                  className="w-full px-5 py-4 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all shadow-inner shadow-indigo-900/5 resize-none text-gray-900 dark:text-white placeholder:transition-opacity focus:placeholder:opacity-0"
                   placeholder="Your full address here..."
                 />
               </div>
@@ -517,7 +508,7 @@ const Profile: React.FC = () => {
                     placeholder="dd/mm/yyyy"
                     value={formatDateToDDMMYYYY(formData.dob)}
                     readOnly
-                    className="w-full pl-5 pr-12 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 font-bold uppercase text-xs text-gray-900 dark:text-white transition-all cursor-pointer"
+                    className="w-full pl-5 pr-12 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 font-bold uppercase text-xs text-gray-900 dark:text-white transition-all cursor-pointer placeholder:transition-opacity focus:placeholder:opacity-0"
                   />
                   
                   {/* Invisible Native Date Picker */}

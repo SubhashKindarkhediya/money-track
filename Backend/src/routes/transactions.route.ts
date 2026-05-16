@@ -14,6 +14,7 @@ router.use(authMiddleware);
 // Endpoints
 router.post("/", transactionsController.create);          // Add transaction
 router.get("/", transactionsController.getAll);           // List all
+router.get("/export/pdf", transactionsController.exportPdf); // Export as PDF
 router.get("/:id", transactionsController.getOne);        // Single transaction
 router.put("/:id", transactionsController.update);        // Update transaction
 router.delete("/:id", transactionsController.delete);     // Delete transaction

@@ -246,7 +246,7 @@ const AddTransaction: React.FC = () => {
                         if (errors.person) setErrors({ ...errors, person: undefined });
                       }}
                       onFocus={() => setIsDropdownOpen(true)}
-                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm`}
+                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`}
                     />
                     <ChevronDown size={18} className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''} pointer-events-none`} />
                   </div>
@@ -340,7 +340,7 @@ const AddTransaction: React.FC = () => {
                   <IndianRupee size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input type="number" placeholder="0.00" required value={txForm.amount}
                     onChange={e => { setTxForm({ ...txForm, amount: e.target.value }); if (errors.amount) setErrors({ ...errors, amount: undefined }); }}
-                    className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm`} />
+                    className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`} />
                 </div>
                 {errors.amount && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.amount}</p>}
               </div>
@@ -352,7 +352,7 @@ const AddTransaction: React.FC = () => {
                   <FileText size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input type="text" placeholder="What was this for?" value={txForm.reason}
                     onChange={e => { setTxForm({ ...txForm, reason: e.target.value }); if (errors.reason) setErrors({ ...errors, reason: undefined }); }}
-                    className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.reason ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm`} />
+                    className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.reason ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`} />
                 </div>
                 {errors.reason && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.reason}</p>}
               </div>
@@ -369,7 +369,7 @@ const AddTransaction: React.FC = () => {
                     placeholder="dd/mm/yyyy"
                     value={formatDateToDDMMYYYY(txForm.date)}
                     readOnly
-                    className="w-full pl-11 pr-12 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm cursor-pointer" 
+                    className="w-full pl-11 pr-12 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm cursor-pointer placeholder:transition-opacity focus:placeholder:opacity-0" 
                   />
                   
                   {/* Invisible Native Date Picker */}
@@ -473,7 +473,7 @@ const AddTransaction: React.FC = () => {
                         setIsDropdownOpen(true);
                       }}
                       onFocus={() => setIsDropdownOpen(true)}
-                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm`}
+                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`}
                     />
                     <ChevronDown size={18} className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''} pointer-events-none`} />
                   </div>
@@ -538,7 +538,7 @@ const AddTransaction: React.FC = () => {
                       required
                       value={txForm.amount}
                       onChange={e => { setTxForm({ ...txForm, amount: e.target.value }); if (errors.amount) setErrors({ ...errors, amount: undefined }); }}
-                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm`}
+                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`}
                     />
                   </div>
                   {errors.amount && <p className="text-amber-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.amount}</p>}
@@ -619,7 +619,7 @@ const AddTransaction: React.FC = () => {
                     <FileText size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input type="text" placeholder="What was this for?" value={txForm.reason}
                       onChange={e => { setTxForm({ ...txForm, reason: e.target.value }); if (errors.reason) setErrors({ ...errors, reason: undefined }); }}
-                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.reason ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm`} />
+                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.reason ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`} />
                   </div>
                   {errors.reason && <p className="text-amber-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.reason}</p>}
                 </div>
@@ -636,7 +636,7 @@ const AddTransaction: React.FC = () => {
                       placeholder="dd/mm/yyyy"
                       value={formatDateToDDMMYYYY(txForm.date)}
                       readOnly
-                      className="w-full pl-11 pr-12 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm cursor-pointer" 
+                      className="w-full pl-11 pr-12 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm cursor-pointer placeholder:transition-opacity focus:placeholder:opacity-0" 
                     />
                     
                     {/* Invisible Native Date Picker */}

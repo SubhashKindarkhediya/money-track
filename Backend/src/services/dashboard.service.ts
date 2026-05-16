@@ -5,26 +5,39 @@ import Transaction from "../models/transaction.model";
 @singleton()
 export class DashboardService {
   /**
-   * Get financial summary for a user (Total Overall)
+   * Get financial summary for a user (Total Overall or Date Range)
    * @param uid
    */
-  async getSummary(uid: string) {
+  async getSummary(uid: string, startDate?: string, endDate?: string) {
+    const whereCondition: any = { uid };
+
+    if (startDate && endDate) {
+      whereCondition.date = {
+        [Op.gte]: new Date(`${startDate}T00:00:00.000Z`),
+        [Op.lte]: new Date(`${endDate}T23:59:59.999Z`),
+      };
+    } else if (startDate) {
+       whereCondition.date = { [Op.gte]: new Date(`${startDate}T00:00:00.000Z`) };
+    } else if (endDate) {
+       whereCondition.date = { [Op.lte]: new Date(`${endDate}T23:59:59.999Z`) };
+    }
+
     // 1. Calculate Udhar Statistics
     const totalCredit = await Transaction.sum("amount", {
-      where: { uid, type: "credit", status: "pending" },
+      where: { ...whereCondition, type: "credit", status: "pending" },
     }) || 0;
 
     const totalDebit = await Transaction.sum("amount", {
-      where: { uid, type: "debit", status: "pending" },
+      where: { ...whereCondition, type: "debit", status: "pending" },
     }) || 0;
 
     // 2. Calculate Personal Statistics
     const totalIncome = await Transaction.sum("amount", {
-      where: { uid, type: "income" },
+      where: { ...whereCondition, type: "income" },
     }) || 0;
 
     const totalExpense = await Transaction.sum("amount", {
-      where: { uid, type: "expense" },
+      where: { ...whereCondition, type: "expense" },
     }) || 0;
 
     return {

@@ -47,8 +47,11 @@ import Person from "./pages/Person";
 import AddTransaction from "./pages/AddTransaction";
 import TransactionHistory from "./pages/TransactionHistory";
 import Analytics from "./pages/Analytics";
+import ForgotPassword from "./pages/ForgotPassword";
+import SettingsPage from "./pages/Settings";
 // import { Sun, Moon } from "lucide-react";
 import { useTheme } from "./context/ThemeContext";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 // inside component
 // Protected Route Component
@@ -82,6 +85,7 @@ const Card = ({
   isVisible: boolean;
   onToggle: () => void;
 }) => {
+  const { currencySymbol } = useAuth();
   const styles = {
     credit: {
       icon: <TrendingUp className="text-emerald-700 dark:text-emerald-400" size={28} />,
@@ -125,7 +129,7 @@ const Card = ({
       {/* Content Area */}
       <div className="flex-1 px-5">
         <h3 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-1.5 ${current.text}`}>
-          <span className={`font-sans text-lg sm:text-xl ${current.label}`}>₹</span>
+          <span className={`font-sans text-lg sm:text-xl ${current.label}`}>{currencySymbol}</span>
           {isVisible ? amount : "*****"}
         </h3>
         <p className={`text-xs font-bold uppercase tracking-widest mt-1 ${current.label}`}>
@@ -154,7 +158,7 @@ const Dashboard = () => {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [isFabOpen, setIsFabOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, currencySymbol } = useAuth();
   const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
@@ -367,7 +371,7 @@ const Dashboard = () => {
                   </div>
                   <div className={`text-base font-black shrink-0 whitespace-nowrap ml-3 ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                     }`}>
-                    {tx.type === "credit" ? "+" : "-"}₹{Number(tx.amount).toLocaleString("en-IN")}
+                    {tx.type === "credit" ? "+" : "-"}{currencySymbol}{Number(tx.amount).toLocaleString("en-IN")}
                   </div>
                 </div>
               ))}
@@ -448,7 +452,7 @@ function AppContent() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isProfileDrawerOpen, setProfileDrawerOpen] = useState(false);
   const [isAddTxOpen, setAddTxOpen] = useState(false);
-  const { logout, user } = useAuth();
+  const { logout, user, currencySymbol } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showNotifPill, setShowNotifPill] = useState(false);
@@ -619,13 +623,14 @@ function AppContent() {
   }, [location.pathname]);
 
   const isAuthPage =
-    location.pathname === "/login" || location.pathname === "/register";
+    location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password";
   const isProfilePage = location.pathname === "/profile";
   const isPersonPage = location.pathname.startsWith("/person");
   const isAddTransactionPage = location.pathname === "/add-transaction";
   const isLogPage = location.pathname === "/transactions";
   const isAnalyticsPage = location.pathname === "/analytics";
-  const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage;
+  const isSettingsPage = location.pathname === "/settings";
+  const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage || isSettingsPage;
 
   // Show bottom nav only on exact main tab paths
   const mainTabs = ["/", "/person", "/transactions", "/analytics"];
@@ -644,6 +649,7 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     );
   }
@@ -953,9 +959,7 @@ function AppContent() {
               path="/settings"
               element={
                 <ProtectedRoute>
-                  <div className="py-20 text-center font-bold text-gray-300">
-                    Settings View Coming Soon
-                  </div>
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />
@@ -1261,7 +1265,7 @@ function AppContent() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
-                              {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ₹${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
+                              {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ${currencySymbol}${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{act.time}</span>
@@ -1307,7 +1311,7 @@ function AppContent() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
-                              {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ₹${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
+                              {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ${currencySymbol}${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{act.time}</span>
@@ -1351,14 +1355,19 @@ function AppContent() {
 }
 
 function App() {
+  // Replace with your actual Google Client ID from Google Cloud Console
+  const GOOGLE_CLIENT_ID = "716274623119-1qt8m7hlduam9hs8423mu8jq4i6dqeq6.apps.googleusercontent.com";
+
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }
 
