@@ -1149,24 +1149,29 @@ Takes less than a minute. See you there! 😊
                     onClick={() => handlePersonClick(person, "transactions")}
                     className="px-5 pb-5 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors active:bg-gray-100 dark:active:bg-gray-800"
                   >
-                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-50 dark:border-gray-800/50">
-                      <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                        <TrendingUp size={10} className="text-emerald-500" /> Credit
-                      </span>
-                      <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                        ₹{credit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
+                    <div className="flex items-center justify-between gap-3 pt-4 border-t border-gray-50 dark:border-gray-800/50">
+                      <div className="grid grid-cols-2 gap-3 flex-1">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1">
+                            <TrendingUp size={10} className="text-emerald-500" /> Credit
+                          </span>
+                          <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                            ₹{credit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-1 border-l border-gray-100 dark:border-gray-800/80 pl-3">
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1">
+                            <TrendingDown size={10} className="text-rose-500" /> Debit
+                          </span>
+                          <span className="text-sm font-black text-rose-600 dark:text-rose-400">
+                            ₹{debit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-1 rounded-lg text-gray-300 dark:text-gray-600 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+                        <ChevronRight size={18} />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1 border-l border-gray-100 dark:border-gray-800/80 pl-3">
-                      <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                        <TrendingDown size={10} className="text-rose-500" /> Debit
-                      </span>
-                      <span className="text-sm font-black text-rose-600 dark:text-rose-400">
-                        ₹{debit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  </div>
                   </div>
                 </div>
               );

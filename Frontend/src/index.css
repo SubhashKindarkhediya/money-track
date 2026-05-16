@@ -89,20 +89,15 @@ input[type="number"] {
 .main-logo {
   border-radius: 12px;
   transition: all 0.3s ease;
-  object-fit: contain;
-  /* This will help hide dark backgrounds on dark theme */
-  mix-blend-mode: screen; 
-  filter: brightness(1.1) contrast(1.1);
+  object-fit: cover;
 }
 
 :where(.dark) .main-logo {
-  filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.4)) brightness(1.2);
+  filter: drop-shadow(0 0 15px rgba(79, 70, 229, 0.3));
 }
 
-/* Specific adjustment for light mode */
 :root:not(.dark) .main-logo {
-  mix-blend-mode: multiply; /* Helps hide white backgrounds in light mode */
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
 }
 
 
