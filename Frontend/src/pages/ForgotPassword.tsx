@@ -112,7 +112,9 @@ const ForgotPassword = () => {
       setCanResend(false);
       setOtp(["", "", "", "", "", ""]); // Reset OTP inputs
     } catch (err: any) {
-      setError(err.response?.data?.error || "Failed to send OTP. Please try again.");
+      console.error("Forgot Password Error:", err);
+      const errorMessage = err.response?.data?.error || err.message || "Failed to send OTP. Please try again.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
