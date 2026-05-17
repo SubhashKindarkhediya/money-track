@@ -213,3 +213,19 @@ input[type="number"] {
 .main-logo-img {
   object-fit: contain;
 }
+
+/* Disable focus outline/border on all chart elements when clicked or tapped */
+.recharts-wrapper, 
+.recharts-surface,
+.recharts-wrapper *,
+svg,
+svg:focus,
+path,
+path:focus,
+rect,
+rect:focus,
+.recharts-wrapper:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}

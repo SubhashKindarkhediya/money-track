@@ -835,7 +835,7 @@ function AppContent() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+            <div className="flex items-center gap-2 sm:gap-3 ml-auto">
               {/* 🌙 THEME TOGGLE */}
               <button
                 onClick={toggleTheme}
@@ -886,7 +886,7 @@ function AppContent() {
                 )}
               </div>
 
-              <button onClick={() => setProfileDrawerOpen(true)} className="flex items-center gap-3 sm:gap-5 group outline-none ml-5">
+              <button onClick={() => setProfileDrawerOpen(true)} className="flex items-center gap-3 sm:gap-5 group outline-none ml-3">
                 <div className="hidden md:block text-right transition-transform group-hover:-translate-x-1">
                   <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">
                     {user?.name || "User"}

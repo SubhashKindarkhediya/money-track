@@ -167,13 +167,13 @@ const SettingsPage: React.FC = () => {
   return (
     <div className="max-w-xl mx-auto w-full font-sans pb-24 animate-in slide-in-from-bottom-6 duration-300 min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-30 px-6 py-5 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-6">
+      <div className="sticky top-0 z-30 px-4 py-5 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-4">
         <button
           onClick={handleBack}
           type="button"
-          className="p-2.5 rounded-2xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 active:scale-95"
+          className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all border border-gray-100 dark:border-gray-700 active:scale-95"
         >
-          <ArrowLeft size={20} className="text-gray-600 dark:text-gray-300" />
+          <ArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
         </button>
         <div className="flex flex-col">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-none">

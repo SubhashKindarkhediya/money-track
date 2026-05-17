@@ -193,14 +193,14 @@ const TransactionHistory: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto w-full font-sans pb-24 animate-in slide-in-from-bottom-6 duration-300">
       {/* Header */}
-      <div className="sticky top-0 z-30 px-6 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
+      <div className="sticky top-0 z-30 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center justify-start gap-4">
             <button
               onClick={() => navigate(-1)}
-              className="p-2.5 rounded-2xl bg-gray-50 dark:bg-[#151624] hover:bg-gray-100 dark:hover:bg-[#1e1f30] transition-colors border border-gray-100 dark:border-gray-800"
+              className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#151624] hover:bg-gray-100 dark:hover:bg-[#1e1f30] transition-all border border-gray-100 dark:border-gray-800 active:scale-95"
             >
-              <ArrowLeft size={20} className="text-gray-600 dark:text-gray-300" />
+              <ArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
             </button>
             <h2 className="text-base font-black text-gray-900 dark:text-white tracking-widest">
               Transaction History

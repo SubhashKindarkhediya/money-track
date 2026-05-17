@@ -207,14 +207,14 @@ const Analytics: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto w-full font-sans pb-24 animate-in slide-in-from-bottom-6 duration-300">
       {/* Header */}
-      <div className="sticky top-0 z-30 px-6 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm">
+      <div className="sticky top-0 z-30 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/")}
-              className="p-2.5 rounded-2xl bg-gray-50 dark:bg-[#151624] hover:bg-gray-100 dark:hover:bg-[#1e1f30] transition-colors border border-gray-100 dark:border-gray-800"
+              className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#151624] hover:bg-gray-100 dark:hover:bg-[#1e1f30] transition-all border border-gray-100 dark:border-gray-800 active:scale-95"
             >
-              <ArrowLeft size={20} className="text-gray-600 dark:text-gray-300" />
+              <ArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
             </button>
             <h2 className="text-base font-black text-gray-900 dark:text-white tracking-widest text-center">
               FINANCIAL INSIGHTS
@@ -481,17 +481,14 @@ const Analytics: React.FC = () => {
                 <div className="relative z-20">
                   <button
                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-[#1a1b2e] border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-xs font-bold text-gray-700 dark:text-gray-300"
+                    className="p-2.5 bg-white dark:bg-[#1a1b2e] border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-indigo-500 transition-all active:scale-95 flex items-center justify-center relative"
+                    title={startDate && endDate ? `${formatDateString(startDate)} - ${formatDateString(endDate)}` : "Select Date Range"}
                   >
-                    <Calendar size={16} className="text-indigo-500" />
-                    {startDate && endDate
-                      ? `${formatDateString(startDate)} - ${formatDateString(endDate)}`
-                      : "Select Range"
-                    }
-                    <ChevronDown size={16} className={`text-gray-400 ml-1 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`} />
+                    <Calendar size={18} />
+                    {startDate && endDate && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-500 dark:bg-indigo-400 rounded-full animate-pulse" />
+                    )}
                   </button>
-
-
                 </div>
               </div>
 
