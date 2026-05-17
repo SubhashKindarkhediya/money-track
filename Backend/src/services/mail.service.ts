@@ -14,11 +14,12 @@ export class MailService {
       host: "smtp.gmail.com",
       port: 465,
       secure: true,
+      family: 4, // Force IPv4 resolution to prevent ENETUNREACH on IPv6-unsupported hosts
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-    });
+    } as nodemailer.TransportOptions);
   }
 
   /**
