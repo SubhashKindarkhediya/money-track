@@ -1,4 +1,8 @@
 import nodemailer from "nodemailer";
+import dns from "dns";
+
+// Force IPv4 resolution (Fix for Render ENETUNREACH error on IPv6)
+dns.setDefaultResultOrder("ipv4first");
 import { singleton } from "tsyringe";
 
 @singleton()
