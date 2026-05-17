@@ -445,7 +445,7 @@ Takes less than a minute. See you there! 😊
                   </button>
                   <button
                     onClick={() => navigate("/add-transaction", { state: { personId: selectedPerson.id, personName: selectedPerson.name, status: statusFilter } })}
-                    className="p-2.5 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/30"
+                    className="p-2.5 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20"
                   >
                     <PlusCircle size={20} />
                   </button>
@@ -530,7 +530,7 @@ Takes less than a minute. See you there! 😊
                       {selectedPerson.linked_user_id ? (
                         <>
                           {(!selectedPerson.connection_status || selectedPerson.connection_status === "none") && (
-                            <button onClick={handleSendRequest} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-95">
+                            <button onClick={handleSendRequest} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all active:scale-95">
                               <UserPlus size={14} /> Send Request
                             </button>
                           )}
@@ -614,7 +614,7 @@ Takes less than a minute. See you there! 😊
                     <p className="text-xs text-gray-500 mt-1 mb-6">Start by adding the first record.</p>
                     <button
                       onClick={() => navigate("/add-transaction", { state: { personId: selectedPerson.id, personName: selectedPerson.name } })}
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-bold text-sm transition-all shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 active:scale-95"
                     >
                       <PlusCircle size={18} />
                       Add Transaction
@@ -748,7 +748,7 @@ Takes less than a minute. See you there! 😊
                     handleUpdateSubmit(e);
                   }}
                   disabled={submitLoading}
-                  className="w-full h-14 bg-indigo-600 text-white font-black rounded-2xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                  className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   {submitLoading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
                   <span className="uppercase tracking-widest text-sm font-bold">
@@ -762,6 +762,18 @@ Takes less than a minute. See you there! 😊
                   Cancel
                 </button> */}
               </div>
+            </div>
+          )}
+
+          {detailTab === "transactions" && transactions.length > 0 && (
+            <div className="sticky bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#0a0a1a]/80 backdrop-blur-xl border-t border-indigo-100/50 dark:border-gray-800 z-40 mt-auto">
+              <button
+                onClick={() => navigate("/add-transaction", { state: { personId: selectedPerson.id, personName: selectedPerson.name, status: statusFilter } })}
+                className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                <PlusCircle size={18} />
+                <span className="uppercase tracking-widest text-sm font-bold">Add Transaction</span>
+              </button>
             </div>
           )}
 
@@ -818,7 +830,7 @@ Takes less than a minute. See you there! 😊
                         handleStatusChange(selectedTx.id, "completed");
                         setSelectedTx(null);
                       }}
-                      className="flex-[2] py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                      className="flex-[2] py-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black text-sm shadow-xl shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                     >
                       <CheckCircle2 size={18} strokeWidth={3} />
                       Mark as Complete
@@ -948,7 +960,7 @@ Takes less than a minute. See you there! 😊
               <button
                 onClick={handleAddSubmit}
                 disabled={submitLoading || !formData.first_name}
-                className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98]"
+                className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98]"
               >
                 {submitLoading ? (
                   <Loader2 size={20} className="animate-spin" />
@@ -997,7 +1009,7 @@ Takes less than a minute. See you there! 😊
           </button>
           <button
             onClick={() => navigate("/person/add")}
-            className="p-2.5 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/30"
+            className="p-2.5 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white transition-colors shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20"
           >
             <UserPlus size={20} />
           </button>
@@ -1036,7 +1048,7 @@ Takes less than a minute. See you there! 😊
             <p className="text-gray-500 text-sm mt-1 mb-6">Start by adding your first contact.</p>
             <button
               onClick={() => navigate("/person/add")}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-bold text-sm transition-all shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 active:scale-95"
             >
               <UserPlus size={18} />
               Add New Person
@@ -1290,7 +1302,7 @@ Takes less than a minute. See you there! 😊
                     handleStatusChange(selectedTx.id, "completed");
                     setSelectedTx(null);
                   }}
-                  className="flex-[2] py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                  className="flex-[2] py-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black text-sm shadow-xl shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   <CheckCircle2 size={18} strokeWidth={3} />
                   Mark as Complete

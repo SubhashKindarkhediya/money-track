@@ -269,15 +269,15 @@ const Dashboard = () => {
   const fabOptions = [
     {
       label: "Give Money",
-      icon: <TrendingDown size={20} />,
-      color: "bg-rose-500",
+      icon: <TrendingDown size={20} strokeWidth={2.5} />,
+      color: "bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-500/10 dark:to-rose-500/5 border border-rose-200/60 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 shadow-md shadow-rose-500/5 dark:shadow-none",
       path: "/add-transaction",
       state: { type: "debit" }
     },
     {
       label: "Receive Money",
-      icon: <TrendingUp size={20} />,
-      color: "bg-emerald-500",
+      icon: <TrendingUp size={20} strokeWidth={2.5} />,
+      color: "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-500/10 dark:to-emerald-500/5 border border-emerald-200/60 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 shadow-md shadow-emerald-500/5 dark:shadow-none",
       path: "/add-transaction",
       state: { type: "credit" }
     }
@@ -362,8 +362,8 @@ const Dashboard = () => {
                       {tx.type === "credit" ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                      <MarqueeText 
-                        text={tx.Person ? tx.Person.name : "Unknown"} 
+                      <MarqueeText
+                        text={tx.Person ? tx.Person.name : "Unknown"}
                         className="text-sm font-bold text-gray-900 dark:text-white"
                       />
                       <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -372,7 +372,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div className="ml-3 shrink-0">
-                    <MarqueeText 
+                    <MarqueeText
                       text={`${tx.type === "credit" ? "+" : "-"}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN")}`}
                       className={`text-base font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
                       containerClassName="justify-end min-w-[60px]"
@@ -407,7 +407,7 @@ const Dashboard = () => {
                   setIsFabOpen(false);
                   navigate(opt.path, { state: opt.state });
                 }}
-                className={`w-12 h-12 ${opt.color} text-white rounded-2xl shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95`}
+                className={`w-12 h-12 ${opt.color} rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95`}
               >
                 {opt.icon}
               </button>
@@ -643,9 +643,9 @@ function AppContent() {
 
   const navigation = [
     { name: "Home", icon: Home, path: "/", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
-    { name: "Person List", icon: Users, path: "/person", color: "from-emerald-500 to-teal-600", lightBg: "bg-emerald-50", darkBg: "dark:bg-emerald-500/10" },
-    { name: "History", icon: History, path: "/transactions", color: "from-amber-500 to-orange-600", lightBg: "bg-amber-50", darkBg: "dark:bg-amber-500/10" },
-    { name: "Analytics", icon: BarChart3, path: "/analytics", color: "from-indigo-500 to-purple-600", lightBg: "bg-indigo-50", darkBg: "dark:bg-indigo-500/10" },
+    { name: "Person List", icon: Users, path: "/person", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "History", icon: History, path: "/transactions", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "Analytics", icon: BarChart3, path: "/analytics", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
   ];
   const { theme, toggleTheme } = useTheme();
 
@@ -681,17 +681,16 @@ function AppContent() {
           <div
             className={`flex items-center gap-4 ${!isSidebarOpen && "lg:justify-center w-full"}`}
           >
-            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#1e293b] flex items-center justify-center shadow-md hover:scale-110 transition-transform main-logo-container overflow-hidden">
-              <img
-                src="/logo.png"
-                alt="MT"
-                className="w-11 h-11 object-contain main-logo-img"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  (e.target as HTMLImageElement).parentElement!.classList.add('bg-indigo-600', 'rounded-2xl', 'p-2');
-                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wallet text-white"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>';
-                }}
-              />
+            <div className="relative group w-12 h-12 flex items-center justify-center shrink-0">
+              {/* Outer Glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl blur-md opacity-40 group-hover:opacity-90 transition-all duration-500"></div>
+              {/* Main Container */}
+              <div className="relative w-12 h-12 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 rounded-2xl flex items-center justify-center text-white border border-white/20 shadow-lg transform group-hover:scale-115 group-hover:rotate-12 transition-all duration-500 ease-out overflow-hidden">
+                {/* Diagonal Glass Highlight */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                {/* Icon */}
+                <Wallet size={22} className="relative z-10 filter drop-shadow-md" />
+              </div>
             </div>
             {isSidebarOpen && (
               <span className="text-xl font-black tracking-tighter text-gray-900 dark:text-white">
@@ -824,8 +823,15 @@ function AppContent() {
                 <Menu size={22} />
               </button>
 
-              <div className="lg:hidden text-left font-black tracking-tighter text-xl text-gray-900 dark:text-white">
-                Money Track
+              <div className="lg:hidden flex flex-col justify-center">
+                <span className="text-left font-black tracking-tighter text-lg text-gray-900 dark:text-white leading-none">
+                  Money Track
+                </span>
+                {user?.name && (
+                  <span className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 leading-none">
+                    Hello, {user.name.split(" ")[0]} 👋
+                  </span>
+                )}
               </div>
             </div>
 
@@ -889,16 +895,12 @@ function AppContent() {
                     Premium Tier
                   </p>
                 </div>
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${user?.profile_picture ? "border border-indigo-100 dark:border-gray-700" : "bg-gradient-to-br from-indigo-500 to-purple-600 p-0.5"} shadow-lg transform group-hover:-rotate-12 group-hover:scale-105 transition-all cursor-pointer`}>
-                  <div className={`w-full h-full rounded-full bg-indigo-50 dark:bg-gray-900 flex items-center justify-center ${user?.profile_picture ? "" : "border-2 border-white dark:border-gray-900"} overflow-hidden`}>
-                    {user?.profile_picture ? (
-                      <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="font-black text-indigo-600 text-base sm:text-lg">
-                        {user?.name ? user.name[0].toUpperCase() : "U"}
-                      </span>
-                    )}
-                  </div>
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-indigo-100 dark:border-gray-700 shadow-lg transform group-hover:-rotate-12 group-hover:scale-105 transition-all cursor-pointer overflow-hidden bg-indigo-50 dark:bg-gray-900 flex items-center justify-center">
+                  {user?.profile_picture ? (
+                    <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={22} className="text-indigo-600 dark:text-indigo-400" />
+                  )}
                 </div>
               </button>
             </div>
@@ -1150,7 +1152,7 @@ function AppContent() {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleAccept(req.id)}
-                                    className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20"
+                                    className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20"
                                   >
                                     Accept
                                   </button>
@@ -1219,7 +1221,7 @@ function AppContent() {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleAccept(req.id)}
-                                    className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg"
+                                    className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20"
                                   >
                                     Accept
                                   </button>

@@ -380,7 +380,7 @@ const SettingsPage: React.FC = () => {
                       <button
                         onClick={handleUpdatePreferences}
                         disabled={isLoading}
-                        className="w-full h-16 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                        className="w-full h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-50 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
                       >
                         {isLoading ? <Loader2 size={20} className="animate-spin" /> : (
                           <>
@@ -505,7 +505,7 @@ const SettingsPage: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full h-16 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                        className="w-full h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-50 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
                       >
                         {isLoading ? <Loader2 size={20} className="animate-spin" /> : (
                           <span className="uppercase tracking-widest text-sm">Update Password</span>

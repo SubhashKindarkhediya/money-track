@@ -194,7 +194,7 @@ const Analytics: React.FC = () => {
         <div className="flex flex-col min-w-0 w-full">
           <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest truncate">{title}</p>
           <div className="flex items-center gap-2 mt-1 min-w-0 w-full">
-            <MarqueeText 
+            <MarqueeText
               text={`${currencySymbol}${value.toLocaleString("en-IN")}`}
               className="text-2xl font-black text-gray-900 dark:text-white leading-none"
             />
@@ -396,7 +396,7 @@ const Analytics: React.FC = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Credit</p>
-                        <MarqueeText 
+                        <MarqueeText
                           text={`${currencySymbol}${(summaryData?.udhar?.totalCredit || 0).toLocaleString("en-IN")}`}
                           className="text-base font-black text-gray-900 dark:text-white leading-none mt-1"
                         />
@@ -409,7 +409,7 @@ const Analytics: React.FC = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Debit</p>
-                        <MarqueeText 
+                        <MarqueeText
                           text={`${currencySymbol}${(summaryData?.udhar?.totalDebit || 0).toLocaleString("en-IN")}`}
                           className="text-base font-black text-gray-900 dark:text-white leading-none mt-1"
                         />
@@ -457,7 +457,7 @@ const Analytics: React.FC = () => {
                     {/* Center Text & Glow */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <div className="absolute w-20 h-20 bg-gradient-to-br from-indigo-500/20 to-amber-500/20 dark:from-indigo-500/30 dark:to-amber-500/30 blur-xl rounded-full"></div>
-                      <MarqueeText 
+                      <MarqueeText
                         text={Math.abs((summaryData?.udhar?.totalCredit || 0) - (summaryData?.udhar?.totalDebit || 0)).toLocaleString("en-IN")}
                         className="text-xl font-black text-gray-900 dark:text-white relative z-10 tracking-tight"
                         containerClassName="max-w-[80px]"
@@ -499,8 +499,8 @@ const Analytics: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={[
-                      { name: "CREDIT", value: chartSummaryData?.udhar?.totalCredit || 0, fill: "#10b981" },
-                      { name: "DEBIT", value: chartSummaryData?.udhar?.totalDebit || 0, fill: "#f43f5e" }
+                      { name: "CREDIT", value: chartSummaryData?.udhar?.totalCredit || 0, fill: "#4f46e5" },
+                      { name: "DEBIT", value: chartSummaryData?.udhar?.totalDebit || 0, fill: "#f59e0b" }
                     ]}
                     margin={{ top: 30, right: 0, left: -20, bottom: 0 }}
                     barSize={60}
@@ -552,24 +552,24 @@ const Analytics: React.FC = () => {
       {/* Date Range Picker Bottom Drawer */}
       {isDatePickerOpen && (
         <div className="fixed inset-0 z-[100] flex flex-col justify-end">
-          <div 
+          <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => setIsDatePickerOpen(false)}
           ></div>
           <div className="relative w-full max-w-lg mx-auto bg-white dark:bg-[#0a0a1a] rounded-t-[2rem] shadow-2xl border-t border-gray-100 dark:border-gray-800 animate-in slide-in-from-bottom-full duration-300">
             <div className="p-6 pb-8">
               <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto mb-6"></div>
-              
+
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-black text-gray-900 dark:text-white">Select Date Range</h3>
-                <button 
+                <button
                   onClick={() => setIsDatePickerOpen(false)}
                   className="p-2 bg-gray-50 dark:bg-gray-800 text-gray-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <X size={18} />
                 </button>
               </div>
-              
+
               <div className="space-y-5">
                 <div className="space-y-2 text-left">
                   <label className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Start Date</label>
@@ -613,7 +613,7 @@ const Analytics: React.FC = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                   <button
                     onClick={() => {
@@ -631,7 +631,7 @@ const Analytics: React.FC = () => {
                       setIsDatePickerOpen(false);
                     }}
                     disabled={!startDate || !endDate}
-                    className="flex-1 h-14 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black uppercase tracking-widest rounded-2xl text-sm disabled:opacity-50 active:scale-95 transition-transform flex items-center justify-center shadow-xl shadow-indigo-500/20"
+                    className="flex-1 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-black uppercase tracking-widest rounded-2xl text-sm disabled:opacity-50 active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20"
                   >
                     Apply Filter
                   </button>

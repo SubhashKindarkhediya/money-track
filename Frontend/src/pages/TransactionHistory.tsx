@@ -453,7 +453,7 @@ const TransactionHistory: React.FC = () => {
               <div className="pt-2">
                 <button
                   onClick={() => setSelectedTx(null)}
-                  className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-[0.98]"
+                  className="w-full py-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all active:scale-[0.98]"
                 >
                   Done
                 </button>

@@ -223,9 +223,9 @@ const Profile: React.FC = () => {
             <div className="min-w-0 flex-1">
               <MarqueeText 
                 text={user?.name || "User"} 
-                className="text-2xl font-black text-gray-900 dark:text-white tracking-tight"
+                className="text-xl font-bold text-gray-800 dark:text-gray-100 tracking-tight"
               />
-              <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-widest mt-1 uppercase">
+              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 tracking-widest mt-1 uppercase">
                 Premium Account
               </p>
             </div>
@@ -245,7 +245,7 @@ const Profile: React.FC = () => {
                   </div>
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Mobile Number</span>
                 </div>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">{user?.phone_number || "-"}</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{user?.phone_number || "-"}</span>
               </div>
 
               <div className="flex items-center justify-between p-5 border-b border-gray-50 dark:border-gray-800/50">
@@ -258,7 +258,7 @@ const Profile: React.FC = () => {
                 <div className="ml-4 max-w-[45%] overflow-hidden">
                   <TruncatedEmail
                     email={user?.email || "-"}
-                    className="text-gray-900 dark:text-white"
+                    className="text-gray-700 dark:text-gray-200 font-semibold"
                   />
                 </div>
               </div>
@@ -270,7 +270,7 @@ const Profile: React.FC = () => {
                   </div>
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Gender</span>
                 </div>
-                <span className="text-sm font-bold text-gray-900 dark:text-white capitalize">{user?.gender || "-"}</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 capitalize">{user?.gender || "-"}</span>
               </div>
 
               <div className="flex items-center justify-between p-5">
@@ -280,7 +280,7 @@ const Profile: React.FC = () => {
                   </div>
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Date of Birth</span>
                 </div>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">{formatDateToDDMMYYYY(user?.dob || "") || "-"}</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{formatDateToDDMMYYYY(user?.dob || "") || "-"}</span>
               </div>
             </div>
           </div>
@@ -359,7 +359,7 @@ const Profile: React.FC = () => {
                   </button>
                 )}
 
-                <label className="absolute -bottom-2 -right-2 w-12 h-12 bg-indigo-600 text-white rounded-2xl border-4 border-white dark:border-gray-900 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer">
+                <label className="absolute -bottom-2 -right-2 w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white rounded-2xl border-4 border-white dark:border-gray-900 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer">
                   <SquarePen size={20} />
                   <input
                     type="file"
@@ -556,7 +556,7 @@ const Profile: React.FC = () => {
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98]"
+            className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98]"
           >
             {isLoading ? (
               <Loader2 className="animate-spin" size={20} />
