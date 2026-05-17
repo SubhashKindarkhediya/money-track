@@ -10,7 +10,6 @@ import {
   Phone,
   MapPin,
   Calendar,
-  Shield,
   ChevronRight,
   ChevronDown,
   Check,
@@ -79,6 +78,7 @@ const Profile: React.FC = () => {
   // Sync with user context
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         first_name:
           user.first_name || (user.name ? user.name.split(" ")[0] : ""),
@@ -163,10 +163,11 @@ const Profile: React.FC = () => {
       setMessage({ type: "success", text: "Profile updated successfully!" });
       setIsEditing(false);
       setTimeout(() => setMessage(null), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
       setMessage({
         type: "error",
-        text: err.response?.data?.error || "Failed to update profile.",
+        text: error.response?.data?.error || "Failed to update profile.",
       });
     } finally {
       setIsLoading(false);
@@ -535,7 +536,9 @@ const Profile: React.FC = () => {
                         } else {
                           e.currentTarget.focus();
                         }
-                      } catch (err) {}
+                      } catch (err) {
+                        console.warn("Failed to open date picker", err);
+                      }
                     }}
                     className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-50"
                   />

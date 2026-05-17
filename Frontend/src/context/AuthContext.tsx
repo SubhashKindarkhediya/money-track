@@ -13,6 +13,7 @@ interface User {
   id_card_no?: string;
   currency?: string;
   monthly_budget?: number;
+  profile_picture?: string;
 }
 
 interface AuthContextType {
