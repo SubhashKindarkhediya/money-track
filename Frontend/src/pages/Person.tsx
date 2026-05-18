@@ -289,7 +289,7 @@ I've been using *Money Track* to manage shared expenses with friends and contact
 We already have some transactions recorded together. Join Money Track to easily see what we owe each other, all in one place.
 
 🔗 Get started for free:
-https://money-track-254.vercel.app/
+https://moneytrackflow.vercel.app/
 
 Takes less than a minute. See you there! 😊
 
