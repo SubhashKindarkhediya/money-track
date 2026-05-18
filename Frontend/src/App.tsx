@@ -639,7 +639,10 @@ function AppContent() {
     } else {
       // Re-apply the active user preference theme
       const savedTheme = localStorage.getItem('theme') || 'light';
-      if (savedTheme === 'dark') {
+      const explicitlySet = localStorage.getItem('theme_explicitly_set');
+      const activeTheme = (explicitlySet === 'true') ? savedTheme : 'light';
+      
+      if (activeTheme === 'dark') {
         root.classList.add('dark');
         root.classList.remove('light');
       } else {
