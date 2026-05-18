@@ -4,7 +4,7 @@ import {
   Shield, ChevronDown, Check, X, ChevronRight, Info, Trash2, Bell, ShieldAlert, Share2, Eye, EyeOff, LockKeyhole, AlertTriangle,
   Code, Mail, ShieldCheck, FileText
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
@@ -401,8 +401,8 @@ const SettingsPage: React.FC = () => {
               <div className="animate-in fade-in slide-in-from-bottom-8 duration-500 pb-32">
                 {/* Logo & Title */}
                 <div className="flex flex-col items-center text-center mt-4 mb-10">
-                  <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-[2rem] flex items-center justify-center shadow-xl shadow-indigo-500/20 mb-6">
-                    <LockKeyhole size={40} className="text-white" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 border border-indigo-100 dark:border-slate-700 rounded-[2rem] flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-md mb-6">
+                    <LockKeyhole size={40} />
                   </div>
                   <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-3">Change Password</h2>
                   <p className="text-gray-500 dark:text-gray-400 font-medium px-8 leading-relaxed">
@@ -422,30 +422,41 @@ const SettingsPage: React.FC = () => {
                   )}
 
                   {/* Current Password */}
-                  <div className="relative group">
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors z-10 pointer-events-none">
-                      <Lock size={20} />
+                  <div className="space-y-2">
+                    <div className="relative group">
+                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors z-10 pointer-events-none">
+                        <Lock size={20} />
+                      </div>
+                      <input
+                        type={showPass.current ? "text" : "password"}
+                        required
+                        placeholder=" "
+                        value={passData.currentPassword}
+                        onChange={(e) => setPassData({ ...passData, currentPassword: e.target.value })}
+                        className="peer w-full pl-14 pr-14 py-5 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-3xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/10 font-bold transition-all text-gray-900 dark:text-white shadow-sm"
+                      />
+                      <label className="absolute left-14 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm font-medium transition-all duration-200 pointer-events-none
+                        peer-focus:-top-1 peer-focus:left-6 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:tracking-widest peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400 peer-focus:bg-white dark:peer-focus:bg-[#0a0a1a] peer-focus:px-2
+                        peer-[:not(:placeholder-shown)]:-top-1 peer-[:not(:placeholder-shown)]:left-6 peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:font-black peer-[:not(:placeholder-shown)]:uppercase peer-[:not(:placeholder-shown)]:tracking-widest peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-[#0a0a1a] peer-[:not(:placeholder-shown)]:px-2">
+                        Current Password*
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowPass({ ...showPass, current: !showPass.current })}
+                        className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors"
+                      >
+                        {showPass.current ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
                     </div>
-                    <input
-                      type={showPass.current ? "text" : "password"}
-                      required
-                      placeholder=" "
-                      value={passData.currentPassword}
-                      onChange={(e) => setPassData({ ...passData, currentPassword: e.target.value })}
-                      className="peer w-full pl-14 pr-14 py-5 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-3xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/10 font-bold transition-all text-gray-900 dark:text-white shadow-sm"
-                    />
-                    <label className="absolute left-14 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm font-medium transition-all duration-200 pointer-events-none
-                      peer-focus:-top-1 peer-focus:left-6 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:tracking-widest peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400 peer-focus:bg-white dark:peer-focus:bg-[#0a0a1a] peer-focus:px-2
-                      peer-[:not(:placeholder-shown)]:-top-1 peer-[:not(:placeholder-shown)]:left-6 peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:font-black peer-[:not(:placeholder-shown)]:uppercase peer-[:not(:placeholder-shown)]:tracking-widest peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-[#0a0a1a] peer-[:not(:placeholder-shown)]:px-2">
-                      Current Password*
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowPass({ ...showPass, current: !showPass.current })}
-                      className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors"
-                    >
-                      {showPass.current ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
+                    <div className="flex justify-end px-2">
+                      <Link
+                        to="/forgot-password"
+                        state={{ email: user?.email }}
+                        className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors uppercase tracking-widest"
+                      >
+                        Forgot Password?
+                      </Link>
+                    </div>
                   </div>
 
                   {/* New Password */}

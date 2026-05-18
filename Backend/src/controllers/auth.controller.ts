@@ -49,6 +49,28 @@ export class AuthController {
   };
 
   /**
+   * Verify signup OTP
+   */
+  verifySignupOtp = async (req: Request, res: Response) => {
+    try {
+      const { email, otp } = req.body;
+      if (!email || !otp) {
+        res.status(400).json({ error: "Email and OTP are required" });
+        return;
+      }
+
+      const { user, token } = await this.authService.verifySignupOtp({ email, otp });
+      res.status(200).json({
+        message: "Email verified and account activated successfully",
+        user,
+        token
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  };
+
+  /**
    * Login user
    */
   login = async (req: Request, res: Response) => {

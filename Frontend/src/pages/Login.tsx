@@ -175,10 +175,10 @@ const Login: React.FC = () => {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <FloatingInput
               icon={Mail}
-              label="Email Address *"
+              label="Email or Phone Number *"
               name="email"
-              type="email"
-              placeholder="name@example.com"
+              type="text"
+              placeholder="email@example.com or 9876543210"
               value={formData.email}
               onChange={handleChange}
               autoComplete="off"

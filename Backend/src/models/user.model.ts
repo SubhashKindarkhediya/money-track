@@ -14,11 +14,12 @@ interface UserAttributes {
   last_name?: string;
   dob?: string;
   id_card_no?: string;
-  reset_otp?: string;
-  reset_otp_expires?: Date;
+  reset_otp?: string | null;
+  reset_otp_expires?: Date | null;
   currency?: string;
   monthly_budget?: number;
   profile_picture?: string;
+  is_verified?: boolean;
 }
 
 interface UserCreationAttributes extends Optional<UserAttributes, "id"> { }
@@ -38,11 +39,13 @@ class User
   public last_name?: string;
   public dob?: string;
   public id_card_no?: string;
-  public reset_otp?: string;
-  public reset_otp_expires?: Date;
+  public reset_otp?: string | null;
+  public reset_otp_expires?: Date | null;
   public currency?: string;
   public monthly_budget?: number;
   public profile_picture?: string;
+  public is_verified?: boolean;
+
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -77,6 +80,11 @@ User.init(
       type: DataTypes.STRING,
       allowNull: true,
       unique: true,
+    },
+    is_verified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     gender: {
       type: DataTypes.STRING,

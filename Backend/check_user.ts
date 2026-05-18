@@ -5,7 +5,7 @@ import sequelize from "./src/config/db";
 async function checkUser() {
   try {
     await sequelize.authenticate();
-    const user = await User.findOne({ where: { email: 'testuser@example.com' } });
+    const user = await User.findOne({ where: { email: 'ravi@yopmail.com' } });
     if (user) {
       console.log("USER_FOUND:", JSON.stringify(user.toJSON(), null, 2));
     } else {

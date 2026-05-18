@@ -10,6 +10,7 @@ const authController = container.resolve(AuthController);
 
 // Signup Route
 router.post("/signup", authController.signup);
+router.post("/verify-signup-otp", authController.verifySignupOtp);
 
 // Login Route
 router.post("/login", authController.login);

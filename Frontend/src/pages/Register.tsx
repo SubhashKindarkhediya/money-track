@@ -1,5 +1,5 @@
 import { Eye, EyeOff } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   User,
@@ -9,8 +9,10 @@ import {
   ChevronRight,
   Loader2,
   Phone,
+  KeyRound,
 } from "lucide-react";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const FloatingInput = ({
   icon: Icon,
@@ -72,8 +74,12 @@ const FloatingInput = ({
   );
 };
 
+type Step = "FORM" | "OTP";
+
 const Register: React.FC = () => {
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const [step, setStep] = useState<Step>("FORM");
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -82,8 +88,25 @@ const Register: React.FC = () => {
     password: "",
     confirmPassword: "",
   });
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Timer logic for OTP resend
+  useEffect(() => {
+    let timer: any;
+    if (step === "OTP" && !canResend && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    } else if (timeLeft === 0) {
+      setCanResend(true);
+    }
+    return () => clearInterval(timer);
+  }, [step, timeLeft, canResend]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -95,7 +118,31 @@ const Register: React.FC = () => {
     } else {
       setFormData({ ...formData, [name]: value });
     }
-    // setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) value = value.slice(-1); // Prevent multiple chars
+    if (!/^\d*$/.test(value)) return; // Only numbers
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input or Auto-submit
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    } else if (value && index === 5) {
+      const fullOtp = newOtp.join("");
+      if (fullOtp.length === 6) {
+        setTimeout(() => handleVerifyOtp(undefined, fullOtp), 300);
+      }
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,11 +163,63 @@ const Register: React.FC = () => {
 
     try {
       await api.post("/auth/signup", formData);
-      navigate("/login");
+      setStep("OTP");
+      setTimeLeft(60);
+      setCanResend(false);
+      setOtp(["", "", "", "", "", ""]);
     } catch (err: any) {
       setError(
         err.response?.data?.error || "Failed to register. Please try again.",
       );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setError("");
+    setIsLoading(true);
+    try {
+      await api.post("/auth/signup", formData);
+      setTimeLeft(60);
+      setCanResend(false);
+      setOtp(["", "", "", "", "", ""]);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to resend OTP. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e?: React.FormEvent, autoOtp?: string) => {
+    if (e) e.preventDefault();
+    const otpString = autoOtp || otp.join("");
+    if (otpString.length !== 6) {
+      setError("Please enter the complete 6-digit OTP");
+      return;
+    }
+
+    setError("");
+    setIsLoading(true);
+    try {
+      const response = await api.post("/auth/verify-signup-otp", {
+        email: formData.email,
+        otp: otpString,
+      });
+
+      const { user, token } = response.data;
+
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      login(token, user);
+
+      setTimeout(() => {
+        navigate("/");
+      }, 150);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Invalid OTP. Please check and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -138,13 +237,15 @@ const Register: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none rounded-[2.5rem] p-6 md:p-8">
           <div className="flex flex-col items-center text-center mb-10">
             <div className="w-14 h-14 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 border border-indigo-100 dark:border-slate-700 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm mb-6">
-              <UserPlus size={28} />
+              {step === "FORM" ? <UserPlus size={28} /> : <KeyRound size={28} />}
             </div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
-              Create Account
+              {step === "FORM" ? "Create Account" : "Verify Email"}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-              Join us to manage your finances smarter.
+              {step === "FORM"
+                ? "Join us to manage your finances smarter."
+                : `We've sent a 6-digit verification code to ${formData.email}`}
             </p>
           </div>
 
@@ -155,85 +256,152 @@ const Register: React.FC = () => {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <FloatingInput
-              icon={User}
-              label="First Name *"
-              name="first_name"
-              placeholder="e.g. John"
-              value={formData.first_name}
-              onChange={handleChange}
-            />
+          {step === "FORM" ? (
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <FloatingInput
+                icon={User}
+                label="First Name *"
+                name="first_name"
+                placeholder="e.g. John"
+                value={formData.first_name}
+                onChange={handleChange}
+              />
 
-            <FloatingInput
-              icon={User}
-              label="Last Name *"
-              name="last_name"
-              placeholder="e.g. Doe"
-              value={formData.last_name}
-              onChange={handleChange}
-            />
+              <FloatingInput
+                icon={User}
+                label="Last Name *"
+                name="last_name"
+                placeholder="e.g. Doe"
+                value={formData.last_name}
+                onChange={handleChange}
+              />
 
-            <FloatingInput
-              icon={Mail}
-              label="Email Address *"
-              name="email"
-              type="email"
-              placeholder="name@example.com"
-              value={formData.email}
-              onChange={handleChange}
-              autoComplete="off"
-            />
+              <FloatingInput
+                icon={Mail}
+                label="Email Address *"
+                name="email"
+                type="email"
+                placeholder="name@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                autoComplete="off"
+              />
 
-            <FloatingInput
-              icon={Phone}
-              label="Mobile Number *"
-              name="phone_number"
-              type="tel"
-              placeholder="+91 00000 00000"
-              value={formData.phone_number}
-              onChange={handleChange}
-              autoComplete="off"
-            />
+              <FloatingInput
+                icon={Phone}
+                label="Mobile Number *"
+                name="phone_number"
+                type="tel"
+                placeholder="+91 00000 00000"
+                value={formData.phone_number}
+                onChange={handleChange}
+                autoComplete="off"
+              />
 
-            <FloatingInput
-              icon={Lock}
-              label="Password *"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              autoComplete="new-password"
-            />
+              <FloatingInput
+                icon={Lock}
+                label="Password *"
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                autoComplete="new-password"
+              />
 
-            <FloatingInput
-              icon={Lock}
-              label="Confirm Password *"
-              name="confirmPassword"
-              type="password"
-              placeholder="••••••••"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              autoComplete="new-password"
-            />
+              <FloatingInput
+                icon={Lock}
+                label="Confirm Password *"
+                name="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                autoComplete="new-password"
+              />
 
-            <button
-              disabled={isLoading}
-              className="w-full h-14 mt-4 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-70 text-white font-bold rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
-            >
-              {isLoading ? (
-                <Loader2 size={20} className="animate-spin" />
-              ) : (
-                <>
-                  <span className="text-sm uppercase tracking-widest">
-                    Register Now
+              <button
+                disabled={isLoading}
+                className="w-full h-14 mt-4 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-70 text-white font-bold rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                {isLoading ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <>
+                    <span className="text-sm uppercase tracking-widest">
+                      Register Now
+                    </span>
+                    <ChevronRight size={18} />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <div className="flex justify-center gap-2 sm:gap-3">
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => {
+                      otpRefs.current[index] = el;
+                    }}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    className="w-12 h-14 sm:w-14 sm:h-16 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-xl sm:text-2xl font-bold text-center text-slate-900 dark:text-white"
+                  />
+                ))}
+              </div>
+
+              <div className="text-center mt-2 flex flex-col items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => (canResend ? handleResendOtp() : null)}
+                  disabled={!canResend || isLoading}
+                  className={`text-xs font-bold uppercase tracking-widest transition-colors ${
+                    canResend
+                      ? "text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                      : "text-slate-400 cursor-not-allowed"
+                  }`}
+                >
+                  Resend OTP
+                </button>
+                {!canResend && (
+                  <span className="text-xs font-bold text-slate-500">
+                    You can resend in {Math.floor(timeLeft / 60)}:
+                    {(timeLeft % 60).toString().padStart(2, "0")}
                   </span>
-                  <ChevronRight size={18} />
-                </>
-              )}
-            </button>
-          </form>
+                )}
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setStep("FORM")}
+                  className="w-1/3 h-14 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all text-xs uppercase tracking-widest"
+                >
+                  Back
+                </button>
+                <button
+                  disabled={isLoading || otp.join("").length !== 6}
+                  className="flex-1 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-70 text-white font-bold rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                >
+                  {isLoading ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <>
+                      <span className="text-sm uppercase tracking-widest">
+                        VERIFY OTP
+                      </span>
+                      <ChevronRight size={18} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
 
           <p className="mt-10 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">
             Already have an account?{" "}

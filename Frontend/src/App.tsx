@@ -458,6 +458,7 @@ function AppContent() {
   const [isProfileDrawerOpen, setProfileDrawerOpen] = useState(false);
   const [isAddTxOpen, setAddTxOpen] = useState(false);
   const { logout, user, currencySymbol } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [showNotifPill, setShowNotifPill] = useState(false);
@@ -627,6 +628,27 @@ function AppContent() {
     }
   }, [location.pathname]);
 
+  // Enforce light theme on Login, Register and Forgot Password
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const isAuth = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password";
+    
+    if (isAuth) {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    } else {
+      // Re-apply the active user preference theme
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      if (savedTheme === 'dark') {
+        root.classList.add('dark');
+        root.classList.remove('light');
+      } else {
+        root.classList.add('light');
+        root.classList.remove('dark');
+      }
+    }
+  }, [location.pathname, theme]);
+
   const isAuthPage =
     location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password";
   const isProfilePage = location.pathname === "/profile";
@@ -647,7 +669,6 @@ function AppContent() {
     { name: "History", icon: History, path: "/transactions", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
     { name: "Analytics", icon: BarChart3, path: "/analytics", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
   ];
-  const { theme, toggleTheme } = useTheme();
 
   if (isAuthPage) {
     return (
@@ -731,7 +752,7 @@ function AppContent() {
                   className="shrink-0 transition-transform group-hover:scale-110"
                 />
                 <span
-                  className={`font-bold tracking-wide text-[11px] ${!isSidebarOpen && "lg:hidden"}`}
+                  className={`font-bold tracking-wide text-[13px] ${!isSidebarOpen && "lg:hidden"}`}
                 >
                   {item.name}
                 </span>
@@ -750,7 +771,7 @@ function AppContent() {
                     `}
                   >
                     <PlusCircle size={22} className={`shrink-0 transition-transform ${isAddTxOpen ? "rotate-45" : ""}`} />
-                    <span className="font-bold tracking-wide text-[11px]">Add Transaction</span>
+                    <span className="font-bold tracking-wide text-[13px]">Add Transaction</span>
                     <ChevronDown size={14} className={`ml-auto transition-transform duration-300 ${isAddTxOpen ? "rotate-180" : ""}`} />
                   </button>
 
@@ -761,7 +782,7 @@ function AppContent() {
                           setSidebarOpen(false);
                           navigate("/add-transaction", { state: { mode: "single" } });
                         }}
-                        className="flex items-center gap-4 p-4 w-full text-left rounded-2xl text-[10px] font-bold text-gray-500 dark:text-gray-400 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+                        className="flex items-center gap-4 p-4 w-full text-left rounded-2xl text-[12px] font-bold text-gray-500 dark:text-gray-400 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
                       >
                         <User size={18} className="shrink-0 ml-1" />
                         <span>Person Transaction</span>
@@ -771,7 +792,7 @@ function AppContent() {
                           setSidebarOpen(false);
                           navigate("/add-transaction", { state: { mode: "group" } });
                         }}
-                        className="flex items-center gap-4 p-4 w-full text-left rounded-2xl text-[10px] font-bold text-gray-500 dark:text-gray-400 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+                        className="flex items-center gap-4 p-4 w-full text-left rounded-2xl text-[12px] font-bold text-gray-500 dark:text-gray-400 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
                       >
                         <Users size={18} className="shrink-0 ml-1" />
                         <span>Group Transaction</span>
@@ -797,7 +818,7 @@ function AppContent() {
           >
             <LogOut size={22} />
             <span
-              className={`font-bold text-[11px] tracking-wide ${!isSidebarOpen && "lg:hidden"}`}
+              className={`font-bold text-[13px] tracking-wide ${!isSidebarOpen && "lg:hidden"}`}
             >
               Logout
             </span>
