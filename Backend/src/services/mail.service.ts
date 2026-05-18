@@ -33,7 +33,7 @@ export class MailService {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #4f46e5; text-align: center;">Money Track</h2>
           <p>Hi,</p>
-          <p>You requested to reset your password. Use the OTP below to verify your account:</p>
+          <p>Use the OTP below to verify your account:</p>
           <div style="background: #f3f4f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1f2937; border-radius: 8px; margin: 20px 0;">
             ${otp}
           </div>
@@ -60,7 +60,7 @@ export class MailService {
               email: emailUser || "kindarkhediyasubhash254@gmail.com"
             },
             to: [{ email: to }],
-            subject: "Password Reset OTP - Money Track",
+            subject: "OTP Verification - Money Track",
             htmlContent: htmlContent
           })
         });
@@ -83,7 +83,7 @@ export class MailService {
     const mailOptions = {
       from: `"Money Track Support" <${emailUser}>`,
       to,
-      subject: "Password Reset OTP - Money Track",
+      subject: "OTP Verification - Money Track",
       html: htmlContent,
     };
 
