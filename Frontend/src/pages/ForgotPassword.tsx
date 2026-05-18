@@ -181,6 +181,13 @@ const ForgotPassword = () => {
             </div>
           )}
 
+          {isLoading && step === "EMAIL" && (
+            <div className="mb-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl text-xs font-medium flex items-center gap-3 animate-in slide-in-from-top-2">
+              <Loader2 size={16} className="animate-spin text-indigo-500 shrink-0" />
+              <span>Starting secure session... If the server was asleep, this may take 30-50 seconds. Please keep this window open.</span>
+            </div>
+          )}
+
           {/* Step 1: Email Form */}
           {step === "EMAIL" && (
             <form onSubmit={handleRequestOtp} className="space-y-6">
