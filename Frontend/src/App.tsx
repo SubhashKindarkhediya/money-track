@@ -457,7 +457,7 @@ function AppContent() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isProfileDrawerOpen, setProfileDrawerOpen] = useState(false);
   const [isAddTxOpen, setAddTxOpen] = useState(false);
-  const { logout, user, currencySymbol } = useAuth();
+  const { logout, user, currencySymbol, token, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -673,7 +673,18 @@ function AppContent() {
     { name: "Analytics", icon: BarChart3, path: "/analytics", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 font-sans">
+        <div className="animate-pulse text-indigo-600 text-sm font-black tracking-widest uppercase">Loading Session...</div>
+      </div>
+    );
+  }
+
   if (isAuthPage) {
+    if (token) {
+      return <Navigate to="/" replace />;
+    }
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
