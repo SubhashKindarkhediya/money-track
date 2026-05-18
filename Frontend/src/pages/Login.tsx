@@ -199,7 +199,7 @@ const Login: React.FC = () => {
                 <Link
                   to="/forgot-password"
                   state={{ email: formData.email }}
-                  className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors uppercase tracking-widest"
+                  className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors uppercase tracking-widest"
                 >
                   Forgot Password?
                 </Link>
