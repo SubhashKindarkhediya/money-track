@@ -969,6 +969,16 @@ Takes less than a minute. See you there! 😊
             <h2 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">
               Add Person
             </h2>
+            {isContactPickerSupported && (
+              <button
+                type="button"
+                onClick={handleImportContact}
+                className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all border border-indigo-100/50 dark:border-indigo-500/20 shadow-sm active:scale-95 animate-in fade-in duration-300"
+              >
+                <Users size={16} />
+                <span className="text-[10px] font-black tracking-wider uppercase">Select Contact</span>
+              </button>
+            )}
           </div>
 
           {/* Add Form Container */}
@@ -983,25 +993,12 @@ Takes less than a minute. See you there! 😊
                 e.preventDefault();
                 handleAddSubmit();
               }}
-              className="space-y-6"
+              className="space-y-6 pb-28"
             >
-              {isContactPickerSupported && (
-                <div className="flex justify-center pb-2">
-                  <button
-                    type="button"
-                    onClick={handleImportContact}
-                    className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all border border-indigo-100/50 dark:border-indigo-500/20 active:scale-95 shadow-sm"
-                  >
-                    <Users size={18} />
-                    <span className="text-xs font-black tracking-wide uppercase">Import from Contacts</span>
-                  </button>
-                </div>
-              )}
               <FloatingInput icon={User} label="First Name *" name="first_name" placeholder="e.g. John" value={formData.first_name} onChange={handleChange} />
               <FloatingInput icon={User} label="Last Name" name="last_name" placeholder="e.g. Doe" value={formData.last_name} onChange={handleChange} />
               <FloatingInput icon={Phone} label="Mobile Number *" name="phone_number" type="tel" placeholder="+91 00000 00000" value={formData.phone_number} onChange={handleChange} />
               <FloatingInput icon={StickyNote} label="Notes (Optional)" name="notes" placeholder="Any extra info..." value={formData.notes} onChange={handleChange} />
-              <div className="h-60" /> {/* Spacer for keyboard scrolling */}
             </form>
           </div>
 
