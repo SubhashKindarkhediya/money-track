@@ -100,6 +100,27 @@ const ForgotPassword = () => {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pastedData.length === 0) return;
+
+    const newOtp = [...otp];
+    for (let i = 0; i < 6; i++) {
+      if (i < pastedData.length) {
+        newOtp[i] = pastedData[i];
+      }
+    }
+    setOtp(newOtp);
+
+    const focusIndex = Math.min(pastedData.length, 5);
+    otpRefs.current[focusIndex]?.focus();
+
+    if (pastedData.length === 6) {
+      setTimeout(() => handleVerifyOtp(undefined, pastedData), 300);
+    }
+  };
+
   // Step 1: Request OTP
   const handleRequestOtp = async (e: React.FormEvent | null = null) => {
     if (e) e.preventDefault();
@@ -225,6 +246,7 @@ const ForgotPassword = () => {
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    onPaste={handlePaste}
                     className="w-12 h-14 sm:w-14 sm:h-16 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-xl sm:text-2xl font-bold text-center text-slate-900 dark:text-white"
                   />
                 ))}

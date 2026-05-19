@@ -10,6 +10,7 @@ import {
   Loader2,
   Phone,
   KeyRound,
+  ArrowLeft,
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -145,6 +146,27 @@ const Register: React.FC = () => {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pastedData.length === 0) return;
+
+    const newOtp = [...otp];
+    for (let i = 0; i < 6; i++) {
+      if (i < pastedData.length) {
+        newOtp[i] = pastedData[i];
+      }
+    }
+    setOtp(newOtp);
+
+    const focusIndex = Math.min(pastedData.length, 5);
+    otpRefs.current[focusIndex]?.focus();
+
+    if (pastedData.length === 6) {
+      setTimeout(() => handleVerifyOtp(undefined, pastedData), 300);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -240,12 +262,12 @@ const Register: React.FC = () => {
               {step === "FORM" ? <UserPlus size={28} /> : <KeyRound size={28} />}
             </div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
-              {step === "FORM" ? "Create Account" : "Verify Email"}
+              {step === "FORM" ? "Create Account" : "Verify OTP"}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
               {step === "FORM"
                 ? "Join us to manage your finances smarter."
-                : `We've sent a 6-digit verification code to ${formData.email}`}
+                : `We've sent a 6-digit code to ${formData.email}`}
             </p>
           </div>
 
@@ -350,6 +372,7 @@ const Register: React.FC = () => {
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    onPaste={handlePaste}
                     className="w-12 h-14 sm:w-14 sm:h-16 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-xl sm:text-2xl font-bold text-center text-slate-900 dark:text-white"
                   />
                 ))}
@@ -376,42 +399,46 @@ const Register: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setStep("FORM")}
-                  className="w-1/3 h-14 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all text-xs uppercase tracking-widest"
-                >
-                  Back
-                </button>
-                <button
-                  disabled={isLoading || otp.join("").length !== 6}
-                  className="flex-1 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-70 text-white font-bold rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
-                >
-                  {isLoading ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : (
-                    <>
-                      <span className="text-sm uppercase tracking-widest">
-                        VERIFY OTP
-                      </span>
-                      <ChevronRight size={18} />
-                    </>
-                  )}
-                </button>
-              </div>
+              <button
+                disabled={isLoading || otp.join("").length !== 6}
+                className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-70 text-white font-bold rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                {isLoading ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <>
+                    <span className="text-sm uppercase tracking-widest">
+                      VERIFY OTP
+                    </span>
+                    <ChevronRight size={18} />
+                  </>
+                )}
+              </button>
             </form>
           )}
 
-          <p className="mt-10 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline underline-offset-4"
-            >
-              Log In
-            </Link>
-          </p>
+          {step === "FORM" ? (
+            <p className="mt-10 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline underline-offset-4"
+              >
+                Log In
+              </Link>
+            </p>
+          ) : (
+            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setStep("FORM")}
+                className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors uppercase tracking-widest"
+              >
+                <ArrowLeft size={14} />
+                Back to Register
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
