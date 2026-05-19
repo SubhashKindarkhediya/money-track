@@ -175,7 +175,19 @@ const AddTransaction: React.FC = () => {
         <div className="sticky top-0 z-30 flex items-center gap-4 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              if (preSelectedPersonId) {
+                navigate(`/person/${preSelectedPersonId}`);
+              } else {
+                navigate(-1);
+                // Smart fallback in case navigate(-1) does not fire due to history refresh
+                setTimeout(() => {
+                  if (window.location.pathname === "/add-transaction") {
+                    navigate("/");
+                  }
+                }, 100);
+              }
+            }}
             className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#151624] hover:bg-gray-100 dark:hover:bg-[#1e1f30] transition-all border border-gray-100 dark:border-gray-800 active:scale-95"
           >
             <ArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
@@ -388,7 +400,7 @@ const AddTransaction: React.FC = () => {
                           }
                         } catch (err) { }
                       }}
-                      className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-50"
+                      className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-20"
                     />
 
                     <CalendarDays size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
@@ -655,7 +667,7 @@ const AddTransaction: React.FC = () => {
                             }
                           } catch (err) { }
                         }}
-                        className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-50"
+                        className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-20"
                       />
 
                       <CalendarDays size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
@@ -679,7 +691,7 @@ const AddTransaction: React.FC = () => {
         </div>
 
         {/* Fixed Bottom Button */}
-        <div className="sticky bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#0a0a1a]/80 backdrop-blur-xl border-t border-indigo-100/50 dark:border-gray-800 z-40 mt-auto">
+        <div className="sticky bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#0a0a1a]/80 backdrop-blur-xl border-t border-indigo-100/50 dark:border-gray-800 z-50 mt-auto">
           <button
             onClick={handleAddTransaction}
             disabled={txLoading}

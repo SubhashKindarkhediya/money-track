@@ -41,33 +41,50 @@ const FloatingInput = ({
   value,
   onChange,
   autoComplete = "off",
+  error,
 }: any) => {
   return (
-    <div className="relative group">
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors z-10 pointer-events-none">
-        <Icon size={18} />
+    <div className="w-full">
+      <div className="relative group">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors z-10 pointer-events-none">
+          <Icon size={18} />
+        </div>
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder=" "
+          autoComplete={autoComplete}
+          maxLength={name === "phone_number" || name === "phone" ? 10 : undefined}
+          inputMode={name === "phone_number" || name === "phone" ? "numeric" : undefined}
+          pattern={name === "phone_number" || name === "phone" ? "[0-9]*" : undefined}
+          className={`peer w-full pl-11 pr-4 py-4 bg-slate-50/50 dark:bg-slate-800/50 border rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:ring-4 transition-all text-sm font-medium text-slate-900 dark:text-white ${
+            error
+              ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/5"
+              : "border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500/5"
+          }`}
+        />
+        <label
+          className={`absolute left-11 top-1/2 -translate-y-1/2 text-sm font-medium transition-all duration-200 pointer-events-none
+          peer-focus:-top-1 peer-focus:left-4 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:tracking-widest peer-focus:bg-white dark:peer-focus:bg-[#0a0a1a] peer-focus:px-2
+          peer-[:not(:placeholder-shown)]:-top-1 peer-[:not(:placeholder-shown)]:left-4 peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:font-black peer-[:not(:placeholder-shown)]:uppercase peer-[:not(:placeholder-shown)]:tracking-widest peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-[#0a0a1a] peer-[:not(:placeholder-shown)]:px-2
+          ${
+            error
+              ? "text-rose-500 dark:text-rose-400 peer-focus:text-rose-500 dark:peer-focus:text-rose-400"
+              : "text-slate-400 dark:text-slate-500 peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
+          }
+        `}
+        >
+          {label}
+        </label>
       </div>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder=" "
-        required={name !== "notes"}
-        autoComplete={autoComplete}
-        maxLength={name === "phone_number" ? 10 : undefined}
-        inputMode={name === "phone_number" ? "numeric" : undefined}
-        pattern={name === "phone_number" ? "[0-9]*" : undefined}
-        className="peer w-full pl-11 pr-4 py-4 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-sm font-medium text-slate-900 dark:text-white"
-      />
-      <label
-        className="absolute left-11 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm font-medium transition-all duration-200 pointer-events-none
-        peer-focus:-top-1 peer-focus:left-4 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:tracking-widest peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400 peer-focus:bg-white dark:peer-focus:bg-[#0a0a1a] peer-focus:px-2
-        peer-[:not(:placeholder-shown)]:-top-1 peer-[:not(:placeholder-shown)]:left-4 peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:font-black peer-[:not(:placeholder-shown)]:uppercase peer-[:not(:placeholder-shown)]:tracking-widest peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-[#0a0a1a] peer-[:not(:placeholder-shown)]:px-2
-      "
-      >
-        {label}
-      </label>
+      {error && (
+        <p className="text-[10px] font-bold text-rose-500 mt-1.5 px-2 animate-in fade-in slide-in-from-top-1 duration-200 flex items-center gap-1.5">
+          <AlertCircle size={10} className="shrink-0" />
+          {error}
+        </p>
+      )}
     </div>
   );
 };
@@ -174,10 +191,12 @@ const Person: React.FC = () => {
   const [showTxSearch, setShowTxSearch] = useState(false);
   const [activeTxMenuId, setActiveTxMenuId] = useState<string | null>(null);
   const [justAddedPerson, setJustAddedPerson] = useState<{ name: string; phone: string } | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<{ first_name?: string; phone_number?: string }>({});
+  const [editErrors, setEditErrors] = useState<{ first_name?: string; phone?: string }>({});
 
   useEffect(() => {
-    setErrorMsg(null);
+    setFormErrors({});
+    setEditErrors({});
   }, [location.pathname, detailTab]);
 
   const handleInvite = (method: "whatsapp" | "sms") => {
@@ -267,8 +286,8 @@ const Person: React.FC = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setErrorMsg(null);
     const { name, value } = e.target;
+    setFormErrors(prev => ({ ...prev, [name]: undefined }));
     if (name === "phone_number") {
       const cleanedValue = value.replace(/\D/g, "").slice(0, 10);
       setFormData({ ...formData, [name]: cleanedValue });
@@ -279,8 +298,20 @@ const Person: React.FC = () => {
 
   const handleAddSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!formData.first_name) {
-      alert("Name is required");
+    setFormErrors({});
+
+    const errors: { first_name?: string; phone_number?: string } = {};
+    if (!formData.first_name.trim()) {
+      errors.first_name = "First name is required.";
+    }
+    if (!formData.phone_number) {
+      errors.phone_number = "Mobile number is required.";
+    } else if (formData.phone_number.replace(/\D/g, "").length !== 10) {
+      errors.phone_number = "Please enter a valid 10-digit mobile number.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
 
@@ -289,7 +320,7 @@ const Person: React.FC = () => {
         (p) => p.phone?.replace(/\D/g, "") === formData.phone_number.replace(/\D/g, "")
       );
       if (isDuplicate) {
-        setErrorMsg("This mobile number is already associated with an existing contact in your list.");
+        setFormErrors({ phone_number: "This mobile number is already associated with an existing contact in your list." });
         return;
       }
     }
@@ -321,13 +352,30 @@ const Person: React.FC = () => {
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPerson || !editForm.first_name) return;
+    if (!selectedPerson) return;
+    setEditErrors({});
+
+    const errors: { first_name?: string; phone?: string } = {};
+    if (!editForm.first_name.trim()) {
+      errors.first_name = "First name is required.";
+    }
+    if (!editForm.phone) {
+      errors.phone = "Mobile number is required.";
+    } else if (editForm.phone.replace(/\D/g, "").length !== 10) {
+      errors.phone = "Please enter a valid 10-digit mobile number.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setEditErrors(errors);
+      return;
+    }
+
     if (editForm.phone && selectedPerson) {
       const isDuplicate = persons.some(
         (p) => p.id !== selectedPerson.id && p.phone?.replace(/\D/g, "") === editForm.phone.replace(/\D/g, "")
       );
       if (isDuplicate) {
-        setErrorMsg("This mobile number is already associated with another contact in your list.");
+        setEditErrors({ phone: "This mobile number is already associated with another contact in your list." });
         return;
       }
     }
@@ -817,10 +865,11 @@ Takes less than a minute. See you there! 😊
                       name="first_name"
                       value={editForm.first_name}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setErrorMsg(null);
+                        setEditErrors(prev => ({ ...prev, first_name: undefined }));
                         setEditForm({ ...editForm, first_name: e.target.value });
                       }}
                       placeholder="Enter first name"
+                      error={editErrors.first_name}
                       required
                     />
                     <FloatingInput
@@ -829,7 +878,6 @@ Takes less than a minute. See you there! 😊
                       name="last_name"
                       value={editForm.last_name}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setErrorMsg(null);
                         setEditForm({ ...editForm, last_name: e.target.value });
                       }}
                       placeholder="Enter last name"
@@ -842,10 +890,11 @@ Takes less than a minute. See you there! 😊
                     name="phone"
                     value={editForm.phone}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      setErrorMsg(null);
+                      setEditErrors(prev => ({ ...prev, phone: undefined }));
                       setEditForm({ ...editForm, phone: e.target.value.replace(/\D/g, "").slice(0, 10) });
                     }}
                     placeholder="Enter mobile number"
+                    error={editErrors.phone}
                   />
 
                   <div className="space-y-1.5">
@@ -860,12 +909,6 @@ Takes less than a minute. See you there! 😊
                       placeholder="Add some details about this person..."
                     />
                   </div>
-                  {errorMsg && (
-                    <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top duration-300">
-                      <AlertCircle className="shrink-0 mt-0.5 text-rose-500" size={16} />
-                      <span className="text-xs font-bold leading-relaxed">{errorMsg}</span>
-                    </div>
-                  )}
                 </form>
               </div>
             )}
@@ -1088,16 +1131,10 @@ Takes less than a minute. See you there! 😊
               }}
               className="space-y-6 pb-28"
             >
-              <FloatingInput icon={User} label="First Name *" name="first_name" placeholder="e.g. John" value={formData.first_name} onChange={handleChange} />
+              <FloatingInput icon={User} label="First Name *" name="first_name" placeholder="e.g. John" value={formData.first_name} onChange={handleChange} error={formErrors.first_name} />
               <FloatingInput icon={User} label="Last Name" name="last_name" placeholder="e.g. Doe" value={formData.last_name} onChange={handleChange} />
-              <FloatingInput icon={Phone} label="Mobile Number *" name="phone_number" type="tel" placeholder="+91 00000 00000" value={formData.phone_number} onChange={handleChange} />
+              <FloatingInput icon={Phone} label="Mobile Number *" name="phone_number" type="tel" placeholder="+91 00000 00000" value={formData.phone_number} onChange={handleChange} error={formErrors.phone_number} />
               <FloatingInput icon={StickyNote} label="Notes (Optional)" name="notes" placeholder="Any extra info..." value={formData.notes} onChange={handleChange} />
-              {errorMsg && (
-                <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top duration-300">
-                  <AlertCircle className="shrink-0 mt-0.5 text-rose-500" size={16} />
-                  <span className="text-xs font-bold leading-relaxed">{errorMsg}</span>
-                </div>
-              )}
             </form>
           </div>
 
@@ -1106,7 +1143,7 @@ Takes less than a minute. See you there! 😊
             <div className="max-w-4xl mx-auto w-full">
               <button
                 onClick={handleAddSubmit}
-                disabled={submitLoading || !formData.first_name}
+                disabled={submitLoading}
                 className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98]"
               >
                 {submitLoading ? (
