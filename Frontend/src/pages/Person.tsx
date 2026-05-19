@@ -200,20 +200,10 @@ const Person: React.FC = () => {
 
   const handleCloseInviteModal = () => {
     setJustAddedPerson(null);
+    navigate("/person");
+    setFormData({ first_name: "", last_name: "", phone_number: "", notes: "" });
+    fetchPersons();
   };
-
-  useEffect(() => {
-    // Check if there is a pending invite modal to show from sessionStorage
-    const saved = sessionStorage.getItem("showInvite");
-    if (saved) {
-      try {
-        setJustAddedPerson(JSON.parse(saved));
-        sessionStorage.removeItem("showInvite");
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     fetchPersons();
@@ -292,12 +282,9 @@ const Person: React.FC = () => {
         notes: formData.notes,
       });
       
-      // If phone number exists, save invite details in sessionStorage and auto-navigate back
+      // If phone number exists, show invite success dialog modal right here on the Add screen
       if (formData.phone_number) {
-        sessionStorage.setItem("showInvite", JSON.stringify({ name: fullName, phone: formData.phone_number }));
-        navigate("/person");
-        setFormData({ first_name: "", last_name: "", phone_number: "", notes: "" });
-        fetchPersons();
+        setJustAddedPerson({ name: fullName, phone: formData.phone_number });
       } else {
         navigate("/person");
         setFormData({ first_name: "", last_name: "", phone_number: "", notes: "" });
@@ -1094,7 +1081,53 @@ Takes less than a minute. See you there! 😊
             </div>
           </div>
         </div>
-
+        {justAddedPerson && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-[#151624] rounded-[2rem] p-6 max-w-sm w-full border border-indigo-50/50 dark:border-gray-800 shadow-2xl animate-in zoom-in-95 duration-300">
+              {/* Decorative success animation (Indigo styled matching Money Track branding) */}
+              <div className="flex items-center justify-center mb-6">
+                <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm animate-bounce">
+                  <CheckCircle2 size={36} strokeWidth={2.5} />
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-black text-gray-900 dark:text-white text-center tracking-tight mb-2">
+                Person Added! 🎉
+              </h3>
+              
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 text-center leading-relaxed mb-6 px-2">
+                Would you like to invite <span className="font-extrabold text-indigo-600 dark:text-indigo-400">{justAddedPerson.name}</span> to track shared transactions and balances on Money Track?
+              </p>
+              
+              <div className="space-y-2.5">
+                <button
+                  onClick={() => handleInvite("whatsapp")}
+                  className="w-full h-12 bg-[#25d366] hover:bg-[#20ba59] text-white font-bold rounded-xl shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 text-xs uppercase tracking-wider"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.5-5.729-1.448L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.97C16.38 1.966 13.91 1.958 12.002 1.958 6.564 1.958 2.14 6.327 2.136 11.756c-.001 1.774.462 3.508 1.34 5.042l-1.012 3.7 3.793-.984zm11.305-6.763c-.305-.152-1.803-.889-2.083-.989-.28-.102-.485-.153-.687.152-.203.304-.787 1.002-.965 1.202-.178.203-.357.23-.662.077-1.127-.565-1.955-1.006-2.73-2.336-.195-.336-.195-.546-.043-.699.136-.137.305-.356.458-.533.152-.178.203-.304.305-.508.102-.203.05-.381-.025-.533-.076-.152-.687-1.657-.941-2.27-.247-.597-.5-.515-.687-.525l-.587-.01c-.203 0-.533.076-.812.381-.28.305-1.066 1.042-1.066 2.541 0 1.5 1.092 2.946 1.244 3.149.153.203 2.15 3.284 5.207 4.601.727.314 1.291.5 1.732.643.73.232 1.393.199 1.917.12.584-.087 1.803-.737 2.057-1.448.254-.71.254-1.32.178-1.448-.076-.127-.28-.203-.585-.355z"/>
+                  </svg>
+                  Invite via WhatsApp
+                </button>
+                
+                <button
+                  onClick={() => handleInvite("sms")}
+                  className="w-full h-12 bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
+                >
+                  <MessageSquare size={16} />
+                  Invite via SMS
+                </button>
+                
+                <button
+                  onClick={handleCloseInviteModal}
+                  className="w-full text-center text-xs font-black tracking-widest uppercase text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 mt-5 active:scale-95 transition-all py-2"
+                >
+                  Skip & Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
