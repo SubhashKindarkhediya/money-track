@@ -203,12 +203,17 @@ const Person: React.FC = () => {
   };
 
   useEffect(() => {
-    if (location.state?.showInvite) {
-      setJustAddedPerson(location.state.showInvite);
-      // Clear location state immediately to prevent re-opening on back button or reload
-      navigate(location.pathname, { replace: true, state: {} });
+    // Check if there is a pending invite modal to show from sessionStorage
+    const saved = sessionStorage.getItem("showInvite");
+    if (saved) {
+      try {
+        setJustAddedPerson(JSON.parse(saved));
+        sessionStorage.removeItem("showInvite");
+      } catch (e) {
+        console.error(e);
+      }
     }
-  }, [location.state, navigate]);
+  }, []);
 
   useEffect(() => {
     fetchPersons();
@@ -268,6 +273,16 @@ const Person: React.FC = () => {
       return;
     }
 
+    if (formData.phone_number) {
+      const isDuplicate = persons.some(
+        (p) => p.phone?.replace(/\D/g, "") === formData.phone_number.replace(/\D/g, "")
+      );
+      if (isDuplicate) {
+        alert("This mobile number is already associated with an existing contact in your list.");
+        return;
+      }
+    }
+
     try {
       setSubmitLoading(true);
       const fullName = `${formData.first_name} ${formData.last_name}`.trim();
@@ -277,9 +292,10 @@ const Person: React.FC = () => {
         notes: formData.notes,
       });
       
-      // If phone number exists, navigate back to list and pass the invite state via router
+      // If phone number exists, save invite details in sessionStorage and auto-navigate back
       if (formData.phone_number) {
-        navigate("/person", { state: { showInvite: { name: fullName, phone: formData.phone_number } } });
+        sessionStorage.setItem("showInvite", JSON.stringify({ name: fullName, phone: formData.phone_number }));
+        navigate("/person");
         setFormData({ first_name: "", last_name: "", phone_number: "", notes: "" });
         fetchPersons();
       } else {
@@ -298,6 +314,16 @@ const Person: React.FC = () => {
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPerson || !editForm.first_name) return;
+    if (editForm.phone && selectedPerson) {
+      const isDuplicate = persons.some(
+        (p) => p.id !== selectedPerson.id && p.phone?.replace(/\D/g, "") === editForm.phone.replace(/\D/g, "")
+      );
+      if (isDuplicate) {
+        alert("This mobile number is already associated with another contact in your list.");
+        return;
+      }
+    }
+
     try {
       setSubmitLoading(true);
       const fullName = `${editForm.first_name} ${editForm.last_name}`.trim();
