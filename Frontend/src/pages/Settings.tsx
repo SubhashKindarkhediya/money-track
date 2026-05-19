@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { 
+import {
   ArrowLeft, Loader2, Settings, Lock, Download, KeyRound, IndianRupee, DollarSign, Euro, FileDown,
   Shield, ChevronDown, Check, X, ChevronRight, Info, Trash2, Bell, ShieldAlert, Share2, Eye, EyeOff, LockKeyhole, AlertTriangle,
   Code, Mail, ShieldCheck, FileText
@@ -16,7 +16,7 @@ const SettingsPage: React.FC = () => {
 
   const [view, setView] = useState<ViewType>("main");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
+
   // Preference Form States
   const [prefData, setPrefData] = useState({
     currency: user?.currency || "INR",
@@ -81,7 +81,7 @@ const SettingsPage: React.FC = () => {
       showMessage("error", "New password must be different from current password");
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await api.post("/auth/change-password", {
@@ -188,9 +188,8 @@ const SettingsPage: React.FC = () => {
       <div className="px-6">
         {/* Message Banner (Global, except Security and Delete Confirm) */}
         {message && view !== "security" && !showDeleteConfirm && (
-          <div className={`mt-6 p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${
-            message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
-          }`}>
+          <div className={`mt-6 p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
+            }`}>
             <div className={`w-1.5 h-1.5 rounded-full ${message.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
             {message.text}
           </div>
@@ -198,25 +197,25 @@ const SettingsPage: React.FC = () => {
 
         {view === "main" ? (
           <div className="mt-4 animate-in fade-in duration-500">
-            <SettingItem 
-              icon={Lock} 
-              label="Change Password" 
-              onClick={() => setView("security")} 
+            <SettingItem
+              icon={Lock}
+              label="Change Password"
+              onClick={() => setView("security")}
             />
-            <SettingItem 
-              icon={IndianRupee} 
-              label="Financial Preferences" 
+            <SettingItem
+              icon={IndianRupee}
+              label="Financial Preferences"
               subtext={`${prefData.currency} • Budget: ${prefData.monthly_budget || 'None'}`}
-              onClick={() => setView("preferences")} 
+              onClick={() => setView("preferences")}
             />
-            <SettingItem 
-              icon={FileDown} 
-              label="Data & Export" 
-              onClick={() => setView("data")} 
+            <SettingItem
+              icon={FileDown}
+              label="Data & Export"
+              onClick={() => setView("data")}
             />
-            <SettingItem 
-              icon={Share2} 
-              label="Share Us" 
+            <SettingItem
+              icon={Share2}
+              label="Share Us"
               onClick={() => {
                 if (navigator.share) {
                   navigator.share({
@@ -229,87 +228,87 @@ const SettingsPage: React.FC = () => {
                   navigator.clipboard.writeText(window.location.origin);
                   showMessage("success", "App link copied to clipboard!");
                 }
-              }} 
+              }}
             />
-            <SettingItem 
-              icon={Info} 
-              label="App Info" 
-              onClick={() => setView("info")} 
+            <SettingItem
+              icon={Info}
+              label="App Info"
+              onClick={() => setView("info")}
             />
-            <SettingItem 
-              icon={Trash2} 
-              label="Delete Account" 
+            <SettingItem
+              icon={Trash2}
+              label="Delete Account"
               color="text-rose-600"
-              onClick={() => setShowDeleteConfirm(true)} 
+              onClick={() => setShowDeleteConfirm(true)}
             />
           </div>
         ) : (
           <div className={`space-y-6 ${view === "info" ? "mt-2" : "mt-8"}`}>
             {view === "info" && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500 w-full">
-                    <SettingItem 
-                      icon={Code} 
-                      label="Developed by" 
-                      subtext="Money Track Team" 
-                      onClick={() => {}} 
-                      hideArrow={true}
-                    />
-                    <SettingItem 
-                      icon={Mail} 
-                      label="Contact Support" 
-                      subtext="moneytrack254@gmail.com" 
-                      onClick={() => {
-                        window.location.href = "mailto:moneytrack254@gmail.com";
-                      }} 
-                      hideArrow={true}
-                    />
-                    <div>
-                      <SettingItem 
-                        icon={ShieldCheck} 
-                        label="Privacy Policy" 
-                        subtext="Read our data policies" 
-                        onClick={() => setActiveDropdown(activeDropdown === 'privacy' ? null : 'privacy')}
-                        isExpanded={activeDropdown === 'privacy'}
-                        hideBorder={activeDropdown === 'privacy'}
-                      />
-                      {activeDropdown === 'privacy' && (
-                        <div className="p-5 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#1a1b2e] rounded-b-2xl border-b border-indigo-50/50 dark:border-gray-800/50 animate-in slide-in-from-top-2 duration-300 mb-2">
-                           <ul className="list-disc pl-4 space-y-3 text-left">
-                             <li><strong className="text-gray-700 dark:text-gray-300">Data Collection:</strong> We collect basic info (name, email, transactions) to provide our service.</li>
-                             <li><strong className="text-gray-700 dark:text-gray-300">Data Usage:</strong> Your data is used solely to generate your personal financial analytics.</li>
-                             <li><strong className="text-gray-700 dark:text-gray-300">Data Security:</strong> We use industry-standard encryption to keep your data 100% safe.</li>
-                             <li><strong className="text-gray-700 dark:text-gray-300">No Third-Party Sharing:</strong> We do not sell or share your data with advertisers or third parties.</li>
-                             <li><strong className="text-gray-700 dark:text-gray-300">Your Rights:</strong> You can export or completely delete your account data at any time.</li>
-                           </ul>
-                        </div>
-                      )}
+                <SettingItem
+                  icon={Code}
+                  label="Developed by"
+                  subtext="Money Track Team"
+                  onClick={() => { }}
+                  hideArrow={true}
+                />
+                <SettingItem
+                  icon={Mail}
+                  label="Contact Support"
+                  subtext="moneytrack254@gmail.com"
+                  onClick={() => {
+                    window.location.href = "mailto:moneytrack254@gmail.com";
+                  }}
+                  hideArrow={true}
+                />
+                <div>
+                  <SettingItem
+                    icon={ShieldCheck}
+                    label="Privacy Policy"
+                    subtext="Read our data policies"
+                    onClick={() => setActiveDropdown(activeDropdown === 'privacy' ? null : 'privacy')}
+                    isExpanded={activeDropdown === 'privacy'}
+                    hideBorder={activeDropdown === 'privacy'}
+                  />
+                  {activeDropdown === 'privacy' && (
+                    <div className="p-5 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#1a1b2e] rounded-b-2xl border-b border-indigo-50/50 dark:border-gray-800/50 animate-in slide-in-from-top-2 duration-300 mb-2">
+                      <ul className="list-disc pl-4 space-y-3 text-left">
+                        <li><strong className="text-gray-700 dark:text-gray-300">Data Collection:</strong> We collect basic info (name, email, transactions) to provide our service.</li>
+                        <li><strong className="text-gray-700 dark:text-gray-300">Data Usage:</strong> Your data is used solely to generate your personal financial analytics.</li>
+                        <li><strong className="text-gray-700 dark:text-gray-300">Data Security:</strong> We use industry-standard encryption to keep your data 100% safe.</li>
+                        <li><strong className="text-gray-700 dark:text-gray-300">No Third-Party Sharing:</strong> We do not sell or share your data with advertisers or third parties.</li>
+                        <li><strong className="text-gray-700 dark:text-gray-300">Your Rights:</strong> You can export or completely delete your account data at any time.</li>
+                      </ul>
                     </div>
-                    
-                    <div>
-                      <SettingItem 
-                        icon={FileText} 
-                        label="Terms of Service" 
-                        subtext="App usage terms" 
-                        onClick={() => setActiveDropdown(activeDropdown === 'terms' ? null : 'terms')}
-                        isExpanded={activeDropdown === 'terms'}
-                        hideBorder={activeDropdown === 'terms'}
-                      />
-                      {activeDropdown === 'terms' && (
-                        <div className="p-5 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#1a1b2e] rounded-b-2xl border-b border-indigo-50/50 dark:border-gray-800/50 animate-in slide-in-from-top-2 duration-300 mb-2">
-                           <ul className="list-disc pl-4 space-y-3 text-left">
-                             <li><strong className="text-gray-700 dark:text-gray-300">Acceptance:</strong> By using Money Track, you agree to these app rules.</li>
-                             <li><strong className="text-gray-700 dark:text-gray-300">Data Accuracy:</strong> You are responsible for the accuracy of your financial input. We are not financial advisors.</li>
-                             <li><strong className="text-gray-700 dark:text-gray-300">User Responsibility:</strong> Please keep your login credentials secure. Misuse of the app is prohibited.</li>
-                             <li><strong className="text-gray-700 dark:text-gray-300">Account Termination:</strong> We reserve the right to suspend accounts engaged in unauthorized activities.</li>
-                           </ul>
-                        </div>
-                      )}
+                  )}
+                </div>
+
+                <div>
+                  <SettingItem
+                    icon={FileText}
+                    label="Terms of Service"
+                    subtext="App usage terms"
+                    onClick={() => setActiveDropdown(activeDropdown === 'terms' ? null : 'terms')}
+                    isExpanded={activeDropdown === 'terms'}
+                    hideBorder={activeDropdown === 'terms'}
+                  />
+                  {activeDropdown === 'terms' && (
+                    <div className="p-5 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#1a1b2e] rounded-b-2xl border-b border-indigo-50/50 dark:border-gray-800/50 animate-in slide-in-from-top-2 duration-300 mb-2">
+                      <ul className="list-disc pl-4 space-y-3 text-left">
+                        <li><strong className="text-gray-700 dark:text-gray-300">Acceptance:</strong> By using Money Track, you agree to these app rules.</li>
+                        <li><strong className="text-gray-700 dark:text-gray-300">Data Accuracy:</strong> You are responsible for the accuracy of your financial input. We are not financial advisors.</li>
+                        <li><strong className="text-gray-700 dark:text-gray-300">User Responsibility:</strong> Please keep your login credentials secure. Misuse of the app is prohibited.</li>
+                        <li><strong className="text-gray-700 dark:text-gray-300">Account Termination:</strong> We reserve the right to suspend accounts engaged in unauthorized activities.</li>
+                      </ul>
                     </div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-12 mb-8 text-center">© 2026 Money Track. All rights reserved.</p>
+                  )}
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-12 mb-8 text-center">© 2026 Money Track. All rights reserved.</p>
               </div>
             )}
             {view === "preferences" && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="animate-in fade-in duration-300">
                 <div className="space-y-6">
                   {/* Currency Selector */}
                   <div className="space-y-2">
@@ -339,9 +338,8 @@ const SettingsPage: React.FC = () => {
                                 setPrefData({ ...prefData, currency: opt.code });
                                 setActiveDropdown(null);
                               }}
-                              className={`w-full flex items-center justify-between p-4 text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                                prefData.currency === opt.code ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/5" : "text-gray-600 dark:text-gray-400"
-                              }`}
+                              className={`w-full flex items-center justify-between p-4 text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${prefData.currency === opt.code ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/5" : "text-gray-600 dark:text-gray-400"
+                                }`}
                             >
                               <div className="flex items-center gap-3">
                                 {opt.code === "INR" ? <IndianRupee size={14} /> : opt.code === "USD" ? <DollarSign size={14} /> : <Euro size={14} />}
@@ -380,7 +378,7 @@ const SettingsPage: React.FC = () => {
                       <button
                         onClick={handleUpdatePreferences}
                         disabled={isLoading}
-                        className="w-full h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-50 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                        className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-50 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
                       >
                         {isLoading ? <Loader2 size={20} className="animate-spin" /> : (
                           <>
@@ -398,7 +396,7 @@ const SettingsPage: React.FC = () => {
             )}
 
             {view === "security" && (
-              <div className="animate-in fade-in slide-in-from-bottom-8 duration-500 pb-32">
+              <div className="animate-in fade-in duration-300 pb-32">
                 {/* Logo & Title */}
                 <div className="flex flex-col items-center text-center mt-4 mb-10">
                   <div className="w-20 h-20 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 border border-indigo-100 dark:border-slate-700 rounded-[2rem] flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-md mb-6">
@@ -413,9 +411,8 @@ const SettingsPage: React.FC = () => {
                 <form onSubmit={handleChangePassword} className="space-y-8 px-2">
                   {/* Local Message Banner for Security View */}
                   {message && view === "security" && (
-                    <div className={`p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${
-                      message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
-                    }`}>
+                    <div className={`p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
+                      }`}>
                       <div className={`w-1.5 h-1.5 rounded-full ${message.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
                       {message.text}
                     </div>
@@ -516,7 +513,7 @@ const SettingsPage: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-50 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                        className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-50 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
                       >
                         {isLoading ? <Loader2 size={20} className="animate-spin" /> : (
                           <span className="uppercase tracking-widest text-sm">Update Password</span>
@@ -529,7 +526,7 @@ const SettingsPage: React.FC = () => {
             )}
 
             {view === "data" && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="animate-in fade-in duration-300">
                 <div className="space-y-8">
                   <div className="bg-white/80 dark:bg-gray-800/50 p-8 rounded-[2.5rem] border border-indigo-100 dark:border-gray-800 shadow-sm">
                     <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-6">
@@ -547,7 +544,7 @@ const SettingsPage: React.FC = () => {
                       <button
                         onClick={handleExportPDF}
                         disabled={isLoading}
-                        className="w-full h-16 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-emerald-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                        className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-emerald-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
                       >
                         {isLoading ? <Loader2 size={20} className="animate-spin" /> : (
                           <>
@@ -570,21 +567,21 @@ const SettingsPage: React.FC = () => {
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center">
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => setShowDeleteConfirm(false)}
           />
-          
+
           {/* Drawer */}
           <div className="relative w-full max-w-xl bg-white dark:bg-[#0f1025] rounded-t-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom-full duration-300 border-t border-gray-100 dark:border-gray-800">
             {/* Handle Bar */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full" />
-            
+
             <div className="flex flex-col items-center text-center mt-4">
               <div className="w-20 h-20 bg-rose-50 dark:bg-rose-500/10 rounded-3xl flex items-center justify-center text-rose-600 mb-6">
                 <AlertTriangle size={40} />
               </div>
-              
+
               <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 uppercase tracking-tight">Delete Account?</h3>
               <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-8 max-w-[280px]">
                 This action is <span className="text-rose-600 font-bold">permanent</span>. All your transactions, contacts, and settings will be wiped forever.
@@ -592,20 +589,19 @@ const SettingsPage: React.FC = () => {
 
               {/* Local Message Banner for Delete Account Drawer (Top) */}
               {message && showDeleteConfirm && (
-                <div className={`w-full mb-6 p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${
-                  message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
-                }`}>
+                <div className={`w-full mb-6 p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
+                  }`}>
                   <div className={`w-1.5 h-1.5 rounded-full ${message.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
                   {message.text}
                 </div>
               )}
-              
+
 
 
               <div className="w-full flex flex-row gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 h-16 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 font-black rounded-2xl transition-all flex items-center justify-center active:scale-[0.98]"
+                  className="flex-1 h-14 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 font-black rounded-2xl transition-all flex items-center justify-center active:scale-[0.98]"
                 >
                   <span className="uppercase tracking-widest text-xs">Cancel</span>
                 </button>
@@ -613,7 +609,7 @@ const SettingsPage: React.FC = () => {
                 <button
                   onClick={handleDeleteAccount}
                   disabled={isLoading}
-                  className="flex-[1.5] h-16 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-rose-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                  className="flex-[1.5] h-14 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-rose-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   {isLoading ? <Loader2 size={16} className="animate-spin" /> : (
                     <>

@@ -663,7 +663,7 @@ function AppContent() {
   const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage || isSettingsPage;
 
   // Show bottom nav only on exact main tab paths
-  const mainTabs = ["/", "/person", "/transactions"];
+  const mainTabs = ["/"];
   const showBottomNav = mainTabs.includes(location.pathname);
 
   const navigation = [
@@ -830,7 +830,7 @@ function AppContent() {
               ${!isSidebarOpen && "lg:justify-center"}
             `}
           >
-            <LogOut size={22} />
+            <LogOut size={22} className="rotate-180" />
             <span
               className={`font-bold text-[13px] tracking-wide ${!isSidebarOpen && "lg:hidden"}`}
             >
@@ -1097,7 +1097,7 @@ function AppContent() {
                   className="flex items-center gap-5 p-4 rounded-2xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-all active:scale-[0.98] w-full text-left group"
                 >
                   <div className="p-3.5 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-[1.2rem] group-hover:bg-red-600 group-hover:text-white transition-colors">
-                    <LogOut size={24} />
+                    <LogOut size={24} className="rotate-180" />
                   </div>
                   <div>
                     <h4 className="font-black text-red-600 dark:text-red-400 text-base">Logout</h4>

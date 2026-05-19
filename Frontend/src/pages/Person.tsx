@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  Search, User, Phone, ArrowLeft, UserPlus,
+  Search, User, Phone, ArrowLeft, UserPlus, Users,
   StickyNote, Loader2, Calendar, MessageSquare,
   TrendingUp, TrendingDown, IndianRupee, MoreVertical, Clock, PlusCircle, Trash2, SquarePen, X, CheckCircle2, ChevronRight, Eye
 } from "lucide-react";
@@ -95,16 +95,55 @@ const InfoRow = ({
       </div>
       <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{label}</span>
     </div>
-    <MarqueeText 
-      text={value || "—"} 
-      containerClassName="max-w-[55%] justify-end" 
-      className="text-sm font-bold text-gray-900 dark:text-white" 
+    <MarqueeText
+      text={value || "—"}
+      containerClassName="max-w-[55%] justify-end"
+      className="text-sm font-bold text-gray-900 dark:text-white"
     />
   </div>
 );
 
 const Person: React.FC = () => {
   const navigate = useNavigate();
+  const [isContactPickerSupported, setIsContactPickerSupported] = useState(false);
+
+  useEffect(() => {
+    setIsContactPickerSupported("contacts" in navigator && "ContactsManager" in window);
+  }, []);
+
+  const handleImportContact = async () => {
+    try {
+      const props = ["name", "tel"];
+      const opts = { multiple: false };
+      const contacts = await (navigator as any).contacts.select(props, opts);
+      
+      if (contacts && contacts.length > 0) {
+        const contact = contacts[0];
+        const fullName = contact.name && contact.name[0] ? contact.name[0] : "";
+        const rawPhone = contact.tel && contact.tel[0] ? contact.tel[0] : "";
+        
+        // Clean phone number: remove all non-digits, keep last 10 digits
+        const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
+        
+        // Split Name into First Name & Last Name
+        const nameParts = fullName.trim().split(/\s+/);
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+        
+        setFormData(prev => ({
+          ...prev,
+          first_name: firstName,
+          last_name: lastName,
+          phone_number: cleanPhone
+        }));
+      }
+    } catch (error: any) {
+      console.error("Contact picker error:", error);
+      if (error.name !== "AbortError") {
+        alert("Failed to pick contact: " + error.message);
+      }
+    }
+  };
   const { user, currencySymbol } = useAuth();
   const location = useLocation();
   const [persons, setPersons] = useState<Person[]>([]);
@@ -144,11 +183,11 @@ const Person: React.FC = () => {
       const p = persons.find(person => person.id === id);
       if (p) {
         setSelectedPerson(p);
-        
+
         // Use URLSearchParams to get the tab from the URL
         const params = new URLSearchParams(location.search);
         const targetTab = (params.get("tab") as any) || location.state?.tab || "profile";
-        
+
         setDetailTab(targetTab);
         if (location.state?.status) {
           setStatusFilter(location.state.status);
@@ -278,10 +317,10 @@ const Person: React.FC = () => {
       alert("Person details not found.");
       return;
     }
-    
+
     // Fallback name if user is not loaded
     const senderName = user?.name || "Your Friend";
-    
+
     const message = `Hi ${selectedPerson.name}! 👋
 
 I've been using *Money Track* to manage shared expenses with friends and contacts — and it's been really helpful!
@@ -306,7 +345,7 @@ Takes less than a minute. See you there! 😊
         await navigator.share(shareData);
         return;
       }
-      
+
       // 2. Try Clipboard Fallback
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(message);
@@ -320,7 +359,7 @@ Takes less than a minute. See you there! 😊
       console.error("Error sharing", err);
       // If native share was canceled by user, don't show error
       if (err.name === 'AbortError') return;
-      
+
       // Final fallback to WhatsApp if anything else fails
       const whatsappUrl = `https://wa.me/${selectedPerson.phone ? selectedPerson.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
@@ -381,12 +420,12 @@ Takes less than a minute. See you there! 😊
   };
 
   const handleEditTransaction = (tx: Transaction) => {
-    navigate("/add-transaction", { 
-      state: { 
+    navigate("/add-transaction", {
+      state: {
         editingTx: tx,
         personId: selectedPerson?.id,
         personName: selectedPerson?.name
-      } 
+      }
     });
   };
 
@@ -477,7 +516,7 @@ Takes less than a minute. See you there! 😊
           </div>
 
           <div className="px-5 mt-4 space-y-6">
-            
+
             {/* Transaction Search Bar */}
             {detailTab === "transactions" && (
               <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showTxSearch ? 'max-h-20 opacity-100 mb-6' : 'max-h-0 opacity-0 mb-0'}`}>
@@ -493,7 +532,7 @@ Takes less than a minute. See you there! 😊
                     className="w-full bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all placeholder:transition-opacity focus:placeholder:opacity-0"
                   />
                   {txSearch && (
-                    <button 
+                    <button
                       onClick={() => {
                         setTxSearch("");
                         setShowTxSearch(false);
@@ -516,16 +555,16 @@ Takes less than a minute. See you there! 😊
                     <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{selectedPerson.name.charAt(0).toUpperCase()}</span>
                   </div>
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
-                    <MarqueeText 
-                      text={selectedPerson.name} 
-                      className="text-lg font-black text-gray-900 dark:text-white tracking-tight" 
+                    <MarqueeText
+                      text={selectedPerson.name}
+                      className="text-lg font-black text-gray-900 dark:text-white tracking-tight"
                     />
                     {selectedPerson.phone && (
                       <div className="flex items-center gap-3">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{selectedPerson.phone}</p>
                       </div>
                     )}
-                    
+
                     <div className="mt-2 flex items-center gap-2">
                       {selectedPerson.linked_user_id ? (
                         <>
@@ -546,7 +585,7 @@ Takes less than a minute. See you there! 😊
                           )}
                         </>
                       ) : (
-                        <button 
+                        <button
                           onClick={handleInviteApp}
                           className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
                         >
@@ -624,53 +663,53 @@ Takes less than a minute. See you there! 😊
                   <div className="space-y-3">
                     {transactions
                       .filter(tx => tx.status === statusFilter)
-                      .filter(tx => 
-                        !txSearch || 
+                      .filter(tx =>
+                        !txSearch ||
                         (tx.reason && tx.reason.toLowerCase().includes(txSearch.toLowerCase())) ||
                         tx.amount.toString().includes(txSearch)
                       )
                       .map(tx => (
-                      <div
-                        key={tx.id}
-                        onClick={() => {
-                          console.log("Opening Person Drawer for:", tx.id);
-                          setSelectedTx(tx);
-                        }}
-                        className="flex items-center justify-between p-4 rounded-[1.2rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm group cursor-pointer hover:border-indigo-100 dark:hover:border-indigo-500/30 transition-all"
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
-                          <div className={`p-2.5 rounded-xl ${tx.type === "credit" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"}`}>
-                            {tx.type === "credit" ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                        <div
+                          key={tx.id}
+                          onClick={() => {
+                            console.log("Opening Person Drawer for:", tx.id);
+                            setSelectedTx(tx);
+                          }}
+                          className="flex items-center justify-between p-4 rounded-[1.2rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm group cursor-pointer hover:border-indigo-100 dark:hover:border-indigo-500/30 transition-all"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                            <div className={`p-2.5 rounded-xl ${tx.type === "credit" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"}`}>
+                              {tx.type === "credit" ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                            </div>
+                            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                              <MarqueeText
+                                text={tx.reason || (tx.type === "credit" ? "Credit" : "Debit")}
+                                className="text-sm font-bold text-gray-900 dark:text-white"
+                              />
+                              <div className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
+                                <Clock size={10} />
+                                <span>{formatDate(tx.date || tx.createdAt)}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                            <MarqueeText 
-                              text={tx.reason || (tx.type === "credit" ? "Credit" : "Debit")} 
-                              className="text-sm font-bold text-gray-900 dark:text-white"
+                          <div className="flex items-center gap-3 shrink-0">
+                            <MarqueeText
+                              text={`${tx.type === "credit" ? "+" : "-"}${currencySymbol}${tx.amount}`}
+                              className={`text-sm font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                              containerClassName="justify-end min-w-[60px]"
                             />
-                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
-                              <Clock size={10} />
-                              <span>{formatDate(tx.date || tx.createdAt)}</span>
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveTxMenuId(tx.id);
+                              }}
+                              className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            >
+                              <MoreVertical size={16} />
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <MarqueeText 
-                            text={`${tx.type === "credit" ? "+" : "-"}${currencySymbol}${tx.amount}`}
-                            className={`text-sm font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
-                            containerClassName="justify-end min-w-[60px]"
-                          />
-                          <div 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveTxMenuId(tx.id);
-                            }}
-                            className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                          >
-                            <MoreVertical size={16} />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                     {transactions.filter(tx => tx.status === statusFilter).length === 0 && (
                       <div className="text-center py-10 opacity-50">
                         <p className="text-sm font-bold text-gray-500">No {statusFilter} transactions found</p>
@@ -772,7 +811,7 @@ Takes less than a minute. See you there! 😊
                 className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
               >
                 <PlusCircle size={18} />
-                <span className="uppercase tracking-widest text-sm font-bold">Add Transaction</span>
+                <span className="uppercase tracking-widest text-sm font-bold">Add New Transaction</span>
               </button>
             </div>
           )}
@@ -946,6 +985,18 @@ Takes less than a minute. See you there! 😊
               }}
               className="space-y-6"
             >
+              {isContactPickerSupported && (
+                <div className="flex justify-center pb-2">
+                  <button
+                    type="button"
+                    onClick={handleImportContact}
+                    className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all border border-indigo-100/50 dark:border-indigo-500/20 active:scale-95 shadow-sm"
+                  >
+                    <Users size={18} />
+                    <span className="text-xs font-black tracking-wide uppercase">Import from Contacts</span>
+                  </button>
+                </div>
+              )}
               <FloatingInput icon={User} label="First Name *" name="first_name" placeholder="e.g. John" value={formData.first_name} onChange={handleChange} />
               <FloatingInput icon={User} label="Last Name" name="last_name" placeholder="e.g. Doe" value={formData.last_name} onChange={handleChange} />
               <FloatingInput icon={Phone} label="Mobile Number *" name="phone_number" type="tel" placeholder="+91 00000 00000" value={formData.phone_number} onChange={handleChange} />
@@ -984,7 +1035,7 @@ Takes less than a minute. See you there! 😊
   // LIST VIEW SCREEN
   // ---------------------------------------------------------
   return (
-    <div className="max-w-4xl mx-auto w-full font-sans transition-colors duration-300 pb-24">
+    <div className="max-w-4xl mx-auto w-full font-sans transition-colors duration-300 pb-8">
 
       {/* Header */}
       <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl">
@@ -1055,7 +1106,7 @@ Takes less than a minute. See you there! 😊
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-32">
             {filteredPersons.map((person) => {
               const credit = person.totalCredit || 0;
               const debit = person.totalDebit || 0;
@@ -1065,7 +1116,7 @@ Takes less than a minute. See you there! 😊
                   key={person.id}
                   className="relative bg-white dark:bg-[#151624] rounded-[1.5rem] border border-gray-100 dark:border-gray-800/80 shadow-sm hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-500/30 transition-all group flex flex-col overflow-hidden"
                 >
-                  <div 
+                  <div
                     onClick={() => handlePersonClick(person, "profile")}
                     className="flex items-start justify-between p-5 pb-4 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors active:bg-gray-100 dark:active:bg-gray-800"
                   >
@@ -1077,8 +1128,8 @@ Takes less than a minute. See you there! 😊
 
                       <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0">
-                          <MarqueeText 
-                            text={person.name} 
+                          <MarqueeText
+                            text={person.name}
                             containerClassName="max-w-[120px] sm:max-w-[180px]"
                             className="text-base font-bold text-gray-900 dark:text-white"
                           />
@@ -1118,7 +1169,7 @@ Takes less than a minute. See you there! 😊
                   </div>
 
                   {/* Financial Summary */}
-                  <div 
+                  <div
                     onClick={() => handlePersonClick(person, "transactions")}
                     className="px-5 pb-5 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors active:bg-gray-100 dark:active:bg-gray-800"
                   >
@@ -1375,6 +1426,19 @@ Takes less than a minute. See you there! 😊
               className="w-full mt-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {persons.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#0a0a1a]/80 backdrop-blur-xl border-t border-indigo-100/50 dark:border-gray-800 z-40">
+          <div className="max-w-4xl mx-auto w-full">
+            <button
+              onClick={() => navigate("/person/add")}
+              className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+            >
+              <UserPlus size={18} />
+              <span className="uppercase tracking-widest text-sm font-bold">Add New Person</span>
             </button>
           </div>
         </div>
