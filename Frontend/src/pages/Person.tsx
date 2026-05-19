@@ -181,7 +181,7 @@ const Person: React.FC = () => {
     const { name, phone } = justAddedPerson;
     const appUrl = window.location.origin;
     const userName = user?.name || "Money Track";
-    const msg = `Hey ${name}! Maine aapko apne Money Track app par add kiya hai taaki hum humare aapsi transactions (len-den/hisab-kitab) ko aasaani aur transparency se track kar sakein. Aap yahan balances check kar sakte hain: ${appUrl} - Regards, ${userName}`;
+    const msg = `Hello ${name},\n\nI have added you on the Money Track app to easily and transparently manage our shared transactions and balances. You can view our live ledger and track transaction history here:\n${appUrl}\n\nRegards,\n${userName}`;
     
     if (method === "whatsapp") {
       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
