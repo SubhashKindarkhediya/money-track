@@ -682,7 +682,7 @@ function AppContent() {
   }
 
   if (isAuthPage) {
-    if (token) {
+    if (token && location.pathname !== "/forgot-password") {
       return <Navigate to="/" replace />;
     }
     return (
