@@ -229,3 +229,24 @@ rect:focus,
   box-shadow: none !important;
   -webkit-tap-highlight-color: transparent !important;
 }
+
+/* Responsive OTP input container and items */
+.otp-container {
+  display: flex;
+  justify-content: center;
+  gap: 0.375rem; /* Default tighter gap for mobile (gap-1.5 equivalent) */
+  width: 100%;
+}
+
+.otp-box {
+  flex: 1;
+  max-width: 3.5rem; /* w-14 equivalent */
+  aspect-ratio: 7 / 8; /* Maintains perfect box proportion (w-12 h-14 or w-14 h-16) */
+  min-width: 0; /* Allows inputs to shrink below default min-content width */
+}
+
+@media (min-width: 640px) {
+  .otp-container {
+    gap: 0.75rem; /* gap-3 equivalent for sm and larger */
+  }
+}

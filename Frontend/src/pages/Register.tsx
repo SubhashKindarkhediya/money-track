@@ -276,7 +276,7 @@ const Register: React.FC = () => {
       </div>
 
       <div className="w-full max-w-[480px] relative z-10 animate-in fade-in zoom-in-95 duration-500">
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none rounded-[2.5rem] p-6 md:p-8">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none rounded-[2.5rem] p-5 sm:p-6 md:p-8">
           <div className="flex flex-col items-center text-center mb-10">
             <div className="w-14 h-14 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 border border-indigo-100 dark:border-slate-700 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm mb-6">
               {step === "FORM" ? <UserPlus size={28} /> : <KeyRound size={28} />}
@@ -380,7 +380,7 @@ const Register: React.FC = () => {
             </form>
           ) : (
             <form onSubmit={handleVerifyOtp} className="space-y-6">
-              <div className="flex justify-center gap-2 sm:gap-3">
+              <div className="otp-container">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -393,7 +393,7 @@ const Register: React.FC = () => {
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
                     onPaste={handlePaste}
-                    className="w-12 h-14 sm:w-14 sm:h-16 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-xl sm:text-2xl font-bold text-center text-slate-900 dark:text-white"
+                    className="otp-box bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-lg sm:text-2xl font-bold text-center text-slate-900 dark:text-white"
                   />
                 ))}
               </div>

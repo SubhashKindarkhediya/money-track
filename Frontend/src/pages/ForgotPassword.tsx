@@ -190,7 +190,7 @@ const ForgotPassword = () => {
       </div>
 
       <div className="w-full max-w-[460px] relative z-10 animate-in fade-in zoom-in-95 duration-500">
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none rounded-[2.5rem] p-8 md:p-10">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none rounded-[2.5rem] p-5 sm:p-8 md:p-10">
           
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-8">
@@ -256,7 +256,7 @@ const ForgotPassword = () => {
           {/* Step 2: OTP Form */}
           {step === "OTP" && (
             <form onSubmit={handleVerifyOtp} className="space-y-6">
-              <div className="flex justify-center gap-2 sm:gap-3">
+              <div className="otp-container">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -267,7 +267,7 @@ const ForgotPassword = () => {
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
                     onPaste={handlePaste}
-                    className="w-12 h-14 sm:w-14 sm:h-16 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-xl sm:text-2xl font-bold text-center text-slate-900 dark:text-white"
+                    className="otp-box bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-lg sm:text-2xl font-bold text-center text-slate-900 dark:text-white"
                   />
                 ))}
               </div>
