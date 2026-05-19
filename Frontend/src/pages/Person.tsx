@@ -192,17 +192,30 @@ const Person: React.FC = () => {
       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
       const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
       window.location.href = whatsappUrl;
+      
+      // WhatsApp is https link, so 1 second is perfect
+      setTimeout(() => {
+        handleCloseInviteModal();
+      }, 1000);
     } else {
       const smsUrl = navigator.userAgent.match(/iPhone|iPad|iPod/i)
         ? `sms:${phone}&body=${encodeURIComponent(msg)}`
         : `sms:${phone}?body=${encodeURIComponent(msg)}`;
+      
+      // Dual-layer listener: trigger immediately on window blur (when SMS app opens)
+      const handleSmsRedirect = () => {
+        handleCloseInviteModal();
+        window.removeEventListener("blur", handleSmsRedirect);
+      };
+      window.addEventListener("blur", handleSmsRedirect);
+      
       window.location.href = smsUrl;
+      
+      // Fallback redirect after 2 seconds to allow the SMS deep link to fire uninterrupted
+      setTimeout(() => {
+        handleSmsRedirect();
+      }, 2000);
     }
-    
-    // Defer the redirection back to the person list page
-    setTimeout(() => {
-      handleCloseInviteModal();
-    }, 1000);
   };
 
   const handleCloseInviteModal = () => {
