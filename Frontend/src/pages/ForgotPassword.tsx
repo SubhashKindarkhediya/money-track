@@ -74,6 +74,26 @@ const ForgotPassword = () => {
   };
 
   const handleOtpChange = (index: number, value: string) => {
+    const cleanedValue = value.replace(/\D/g, "");
+    if (cleanedValue.length > 1) {
+      const pastedData = cleanedValue.slice(0, 6);
+      const newOtp = [...otp];
+      for (let i = 0; i < 6; i++) {
+        if (i < pastedData.length) {
+          newOtp[i] = pastedData[i];
+        }
+      }
+      setOtp(newOtp);
+
+      const focusIndex = Math.min(pastedData.length, 5);
+      otpRefs.current[focusIndex]?.focus();
+
+      if (pastedData.length === 6) {
+        setTimeout(() => handleVerifyOtp(undefined, pastedData), 300);
+      }
+      return;
+    }
+
     if (value.length > 1) value = value.slice(-1); // Prevent multiple chars
     if (!/^\d*$/.test(value)) return; // Only numbers
 
