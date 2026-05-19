@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Search, User, Phone, ArrowLeft, UserPlus, Users,
   StickyNote, Loader2, Calendar, MessageSquare,
-  TrendingUp, TrendingDown, IndianRupee, MoreVertical, Clock, PlusCircle, Trash2, SquarePen, X, CheckCircle2, ChevronRight, Eye
+  TrendingUp, TrendingDown, IndianRupee, MoreVertical, Clock, PlusCircle, Trash2, SquarePen, X, CheckCircle2, ChevronRight, Eye, AlertCircle
 } from "lucide-react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../services/api";
@@ -174,6 +174,11 @@ const Person: React.FC = () => {
   const [showTxSearch, setShowTxSearch] = useState(false);
   const [activeTxMenuId, setActiveTxMenuId] = useState<string | null>(null);
   const [justAddedPerson, setJustAddedPerson] = useState<{ name: string; phone: string } | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setErrorMsg(null);
+  }, [location.pathname, detailTab]);
 
   const handleInvite = (method: "whatsapp" | "sms") => {
     if (!justAddedPerson) return;
@@ -186,16 +191,18 @@ const Person: React.FC = () => {
     if (method === "whatsapp") {
       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
       const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
-      window.open(whatsappUrl, "_blank");
+      window.location.href = whatsappUrl;
     } else {
       const smsUrl = navigator.userAgent.match(/iPhone|iPad|iPod/i)
         ? `sms:${phone}&body=${encodeURIComponent(msg)}`
         : `sms:${phone}?body=${encodeURIComponent(msg)}`;
-      window.open(smsUrl, "_blank");
+      window.location.href = smsUrl;
     }
     
-    // Close modal and navigate
-    handleCloseInviteModal();
+    // Defer the redirection back to the person list page
+    setTimeout(() => {
+      handleCloseInviteModal();
+    }, 1000);
   };
 
   const handleCloseInviteModal = () => {
@@ -247,6 +254,7 @@ const Person: React.FC = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorMsg(null);
     const { name, value } = e.target;
     if (name === "phone_number") {
       const cleanedValue = value.replace(/\D/g, "").slice(0, 10);
@@ -268,7 +276,7 @@ const Person: React.FC = () => {
         (p) => p.phone?.replace(/\D/g, "") === formData.phone_number.replace(/\D/g, "")
       );
       if (isDuplicate) {
-        alert("This mobile number is already associated with an existing contact in your list.");
+        setErrorMsg("This mobile number is already associated with an existing contact in your list.");
         return;
       }
     }
@@ -306,7 +314,7 @@ const Person: React.FC = () => {
         (p) => p.id !== selectedPerson.id && p.phone?.replace(/\D/g, "") === editForm.phone.replace(/\D/g, "")
       );
       if (isDuplicate) {
-        alert("This mobile number is already associated with another contact in your list.");
+        setErrorMsg("This mobile number is already associated with another contact in your list.");
         return;
       }
     }
@@ -795,7 +803,10 @@ Takes less than a minute. See you there! 😊
                       label="First Name"
                       name="first_name"
                       value={editForm.first_name}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm({ ...editForm, first_name: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setErrorMsg(null);
+                        setEditForm({ ...editForm, first_name: e.target.value });
+                      }}
                       placeholder="Enter first name"
                       required
                     />
@@ -804,7 +815,10 @@ Takes less than a minute. See you there! 😊
                       label="Last Name"
                       name="last_name"
                       value={editForm.last_name}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm({ ...editForm, last_name: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setErrorMsg(null);
+                        setEditForm({ ...editForm, last_name: e.target.value });
+                      }}
                       placeholder="Enter last name"
                     />
                   </div>
@@ -814,7 +828,10 @@ Takes less than a minute. See you there! 😊
                     label="Phone Number"
                     name="phone"
                     value={editForm.phone}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm({ ...editForm, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setErrorMsg(null);
+                      setEditForm({ ...editForm, phone: e.target.value.replace(/\D/g, "").slice(0, 10) });
+                    }}
                     placeholder="Enter mobile number"
                   />
 
@@ -830,6 +847,12 @@ Takes less than a minute. See you there! 😊
                       placeholder="Add some details about this person..."
                     />
                   </div>
+                  {errorMsg && (
+                    <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top duration-300">
+                      <AlertCircle className="shrink-0 mt-0.5 text-rose-500" size={16} />
+                      <span className="text-xs font-bold leading-relaxed">{errorMsg}</span>
+                    </div>
+                  )}
                 </form>
               </div>
             )}
@@ -1056,6 +1079,12 @@ Takes less than a minute. See you there! 😊
               <FloatingInput icon={User} label="Last Name" name="last_name" placeholder="e.g. Doe" value={formData.last_name} onChange={handleChange} />
               <FloatingInput icon={Phone} label="Mobile Number *" name="phone_number" type="tel" placeholder="+91 00000 00000" value={formData.phone_number} onChange={handleChange} />
               <FloatingInput icon={StickyNote} label="Notes (Optional)" name="notes" placeholder="Any extra info..." value={formData.notes} onChange={handleChange} />
+              {errorMsg && (
+                <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top duration-300">
+                  <AlertCircle className="shrink-0 mt-0.5 text-rose-500" size={16} />
+                  <span className="text-xs font-bold leading-relaxed">{errorMsg}</span>
+                </div>
+              )}
             </form>
           </div>
 
