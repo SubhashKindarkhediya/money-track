@@ -173,6 +173,37 @@ const Person: React.FC = () => {
   const [txSearch, setTxSearch] = useState("");
   const [showTxSearch, setShowTxSearch] = useState(false);
   const [activeTxMenuId, setActiveTxMenuId] = useState<string | null>(null);
+  const [justAddedPerson, setJustAddedPerson] = useState<{ name: string; phone: string } | null>(null);
+
+  const handleInvite = (method: "whatsapp" | "sms") => {
+    if (!justAddedPerson) return;
+    
+    const { name, phone } = justAddedPerson;
+    const appUrl = window.location.origin;
+    const userName = user?.name || "Money Track";
+    const msg = `Hey ${name}! Maine aapko apne Money Track app par add kiya hai taaki hum humare aapsi transactions (len-den/hisab-kitab) ko aasaani aur transparency se track kar sakein. Aap yahan balances check kar sakte hain: ${appUrl} - Regards, ${userName}`;
+    
+    if (method === "whatsapp") {
+      const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
+      const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
+      window.open(whatsappUrl, "_blank");
+    } else {
+      const smsUrl = navigator.userAgent.match(/iPhone|iPad|iPod/i)
+        ? `sms:${phone}&body=${encodeURIComponent(msg)}`
+        : `sms:${phone}?body=${encodeURIComponent(msg)}`;
+      window.open(smsUrl, "_blank");
+    }
+    
+    // Close modal and navigate
+    handleCloseInviteModal();
+  };
+
+  const handleCloseInviteModal = () => {
+    setJustAddedPerson(null);
+    navigate("/person");
+    setFormData({ first_name: "", last_name: "", phone_number: "", notes: "" });
+    fetchPersons();
+  };
 
   useEffect(() => {
     fetchPersons();
@@ -240,9 +271,15 @@ const Person: React.FC = () => {
         phone: formData.phone_number,
         notes: formData.notes,
       });
-      navigate("/person");
-      setFormData({ first_name: "", last_name: "", phone_number: "", notes: "" });
-      fetchPersons();
+      
+      // If phone number exists, show invite success dialog modal first
+      if (formData.phone_number) {
+        setJustAddedPerson({ name: fullName, phone: formData.phone_number });
+      } else {
+        navigate("/person");
+        setFormData({ first_name: "", last_name: "", phone_number: "", notes: "" });
+        fetchPersons();
+      }
     } catch (error: any) {
       console.error("Failed to add person", error);
       alert(error.response?.data?.error || "Failed to add person. Please try again.");
@@ -1437,6 +1474,51 @@ Takes less than a minute. See you there! 😊
               <UserPlus size={18} />
               <span className="uppercase tracking-widest text-sm font-bold">Add New Person</span>
             </button>
+          </div>
+        </div>
+      )}
+      {justAddedPerson && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-[#151624] rounded-[2rem] p-6 max-w-sm w-full border border-indigo-50/50 dark:border-gray-800 shadow-2xl animate-in zoom-in-95 duration-300">
+            {/* Decorative success animation */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm animate-bounce">
+                <CheckCircle2 size={36} strokeWidth={2.5} />
+              </div>
+            </div>
+            
+            <h3 className="text-lg font-black text-gray-900 dark:text-white text-center tracking-tight mb-2">
+              Person Added! 🎉
+            </h3>
+            
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 text-center leading-relaxed mb-6 px-2">
+              Would you like to invite <span className="font-extrabold text-indigo-600 dark:text-indigo-400">{justAddedPerson.name}</span> to track shared transactions and balances on Money Track?
+            </p>
+            
+            <div className="space-y-2.5">
+              <button
+                onClick={() => handleInvite("whatsapp")}
+                className="w-full h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
+              >
+                <MessageSquare size={16} />
+                Invite via WhatsApp
+              </button>
+              
+              <button
+                onClick={() => handleInvite("sms")}
+                className="w-full h-12 bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
+              >
+                <Phone size={16} />
+                Invite via SMS
+              </button>
+              
+              <button
+                onClick={handleCloseInviteModal}
+                className="w-full h-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center text-xs uppercase tracking-wider"
+              >
+                Skip & Continue
+              </button>
+            </div>
           </div>
         </div>
       )}
