@@ -632,7 +632,7 @@ function AppContent() {
   useEffect(() => {
     const root = window.document.documentElement;
     const isAuth = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password";
-    
+
     if (isAuth) {
       root.classList.add('light');
       root.classList.remove('dark');
@@ -641,7 +641,7 @@ function AppContent() {
       const savedTheme = localStorage.getItem('theme') || 'light';
       const explicitlySet = localStorage.getItem('theme_explicitly_set');
       const activeTheme = (explicitlySet === 'true') ? savedTheme : 'light';
-      
+
       if (activeTheme === 'dark') {
         root.classList.add('dark');
         root.classList.remove('light');
@@ -676,7 +676,7 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 font-sans">
-        <div className="animate-pulse text-indigo-600 text-sm font-black tracking-widest uppercase">Login...</div>
+        <div className="animate-pulse text-indigo-600 text-sm font-black tracking-widest uppercase">Loading...</div>
       </div>
     );
   }
