@@ -116,6 +116,8 @@ const Register: React.FC = () => {
       // only digits + max 10
       const cleanedValue = value.replace(/\D/g, "").slice(0, 10);
       setFormData({ ...formData, [name]: cleanedValue });
+    } else if (name === "email") {
+      setFormData({ ...formData, [name]: value.toLowerCase() });
     } else {
       setFormData({ ...formData, [name]: value });
     }

@@ -80,7 +80,9 @@ const Login: React.FC = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const finalValue = name === "email" ? value.toLowerCase() : value;
+    setFormData({ ...formData, [name]: finalValue });
   };
 
   const handleGoogleLogin = useGoogleLogin({
