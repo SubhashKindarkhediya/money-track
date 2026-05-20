@@ -17,6 +17,7 @@ router.get("/", transactionsController.getAll);           // List all
 router.get("/export/pdf", transactionsController.exportPdf); // Export as PDF
 router.get("/:id", transactionsController.getOne);        // Single transaction
 router.put("/:id", transactionsController.update);        // Update transaction
+router.post("/:id/settle", transactionsController.settle);  // Settle transaction (partial/full)
 router.delete("/:id", transactionsController.delete);     // Delete transaction
 router.get("/person/:person_id", transactionsController.getByPerson); // By person
 

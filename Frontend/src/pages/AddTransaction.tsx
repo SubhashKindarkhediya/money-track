@@ -177,7 +177,7 @@ const AddTransaction: React.FC = () => {
             type="button"
             onClick={() => {
               if (preSelectedPersonId) {
-                navigate(`/person/${preSelectedPersonId}`);
+                navigate(`/person/${preSelectedPersonId}?tab=transactions`);
               } else {
                 navigate(-1);
                 // Smart fallback in case navigate(-1) does not fire due to history refresh

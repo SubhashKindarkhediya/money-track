@@ -268,4 +268,32 @@ export class TransactionsController {
       }
     }
   };
+
+  /**
+   * Settle a transaction (partial or full)
+   */
+  settle = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { settleAmount, date, note } = req.body;
+      const uid = (req as any).user.uid;
+
+      if (settleAmount === undefined || settleAmount === null || isNaN(Number(settleAmount)) || Number(settleAmount) <= 0) {
+        res.status(400).json({ error: "Invalid settleAmount. It must be a positive number." });
+        return;
+      }
+
+      const settledTx = await this.transactionsService.settleTransaction(
+        id,
+        uid,
+        Number(settleAmount),
+        date ? new Date(date) : undefined,
+        note
+      );
+
+      res.json(settledTx);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
 }

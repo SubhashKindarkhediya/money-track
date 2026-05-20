@@ -25,6 +25,8 @@ router.get("/me", authMiddleware, authController.getMe);
 // Update Profile Route
 router.patch("/profile", authMiddleware, authController.updateProfile);
 router.post("/change-password", authMiddleware, authController.changePassword);
+router.post("/send-phone-otp", authMiddleware, authController.sendPhoneOtp);
+router.post("/verify-phone-otp", authMiddleware, authController.verifyPhoneOtp);
 
 // Password Reset Routes
 router.post("/request-otp", authController.requestOtp);

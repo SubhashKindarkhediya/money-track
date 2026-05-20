@@ -261,4 +261,52 @@ export class AuthController {
       res.status(400).json({ error: error.message });
     }
   };
+
+  /**
+   * Send verification OTP to user's mobile number
+   */
+  sendPhoneOtp = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.uid;
+      const { phone_number } = req.body;
+
+      if (!phone_number || phone_number.trim().length !== 10) {
+        res.status(400).json({ error: "A valid 10-digit mobile number is required" });
+        return;
+      }
+
+      const result = await this.authService.sendPhoneOtp(userId, phone_number.trim());
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Verify phone OTP and save number
+   */
+  verifyPhoneOtp = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.uid;
+      const { otp, phone_number } = req.body;
+
+      if (!otp || otp.trim().length !== 6) {
+        res.status(400).json({ error: "A valid 6-digit OTP is required" });
+        return;
+      }
+
+      if (!phone_number || phone_number.trim().length !== 10) {
+        res.status(400).json({ error: "A valid 10-digit mobile number is required" });
+        return;
+      }
+
+      const result = await this.authService.verifyPhoneOtp(userId, {
+        otp: otp.trim(),
+        phone_number: phone_number.trim()
+      });
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  };
 }

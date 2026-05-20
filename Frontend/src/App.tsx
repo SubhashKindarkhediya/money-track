@@ -49,6 +49,7 @@ import TransactionHistory from "./pages/TransactionHistory";
 import Analytics from "./pages/Analytics";
 import ForgotPassword from "./pages/ForgotPassword";
 import SettingsPage from "./pages/Settings";
+import RegisterPhone from "./pages/RegisterPhone";
 // import { Sun, Moon } from "lucide-react";
 import { useTheme } from "./context/ThemeContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -57,7 +58,7 @@ import MarqueeText from "./components/MarqueeText";
 // inside component
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { token, loading, isWakingUp } = useAuth();
+  const { token, loading, isWakingUp, user } = useAuth();
   if (loading)
     return (
       <div className="min-h-screen flex flex-col items-center justify-center font-black transition-all">
@@ -69,7 +70,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         )}
       </div>
     );
-  if (!token) return <Navigate to="/login" />;
+  if (!token) return <Navigate to="/login" replace />;
+
+  // If user is authenticated but has no phone number, redirect to mobile verification
+  if (token && !user?.phone_number) {
+    return <Navigate to="/register-phone" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -98,13 +105,13 @@ const Card = ({
       btn: "text-emerald-600 hover:text-emerald-800 bg-emerald-100/50 hover:bg-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400"
     },
     debit: {
-      icon: <TrendingDown className="text-rose-700 dark:text-rose-400" size={28} />,
-      iconBg: "bg-white/60 dark:bg-rose-500/20",
-      bg: "bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-500/10 dark:to-rose-500/5",
-      border: "border-rose-200/60 dark:border-rose-500/20",
-      text: "text-rose-900 dark:text-white",
-      label: "text-rose-600 dark:text-rose-400",
-      btn: "text-rose-600 hover:text-rose-800 bg-rose-100/50 hover:bg-rose-200/50 dark:bg-rose-500/20 dark:text-rose-400"
+      icon: <TrendingDown className="text-red-600 dark:text-red-400" size={28} />,
+      iconBg: "bg-red-500/10 dark:bg-red-500/20",
+      bg: "bg-gradient-to-br from-red-500/10 to-red-500/5 dark:from-red-500/10 dark:to-red-500/5",
+      border: "border-red-500/20 dark:border-red-500/20",
+      text: "text-red-700 dark:text-white",
+      label: "text-red-600 dark:text-red-400",
+      btn: "text-red-600 hover:text-red-700 bg-red-500/10 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-400"
     },
     balance: {
       icon: <Wallet className="text-indigo-700 dark:text-indigo-400" size={28} />,
@@ -270,7 +277,7 @@ const Dashboard = () => {
     {
       label: "Give Money",
       icon: <TrendingDown size={20} strokeWidth={2.5} />,
-      color: "bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-500/10 dark:to-rose-500/5 border border-rose-200/60 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 shadow-md shadow-rose-500/5 dark:shadow-none",
+      color: "bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-500/10 dark:to-red-500/5 border border-red-200/60 dark:border-red-500/20 text-red-700 dark:text-red-400 shadow-md shadow-red-500/5 dark:shadow-none",
       path: "/add-transaction",
       state: { type: "debit" }
     },
@@ -357,7 +364,7 @@ const Dashboard = () => {
                   <div className="flex items-center gap-4 flex-1 min-w-0 mr-3">
                     <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 ${tx.type === "credit"
                       ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
-                      : "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400"
+                      : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
                       }`}>
                       {tx.type === "credit" ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
                     </div>
@@ -374,7 +381,7 @@ const Dashboard = () => {
                   <div className="ml-3 shrink-0">
                     <MarqueeText
                       text={`${tx.type === "credit" ? "+" : "-"}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN")}`}
-                      className={`text-base font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                      className={`text-base font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
                       containerClassName="justify-end min-w-[60px]"
                     />
                   </div>
@@ -631,7 +638,7 @@ function AppContent() {
   // Enforce light theme on Login, Register and Forgot Password
   useEffect(() => {
     const root = window.document.documentElement;
-    const isAuth = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password";
+    const isAuth = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password" || location.pathname === "/register-phone";
 
     if (isAuth) {
       root.classList.add('light');
@@ -653,7 +660,7 @@ function AppContent() {
   }, [location.pathname, theme]);
 
   const isAuthPage =
-    location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password";
+    location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password" || location.pathname === "/register-phone";
   const isProfilePage = location.pathname === "/profile";
   const isPersonPage = location.pathname.startsWith("/person");
   const isAddTransactionPage = location.pathname === "/add-transaction";
@@ -682,7 +689,7 @@ function AppContent() {
   }
 
   if (isAuthPage) {
-    if (token && location.pathname !== "/forgot-password") {
+    if (token && location.pathname !== "/forgot-password" && location.pathname !== "/register-phone") {
       return <Navigate to="/" replace />;
     }
     return (
@@ -690,6 +697,7 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/register-phone" element={<RegisterPhone />} />
       </Routes>
     );
   }

@@ -7,10 +7,14 @@ import Person from "../models/person.model";
 import Transaction from "../models/transaction.model";
 import Notification from "../models/notification.model";
 import { MailService } from "./mail.service";
+import { SmsService } from "./sms.service";
 
 @singleton()
 export class AuthService {
-  constructor(private mailService: MailService) {}
+  constructor(
+    private mailService: MailService,
+    private smsService: SmsService
+  ) {}
 
   /**
    * Register a new user and send verification OTP
@@ -465,5 +469,104 @@ export class AuthService {
     await user.destroy();
 
     return { message: "Account deleted successfully" };
+  }
+
+  /**
+   * Send verification OTP to user's mobile number
+   * @param userId {string}
+   * @param phone_number {string}
+   */
+  async sendPhoneOtp(userId: string, phone_number: string) {
+    // 1. Validate phone number is not taken by another user
+    const existingUser = await User.findOne({
+      where: {
+        phone_number,
+        id: { [Op.ne]: userId }
+      }
+    });
+
+    if (existingUser) {
+      throw new Error("This mobile number is already registered with another account");
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // 2. Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // 3. Save OTP details
+    user.reset_otp = otp;
+    user.reset_otp_expires = expiry;
+    await user.save();
+
+    // 4. Send OTP to registered email address only
+    await this.mailService.sendOtpEmail(user.email, otp);
+
+    return { message: "OTP sent successfully to your registered email address" };
+  }
+
+  /**
+   * Verify phone OTP and save phone number
+   * @param userId {string}
+   * @param otp {string}
+   * @param phone_number {string}
+   */
+  async verifyPhoneOtp(userId: string, data: { otp: string; phone_number: string }) {
+    const { otp, phone_number } = data;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (!user.reset_otp || user.reset_otp !== otp) {
+      throw new Error("Invalid OTP");
+    }
+
+    if (!user.reset_otp_expires || user.reset_otp_expires < new Date()) {
+      throw new Error("OTP has expired. Please request a new one.");
+    }
+
+    // Double check that phone number wasn't claimed while verifying
+    const existingUser = await User.findOne({
+      where: {
+        phone_number,
+        id: { [Op.ne]: userId }
+      }
+    });
+
+    if (existingUser) {
+      throw new Error("This mobile number is already registered with another account");
+    }
+
+    // Update phone number & mark verified (since we verified the OTP on phone)
+    user.phone_number = phone_number;
+    user.reset_otp = null;
+    user.reset_otp_expires = null;
+    user.is_verified = true;
+    await user.save();
+
+    // --- Link MoneyTrail Person logic ---
+    await Person.update(
+      { linked_user_id: user.id },
+      { where: { phone: phone_number } }
+    );
+
+    const userResponse = user.toJSON();
+    delete (userResponse as any).password;
+    delete (userResponse as any).confirmPassword;
+
+    // Generate fresh token
+    const token = jwt.sign(
+      { uid: user.id, email: user.email },
+      process.env.JWT_SECRET || "super-secret-key",
+      { expiresIn: "1d" }
+    );
+
+    return { user: userResponse, token, message: "Mobile number verified successfully" };
   }
 }

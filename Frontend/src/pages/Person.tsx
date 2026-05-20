@@ -184,6 +184,10 @@ const Person: React.FC = () => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"pending" | "completed">("pending");
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [settleTx, setSettleTx] = useState<Transaction | null>(null);
+  const [settleAmount, setSettleAmount] = useState("");
+  const [settleNote, setSettleNote] = useState("");
+  const [settleLoading, setSettleLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", notes: "" });
@@ -530,6 +534,48 @@ Takes less than a minute. See you there! 😊
       fetchPersons();
     } catch (err) {
       console.error("Failed to update status", err);
+    }
+  };
+
+  const openSettleModal = (tx: Transaction) => {
+    setSettleTx(tx);
+    setSettleAmount(Math.round(Number(tx.amount)).toString());
+    setSettleNote("");
+    setSelectedTx(null); // Close detail drawer
+  };
+
+  const handleSettleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!settleTx) return;
+
+    const amt = Number(settleAmount);
+    if (isNaN(amt) || amt <= 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+
+    if (amt > Number(settleTx.amount)) {
+      alert(`Settle amount cannot exceed the pending amount of ${currencySymbol}${settleTx.amount}`);
+      return;
+    }
+
+    try {
+      setSettleLoading(true);
+      await api.post(`/transactions/${settleTx.id}/settle`, {
+        settleAmount: amt,
+        note: settleNote
+      });
+
+      setSettleTx(null);
+      if (selectedPerson) {
+        fetchTransactions(selectedPerson.id);
+      }
+      fetchPersons();
+    } catch (err: any) {
+      console.error("Failed to settle transaction", err);
+      alert(err.response?.data?.error || "Failed to settle transaction.");
+    } finally {
+      setSettleLoading(false);
     }
   };
 
@@ -1002,13 +1048,12 @@ Takes less than a minute. See you there! 😊
                   {selectedTx.status === "pending" && (
                     <button
                       onClick={() => {
-                        handleStatusChange(selectedTx.id, "completed");
-                        setSelectedTx(null);
+                        openSettleModal(selectedTx);
                       }}
                       className="flex-[2] py-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black text-sm shadow-xl shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                     >
                       <CheckCircle2 size={18} strokeWidth={3} />
-                      Mark as Complete
+                      Settle / Complete
                     </button>
                   )}
                 </div>
@@ -1079,6 +1124,85 @@ Takes less than a minute. See you there! 😊
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Settle Transaction Modal */}
+          {settleTx && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
+              <div className="bg-white/95 dark:bg-[#0c0d1e]/95 backdrop-blur-xl rounded-[2.5rem] p-6 max-w-sm w-full border border-indigo-100 dark:border-indigo-500/20 shadow-2xl animate-in zoom-in-95 duration-300 relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setSettleTx(null)}
+                  className="absolute top-5 right-5 p-2 bg-gray-50 dark:bg-gray-800 text-gray-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+
+                <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 text-center tracking-tight">
+                  Settle Payment
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-6">
+                  How much are you settling for this transaction?
+                </p>
+
+                <form onSubmit={handleSettleSubmit} className="space-y-5">
+                  <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-500/5 border border-indigo-100/50 dark:border-indigo-500/10 text-center">
+                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block mb-1">Total Outstanding</span>
+                    <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                      {currencySymbol}{Number(settleTx.amount) % 1 === 0 ? Math.round(Number(settleTx.amount)) : Number(settleTx.amount).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 text-left">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Amount Paid / Received</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span className="text-sm font-bold text-indigo-500">{currencySymbol}</span>
+                      </div>
+                      <input
+                        type="number"
+                        step="1"
+                        min="1"
+                        max={settleTx.amount}
+                        value={settleAmount}
+                        onChange={(e) => setSettleAmount(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-[#151624] border border-slate-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl pl-8 pr-4 py-4 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-left">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Note (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Paid in cash, GPay..."
+                      value={settleNote}
+                      onChange={(e) => setSettleNote(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#151624] border border-slate-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl px-4 py-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setSettleTx(null)}
+                      className="w-1/3 h-14 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest rounded-2xl text-[10px] active:scale-95 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={settleLoading}
+                      className="flex-1 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black uppercase tracking-widest rounded-2xl text-xs disabled:opacity-50 active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20"
+                    >
+                      {settleLoading ? <Loader2 size={16} className="animate-spin" /> : "Confirm"}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
@@ -1530,13 +1654,12 @@ Takes less than a minute. See you there! 😊
               {selectedTx.status === "pending" && (
                 <button
                   onClick={() => {
-                    handleStatusChange(selectedTx.id, "completed");
-                    setSelectedTx(null);
+                    openSettleModal(selectedTx);
                   }}
                   className="flex-[2] py-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black text-sm shadow-xl shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   <CheckCircle2 size={18} strokeWidth={3} />
-                  Mark as Complete
+                  Settle / Complete
                 </button>
               )}
             </div>
@@ -1667,6 +1790,84 @@ Takes less than a minute. See you there! 😊
                 Skip & Continue
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settle Transaction Modal */}
+      {settleTx && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white/95 dark:bg-[#0c0d1e]/95 backdrop-blur-xl rounded-[2.5rem] p-6 max-w-sm w-full border border-indigo-100 dark:border-indigo-500/20 shadow-2xl animate-in zoom-in-95 duration-300 relative">
+            <button
+              onClick={() => setSettleTx(null)}
+              className="absolute top-5 right-5 p-2 bg-gray-50 dark:bg-gray-800 text-gray-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <X size={16} />
+            </button>
+
+            <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 text-center tracking-tight">
+              Settle Payment
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-6">
+              How much are you settling for this transaction?
+            </p>
+
+            <form onSubmit={handleSettleSubmit} className="space-y-5">
+              <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-500/5 border border-indigo-100/50 dark:border-indigo-500/10 text-center">
+                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block mb-1">Total Outstanding</span>
+                <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                  {currencySymbol}{Number(settleTx.amount) % 1 === 0 ? Math.round(Number(settleTx.amount)) : Number(settleTx.amount).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Amount Paid / Received</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-sm font-bold text-indigo-500">{currencySymbol}</span>
+                  </div>
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    max={settleTx.amount}
+                    value={settleAmount}
+                    onChange={(e) => setSettleAmount(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-[#151624] border border-slate-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl pl-8 pr-4 py-4 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Note (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Paid in cash, GPay..."
+                  value={settleNote}
+                  onChange={(e) => setSettleNote(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#151624] border border-slate-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl px-4 py-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSettleTx(null)}
+                  className="w-1/3 h-14 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest rounded-2xl text-[10px] active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={settleLoading}
+                  className="flex-1 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black uppercase tracking-widest rounded-2xl text-xs disabled:opacity-50 active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20"
+                >
+                  {settleLoading ? <Loader2 size={16} className="animate-spin" /> : "Confirm"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

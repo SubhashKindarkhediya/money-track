@@ -147,6 +147,53 @@ export class TransactionsService {
   }
 
   /**
+   * Settle a transaction (supports partial and full settlement)
+   */
+  async settleTransaction(
+    id: string,
+    uid: string,
+    settleAmount: number,
+    date?: Date,
+    note?: string
+  ) {
+    const transaction = await this.getTransactionById(id, uid);
+    if (!transaction) {
+      throw new Error("Transaction not found");
+    }
+
+    if (transaction.status === "completed") {
+      throw new Error("Transaction is already completed");
+    }
+
+    const currentAmount = Number(transaction.amount);
+
+    if (settleAmount >= currentAmount) {
+      // Full settlement
+      return await transaction.update({ status: "completed" });
+    } else {
+      // Partial settlement
+      const remainingAmount = currentAmount - settleAmount;
+
+      // 1. Update original transaction's amount to the remaining pending amount
+      await transaction.update({ amount: remainingAmount });
+
+      // 2. Create a new transaction representing the completed partial payment
+      const settledTx = await this.createTransaction({
+        uid: transaction.uid,
+        person_id: transaction.person_id,
+        type: transaction.type,
+        amount: settleAmount,
+        reason: `[Paid Part] ${transaction.reason || "Payment"}`,
+        note: `Settled ${settleAmount} from original pending of ${currentAmount}. ${note || ""}`,
+        status: "completed",
+        date: date || new Date()
+      });
+
+      return settledTx;
+    }
+  }
+
+  /**
    * Delete a transaction
    */
   async deleteTransaction(id: string, uid: string) {
