@@ -150,7 +150,11 @@ const SettingsPage: React.FC = () => {
         </div>
         <div className="text-left">
           <p className={`text-base font-bold ${color}`}>{label}</p>
-          {subtext && <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">{subtext}</p>}
+          {subtext && (
+            <p className={`text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-0.5 ${subtext.includes('@') ? 'lowercase tracking-normal' : 'uppercase tracking-widest'}`}>
+              {subtext}
+            </p>
+          )}
         </div>
       </div>
       {!hideArrow && <ChevronRight size={18} className={`text-gray-300 dark:text-gray-600 transition-transform ${isExpanded ? 'rotate-90' : 'group-hover:translate-x-1'}`} />}
