@@ -160,7 +160,7 @@ const Login: React.FC = () => {
               <LogInIcon size={28} />
             </div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
-              Welcome Back
+              Welcome
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
               Please enter your details to log in.
