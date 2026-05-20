@@ -676,7 +676,7 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 font-sans">
-        <div className="animate-pulse text-indigo-600 text-sm font-black tracking-widest uppercase">Loading Session...</div>
+        <div className="animate-pulse text-indigo-600 text-sm font-black tracking-widest uppercase">Login...</div>
       </div>
     );
   }
