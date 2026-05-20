@@ -238,7 +238,11 @@ export class AuthService {
         email,
         password: await bcrypt.hash(googleId, 10), // Set a random hashed password
         confirmPassword: await bcrypt.hash(googleId, 10),
+        is_verified: true,
       });
+    } else if (!user.is_verified) {
+      // Verify user since they successfully logged in via Google
+      await user.update({ is_verified: true });
     }
 
     // 2. Generate JWT Token
@@ -428,6 +432,7 @@ export class AuthService {
     user.confirmPassword = hashedPassword;
     user.reset_otp = undefined; // Clear OTP after use
     user.reset_otp_expires = undefined;
+    user.is_verified = true; // Mark verified since they successfully verified the OTP
     
     await user.save();
 
