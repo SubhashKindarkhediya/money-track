@@ -869,9 +869,15 @@ Takes less than a minute. See you there! 😊
                                 text={tx.reason || (tx.type === "credit" ? "Credit" : "Debit")}
                                 className="text-sm font-bold text-gray-900 dark:text-white"
                               />
-                              <div className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
-                                <Clock size={10} />
-                                <span>{formatDate(tx.date || tx.createdAt)} • {formatTime(tx.date || tx.createdAt)}</span>
+                              <div className="flex flex-col gap-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-1.5">
+                                <div className="flex items-center gap-1.5">
+                                  <Calendar size={11} className="text-gray-400 dark:text-gray-500 shrink-0" />
+                                  <span>{formatDate(tx.date || tx.createdAt)}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[9px] font-medium text-gray-400/80 dark:text-gray-500/80 mt-0.5">
+                                  <Clock size={10} className="text-gray-400/70 dark:text-gray-500/70 shrink-0" />
+                                  <span>{formatTime(tx.date || tx.createdAt)}</span>
+                                </div>
                               </div>
                             </div>
                           </div>
