@@ -161,7 +161,17 @@ export class TransactionsController {
       doc.fontSize(20).text('Money Track - Transaction History', { align: 'center' });
       doc.moveDown();
       doc.fontSize(12).text(`Generated for: ${user.name} (${user.email})`);
-      doc.text(`Generated on: ${new Date().toLocaleString()}`);
+      const formattedDate = new Date().toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+      doc.text(`Generated on: ${formattedDate}`);
       doc.moveDown();
 
       // Summary
@@ -231,7 +241,9 @@ export class TransactionsController {
             currentY = 50;
           }
 
-          const dateStr = new Date(t.date || t.createdAt).toLocaleDateString('en-IN');
+          const dateStr = new Date(t.date || t.createdAt).toLocaleDateString('en-IN', {
+            timeZone: 'Asia/Kolkata'
+          });
           const nameStr = t.Person ? t.Person.name : (t.type === 'income' || t.type === 'expense' ? 'Personal' : '-');
           const typeStr = t.type.toUpperCase();
           const amountStr = `${currencySymbol}${Number(t.amount).toLocaleString('en-IN')}`;
