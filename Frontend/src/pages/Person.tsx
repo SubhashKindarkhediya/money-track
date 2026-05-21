@@ -871,7 +871,7 @@ Takes less than a minute. See you there! 😊
                               />
                               <div className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
                                 <Clock size={10} />
-                                <span>{formatDate(tx.date || tx.createdAt)}</span>
+                                <span>{formatDate(tx.date || tx.createdAt)} • {formatTime(tx.date || tx.createdAt)}</span>
                               </div>
                             </div>
                           </div>
