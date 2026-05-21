@@ -194,11 +194,27 @@ export class PersonService {
     data: { name?: string; phone?: string; notes?: string },
     uid: string
   ) {
-    const person = await this.getPersonById(id, uid);
+    const person = await Person.findOne({ where: { id, uid } });
     if (!person) {
       throw new Error("Person not found");
     }
-    return await person.update(data);
+
+    const updateData: any = { ...data };
+
+    // If phone number is updated, re-evaluate linked_user_id
+    if (data.phone !== undefined) {
+      if (data.phone) {
+        const existingUser = await User.findOne({
+          where: { phone_number: data.phone },
+        });
+        updateData.linked_user_id = existingUser ? existingUser.id : null;
+      } else {
+        updateData.linked_user_id = null;
+      }
+    }
+
+    await person.update(updateData);
+    return await this.getPersonById(id, uid);
   }
 
   /**

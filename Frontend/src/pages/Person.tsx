@@ -392,8 +392,8 @@ const Person: React.FC = () => {
         phone: editForm.phone,
         notes: editForm.notes
       };
-      await api.put(`/person/${selectedPerson.id}`, updateData);
-      setSelectedPerson({ ...selectedPerson, ...updateData });
+      const res = await api.put(`/person/${selectedPerson.id}`, updateData);
+      setSelectedPerson(res.data);
       fetchPersons();
       setDetailTab("profile");
       navigate(`/person/${selectedPerson.id}?tab=profile`, { replace: true });
@@ -1434,6 +1434,7 @@ Takes less than a minute. See you there! 😊
             {filteredPersons.map((person) => {
               const credit = person.totalCredit || 0;
               const debit = person.totalDebit || 0;
+              const netBalance = credit - debit;
 
               return (
                 <div
@@ -1495,29 +1496,52 @@ Takes less than a minute. See you there! 😊
                   {/* Financial Summary */}
                   <div
                     onClick={() => handlePersonClick(person, "transactions")}
-                    className="px-5 pb-5 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors active:bg-gray-100 dark:active:bg-gray-800"
+                    className="px-5 pb-3.5 cursor-pointer"
                   >
-                    <div className="flex items-center justify-between gap-3 pt-4 border-t border-gray-50 dark:border-gray-800/50">
-                      <div className="grid grid-cols-2 gap-3 flex-1">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                            <TrendingUp size={10} className="text-emerald-500" /> Credit
-                          </span>
-                          <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                            {currencySymbol}{credit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
+                    <div className="pt-3 border-t border-gray-50 dark:border-gray-800/50">
+                      <div className="flex items-center justify-between gap-3 py-2.5 px-3.5 rounded-2xl bg-slate-50/50 dark:bg-[#151624] hover:bg-slate-100/50 dark:hover:bg-[#1a1b2f] transition-all border border-slate-100/50 dark:border-gray-800/50 shadow-sm mt-0.5">
+                        <div className="flex items-center gap-3.5">
+                          {/* Icon */}
+                          {netBalance > 0 ? (
+                            <TrendingUp size={24} className="text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2.5} />
+                          ) : netBalance < 0 ? (
+                            <TrendingDown size={24} className="text-rose-600 dark:text-rose-400 shrink-0" strokeWidth={2.5} />
+                          ) : (
+                            <CheckCircle2 size={24} className="text-slate-400 dark:text-slate-500 shrink-0" strokeWidth={2.5} />
+                          )}
+
+                          {/* Text Stack */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                              Net Balance
+                            </span>
+                            <span className={`text-[10px] font-black tracking-wider uppercase ${
+                              netBalance > 0
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : netBalance < 0
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : "text-slate-400 dark:text-slate-500"
+                            }`}>
+                              {netBalance > 0 ? "You'll Get" : netBalance < 0 ? "You Owe" : "Settled"}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-1 border-l border-gray-100 dark:border-gray-800/80 pl-3">
-                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                            <TrendingDown size={10} className="text-rose-500" /> Debit
+
+                        {/* Right Side: Amount & Chevron */}
+                        <div className="flex items-center gap-2.5">
+                          <span className={`text-base font-black tracking-tight ${
+                            netBalance > 0
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : netBalance < 0
+                                ? "text-rose-600 dark:text-rose-400"
+                                : "text-slate-500 dark:text-slate-400"
+                          }`}>
+                            {netBalance > 0 ? "+" : netBalance < 0 ? "-" : ""}
+                            {currencySymbol}
+                            {Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
-                          <span className="text-sm font-black text-rose-600 dark:text-rose-400">
-                            {currencySymbol}{debit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
+                          <ChevronRight size={18} className="text-gray-400 dark:text-gray-600 shrink-0" />
                         </div>
-                      </div>
-                      <div className="p-1 rounded-lg text-gray-300 dark:text-gray-600 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
-                        <ChevronRight size={18} />
                       </div>
                     </div>
                   </div>
