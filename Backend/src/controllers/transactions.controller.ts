@@ -143,7 +143,7 @@ export class TransactionsController {
       }
 
       const transactions = await this.transactionsService.getTransactionsByUid(uid);
-      const currencySymbol = user.currency === 'USD' ? '$' : user.currency === 'EUR' ? '€' : '₹';
+      const currencySymbol = user.currency === 'USD' ? '$' : user.currency === 'EUR' ? '€' : 'Rs. ';
 
       // Initialize PDF document
       const doc = new PDFDocument({ margin: 50 });

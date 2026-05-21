@@ -478,7 +478,7 @@ const Profile: React.FC = () => {
               </div>
 
               {/* Gender */}
-              <div className="space-y-2 relative">
+              <div className={`space-y-2 relative ${activeDropdown === "gender" ? "z-30" : "z-10"}`}>
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 ml-1">
                   Gender
                 </label>
@@ -540,7 +540,7 @@ const Profile: React.FC = () => {
                         console.warn("Failed to open date picker", err);
                       }
                     }}
-                    className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-50"
+                    className="absolute inset-0 w-full h-full opacity-[0.01] cursor-pointer z-10"
                   />
                   
                   <Calendar size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
