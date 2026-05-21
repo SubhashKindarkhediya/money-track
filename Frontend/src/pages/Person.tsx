@@ -514,6 +514,17 @@ Takes less than a minute. See you there! 😊
     }
   };
 
+  const formatTime = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  };
+
   const fetchTransactions = async (personId: string) => {
     try {
       setTxLoading(true);
@@ -1027,8 +1038,11 @@ Takes less than a minute. See you there! 😊
                     <span className={`text-lg font-black ${selectedTx.type === "credit" ? "text-emerald-600" : "text-rose-600"}`}>{currencySymbol}{selectedTx.amount}</span>
                   </div>
                   <div className="flex justify-between items-center p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Date</span>
-                    <span className="text-sm font-bold text-gray-900 dark:text-white">{formatDate(selectedTx.date || selectedTx.createdAt)}</span>
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Date & Time</span>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{formatDate(selectedTx.date || selectedTx.createdAt)}</p>
+                      <p className="text-[10px] font-bold text-gray-400 mt-0.5">{formatTime(selectedTx.date || selectedTx.createdAt)}</p>
+                    </div>
                   </div>
                   {selectedTx.reason && (
                     <div className="p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
@@ -1633,8 +1647,11 @@ Takes less than a minute. See you there! 😊
                 <span className={`text-lg font-black ${selectedTx.type === "credit" ? "text-emerald-600" : "text-rose-600"}`}>{currencySymbol}{selectedTx.amount}</span>
               </div>
               <div className="flex justify-between items-center p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Date</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">{formatDate(selectedTx.date || selectedTx.createdAt)}</span>
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Date & Time</span>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{formatDate(selectedTx.date || selectedTx.createdAt)}</p>
+                  <p className="text-[10px] font-bold text-gray-400 mt-0.5">{formatTime(selectedTx.date || selectedTx.createdAt)}</p>
+                </div>
               </div>
               {selectedTx.reason && (
                 <div className="p-4 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
