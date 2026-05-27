@@ -168,6 +168,8 @@ const Dashboard = () => {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const { user, currencySymbol } = useAuth();
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showPersonOnboarding, setShowPersonOnboarding] = useState(false);
+  const [personsCount, setPersonsCount] = useState<number | null>(null);
 
   useEffect(() => {
     // Dismiss mobile keyboard on mount with a small delay
@@ -207,15 +209,16 @@ const Dashboard = () => {
     setVisibility(prev => prev.map((v, i) => i === index ? !v : v));
   };
 
-  // Fetch dashboard summary and recent transactions
+  // Fetch dashboard summary, recent transactions, and person list count
   useEffect(() => {
     const fetchData = async () => {
       try {
         setSummaryLoading(true);
         const { default: api } = await import("./services/api");
-        const [sumRes, txRes] = await Promise.all([
+        const [sumRes, txRes, personRes] = await Promise.all([
           api.get("/dashboard/summary"),
-          api.get("/transactions")
+          api.get("/transactions"),
+          api.get("/person")
         ]);
 
         const { udhar } = sumRes.data.data;
@@ -225,6 +228,17 @@ const Dashboard = () => {
           const pendingTxs = txRes.data.filter((tx: any) => tx.status === "pending");
           setRecentTransactions(pendingTxs.slice(0, 3));
         }
+
+        if (Array.isArray(personRes.data)) {
+          setPersonsCount(personRes.data.length);
+          const userData = user || JSON.parse(localStorage.getItem("user") || "{}");
+          const userKey = userData?.id || userData?.email || "guest";
+          const dismissed = localStorage.getItem(`dismissedPersonOnboarding_${userKey}`);
+          
+          if (personRes.data.length === 0 && dismissed !== "true") {
+            setShowPersonOnboarding(true);
+          }
+        }
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
       } finally {
@@ -232,7 +246,7 @@ const Dashboard = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   const fmt = (n: number) => n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -456,6 +470,73 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
+
+      {/* Onboarding Welcome Modal */}
+      {showPersonOnboarding && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[150] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-[2.5rem] p-6 sm:p-8 max-w-md w-full border border-indigo-50/50 dark:border-slate-800 shadow-[0_20px_50px_rgba(99,102,241,0.2)] dark:shadow-none animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            {/* Ambient Background Glow inside modal */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 blur-3xl rounded-full pointer-events-none"></div>
+            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/10 blur-3xl rounded-full pointer-events-none"></div>
+
+            {/* Decorative Close Button */}
+            <button
+              onClick={() => {
+                const userData = user || JSON.parse(localStorage.getItem("user") || "{}");
+                const userKey = userData?.id || userData?.email || "guest";
+                localStorage.setItem(`dismissedPersonOnboarding_${userKey}`, "true");
+                setShowPersonOnboarding(false);
+              }}
+              className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all active:scale-95"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Header Icon */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="relative w-16 h-16 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 rounded-2xl flex items-center justify-center text-white border border-white/20 shadow-lg shadow-indigo-500/25 animate-bounce">
+                <UserPlus size={28} className="relative z-10 filter drop-shadow-sm" />
+              </div>
+            </div>
+
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white text-center tracking-tight mb-3">
+              Welcome to Money Track! 👋
+            </h3>
+
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 text-center leading-relaxed mb-8 px-2">
+              Let's set up your ledger. To start tracking split bills, payments, and shared expenses, you need to add your first contact (Person).
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  const userData = user || JSON.parse(localStorage.getItem("user") || "{}");
+                  const userKey = userData?.id || userData?.email || "guest";
+                  localStorage.setItem(`dismissedPersonOnboarding_${userKey}`, "true");
+                  setShowPersonOnboarding(false);
+                  navigate("/person/add");
+                }}
+                className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider border border-indigo-400/20"
+              >
+                <Plus size={18} strokeWidth={3} />
+                Add Your First Contact
+              </button>
+
+              <button
+                onClick={() => {
+                  const userData = user || JSON.parse(localStorage.getItem("user") || "{}");
+                  const userKey = userData?.id || userData?.email || "guest";
+                  localStorage.setItem(`dismissedPersonOnboarding_${userKey}`, "true");
+                  setShowPersonOnboarding(false);
+                }}
+                className="w-full h-12 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold rounded-xl transition-all flex items-center justify-center text-xs uppercase tracking-wider active:scale-[0.98]"
+              >
+                Explore Dashboard First
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

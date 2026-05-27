@@ -23,13 +23,24 @@ export class DashboardService {
     }
 
     // 1. Calculate Udhar Statistics
-    const totalCredit = await Transaction.sum("amount", {
+    const rawCredit = await Transaction.sum("amount", {
       where: { ...whereCondition, type: "credit", status: "pending" },
     }) || 0;
 
-    const totalDebit = await Transaction.sum("amount", {
+    const rawDebit = await Transaction.sum("amount", {
       where: { ...whereCondition, type: "debit", status: "pending" },
     }) || 0;
+
+    let totalCredit = 0;
+    let totalDebit = 0;
+
+    if (rawCredit >= rawDebit) {
+      totalCredit = rawCredit - rawDebit;
+      totalDebit = 0;
+    } else {
+      totalCredit = 0;
+      totalDebit = rawDebit - rawCredit;
+    }
 
     // 2. Calculate Personal Statistics
     const totalIncome = await Transaction.sum("amount", {
@@ -76,17 +87,28 @@ export class DashboardService {
     // 2. Calculate Monthly Totals
     let monthlyIncome = 0;
     let monthlyExpense = 0;
-    let monthlyCredit = 0;
-    let monthlyDebit = 0;
+    let rawMonthlyCredit = 0;
+    let rawMonthlyDebit = 0;
 
     transactions.forEach(t => {
       const amount = Number(t.amount);
       if (t.type === "income") monthlyIncome += amount;
       if (t.type === "expense") monthlyExpense += amount;
       // Only count credit/debit in summary if they are pending
-      if (t.type === "credit" && t.status === "pending") monthlyCredit += amount;
-      if (t.type === "debit" && t.status === "pending") monthlyDebit += amount;
+      if (t.type === "credit" && t.status === "pending") rawMonthlyCredit += amount;
+      if (t.type === "debit" && t.status === "pending") rawMonthlyDebit += amount;
     });
+
+    let monthlyCredit = 0;
+    let monthlyDebit = 0;
+
+    if (rawMonthlyCredit >= rawMonthlyDebit) {
+      monthlyCredit = rawMonthlyCredit - rawMonthlyDebit;
+      monthlyDebit = 0;
+    } else {
+      monthlyCredit = 0;
+      monthlyDebit = rawMonthlyDebit - rawMonthlyCredit;
+    }
 
     return {
       period: { month, year },

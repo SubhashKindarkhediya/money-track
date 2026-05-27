@@ -111,11 +111,24 @@ export class PersonService {
         }
       }
       
+      const rawC = summaryMap[personData.id]?.totalCredit || 0;
+      const rawD = summaryMap[personData.id]?.totalDebit || 0;
+      let finalCredit = 0;
+      let finalDebit = 0;
+
+      if (rawC >= rawD) {
+        finalCredit = rawC - rawD;
+        finalDebit = 0;
+      } else {
+        finalCredit = 0;
+        finalDebit = rawD - rawC;
+      }
+
       return {
         ...personData,
         phone: displayPhone,
-        totalCredit: summaryMap[personData.id]?.totalCredit || 0,
-        totalDebit: summaryMap[personData.id]?.totalDebit || 0,
+        totalCredit: finalCredit,
+        totalDebit: finalDebit,
         connection_status
       };
     });
