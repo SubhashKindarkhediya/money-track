@@ -262,6 +262,9 @@ const ForgotPassword = () => {
                     key={index}
                     ref={(el) => { otpRefs.current[index] = el; }}
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="one-time-code"
                     maxLength={1}
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}

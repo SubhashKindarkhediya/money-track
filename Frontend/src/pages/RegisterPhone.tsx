@@ -231,6 +231,8 @@ const RegisterPhone = () => {
                   type="tel"
                   required
                   maxLength={10}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Enter 10-digit number"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
@@ -261,6 +263,9 @@ const RegisterPhone = () => {
                     key={index}
                     ref={(el) => { otpRefs.current[index] = el; }}
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="one-time-code"
                     maxLength={1}
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
