@@ -1536,8 +1536,8 @@ Takes less than a minute. See you there! 😊
                                 ? "text-rose-600 dark:text-rose-400"
                                 : "text-slate-500 dark:text-slate-400"
                           }`}>
-                            {netBalance > 0 ? "+" : netBalance < 0 ? "-" : ""}
                             {currencySymbol}
+                            {netBalance > 0 ? "+" : netBalance < 0 ? "-" : ""}
                             {Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                           <ChevronRight size={18} className="text-gray-400 dark:text-gray-600 shrink-0" />
@@ -1780,7 +1780,7 @@ Takes less than a minute. See you there! 😊
           </div>
         </div>
       )}
-      {persons.length > 0 && (
+      {persons.length > 0 && location.state?.from !== "bottom_nav" && (
         <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#0a0a1a]/80 backdrop-blur-xl border-t border-indigo-100/50 dark:border-gray-800 z-40">
           <div className="max-w-4xl mx-auto w-full">
             <button

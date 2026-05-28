@@ -31,16 +31,8 @@ export class DashboardService {
       where: { ...whereCondition, type: "debit", status: "pending" },
     }) || 0;
 
-    let totalCredit = 0;
-    let totalDebit = 0;
-
-    if (rawCredit >= rawDebit) {
-      totalCredit = rawCredit - rawDebit;
-      totalDebit = 0;
-    } else {
-      totalCredit = 0;
-      totalDebit = rawDebit - rawCredit;
-    }
+    const totalCredit = rawCredit;
+    const totalDebit = rawDebit;
 
     // 2. Calculate Personal Statistics
     const totalIncome = await Transaction.sum("amount", {
@@ -99,16 +91,8 @@ export class DashboardService {
       if (t.type === "debit" && t.status === "pending") rawMonthlyDebit += amount;
     });
 
-    let monthlyCredit = 0;
-    let monthlyDebit = 0;
-
-    if (rawMonthlyCredit >= rawMonthlyDebit) {
-      monthlyCredit = rawMonthlyCredit - rawMonthlyDebit;
-      monthlyDebit = 0;
-    } else {
-      monthlyCredit = 0;
-      monthlyDebit = rawMonthlyDebit - rawMonthlyCredit;
-    }
+    const monthlyCredit = rawMonthlyCredit;
+    const monthlyDebit = rawMonthlyDebit;
 
     return {
       period: { month, year },

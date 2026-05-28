@@ -138,7 +138,7 @@ export class AuthService {
     const token = jwt.sign(
       { uid: user.id, email: user.email },
       process.env.JWT_SECRET || "super-secret-key",
-      { expiresIn: "1d" }
+      { expiresIn: "3650d" }
     );
 
     const userResponse = user.toJSON();
@@ -184,7 +184,7 @@ export class AuthService {
     const token = jwt.sign(
       { uid: user.id, email: user.email },
       process.env.JWT_SECRET || "super-secret-key",
-      { expiresIn: "1d" },
+      { expiresIn: "3650d" },
     );
 
     const userResponse = user.toJSON();
@@ -253,7 +253,7 @@ export class AuthService {
     const token = jwt.sign(
       { uid: user.id, email: user.email },
       process.env.JWT_SECRET || "super-secret-key",
-      { expiresIn: "1d" },
+      { expiresIn: "3650d" },
     );
 
     const userResponse = user.toJSON();
@@ -564,7 +564,7 @@ export class AuthService {
     const token = jwt.sign(
       { uid: user.id, email: user.email },
       process.env.JWT_SECRET || "super-secret-key",
-      { expiresIn: "1d" }
+      { expiresIn: "3650d" }
     );
 
     return { user: userResponse, token, message: "Mobile number verified successfully" };

@@ -26,6 +26,7 @@ import {
   Plus,
   User,
   ChevronDown,
+  ChevronRight,
   PlusCircle,
   Bell,
   IndianRupee,
@@ -316,6 +317,54 @@ const Dashboard = () => {
           </p>
         </div>
 
+        {/* Header Pill */}
+        {!summaryLoading && (
+          <div
+            onClick={() => navigate('/transactions')}
+            className="group w-full bg-white/90 dark:bg-gray-800/80 backdrop-blur-md border border-gray-100/80 dark:border-gray-700/60 shadow-lg shadow-indigo-950/5 px-5 py-3.5 rounded-[1.5rem] flex items-center justify-between gap-4 transition-all hover:scale-[1.01] active:scale-[0.99] duration-300 cursor-pointer animate-in slide-in-from-top-4 duration-300"
+          >
+            <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                  summary.netBalance > 0
+                    ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : summary.netBalance < 0
+                      ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
+                      : "bg-gray-50 dark:bg-gray-800 text-gray-500"
+                }`}>
+                  <Wallet size={18} className="stroke-[2]" />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
+                    Net Balance
+                  </span>
+                  <span className={`text-[9px] font-black uppercase tracking-wider ${
+                    summary.netBalance > 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : summary.netBalance < 0
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-gray-400"
+                  }`}>
+                    {summary.netBalance > 0 ? "You'll Get" : summary.netBalance < 0 ? "You Owe" : "Settled"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-black tracking-tight ${
+                  summary.netBalance > 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : summary.netBalance < 0
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-gray-500 dark:text-gray-400"
+                }`}>
+                  {summary.netBalance > 0 ? "+" : ""}
+                  {currencySymbol}{fmt(summary.netBalance)}
+                </span>
+              </div>
+            </div>
+          )}
+
         {/* Carousel Container */}
         <div className="relative -mx-6 md:mx-0">
           <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
@@ -352,6 +401,8 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
+
+
 
         {/* Recent Activity */}
         <div className="bg-white/80 backdrop-blur-md dark:bg-gray-800/40 rounded-[2.5rem] p-5 md:p-8 border border-indigo-50 dark:border-gray-700/50 shadow-xl shadow-indigo-900/5">
@@ -750,9 +801,11 @@ function AppContent() {
   const isSettingsPage = location.pathname === "/settings";
   const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage || isSettingsPage;
 
-  // Show bottom nav only on exact main tab paths
-  const mainTabs = ["/"];
-  const showBottomNav = mainTabs.includes(location.pathname);
+  // Show bottom nav on "/" or if we are on one of the main pages and came from bottom nav
+  const showBottomNav = 
+    location.pathname === "/" || 
+    ((location.pathname === "/person" || location.pathname === "/transactions" || location.pathname === "/analytics") && 
+     location.state?.from === "bottom_nav");
 
   const navigation = [
     { name: "Home", icon: Home, path: "/", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
@@ -1108,6 +1161,7 @@ function AppContent() {
               <NavLink
                 key={item.name}
                 to={item.path}
+                state={item.name !== "Home" ? { from: "bottom_nav" } : undefined}
                 className={({ isActive }) => `
                 flex flex-col items-center justify-center gap-1.5 py-2 transition-all relative
                 ${isActive ? "scale-110" : "opacity-80"}
