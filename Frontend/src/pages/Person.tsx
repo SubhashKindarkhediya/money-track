@@ -883,7 +883,7 @@ Takes less than a minute. See you there! 😊
                           </div>
                           <div className="flex items-center gap-3 shrink-0">
                             <MarqueeText
-                              text={`${tx.type === "credit" ? "+" : "-"}${currencySymbol}${tx.amount}`}
+                              text={`${tx.type === "credit" ? "+ " : "- "}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                               className={`text-sm font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
                               containerClassName="justify-end min-w-[60px]"
                             />
@@ -1536,8 +1536,8 @@ Takes less than a minute. See you there! 😊
                                 ? "text-rose-600 dark:text-rose-400"
                                 : "text-slate-500 dark:text-slate-400"
                           }`}>
+                            {netBalance > 0 ? "+ " : netBalance < 0 ? "- " : ""}
                             {currencySymbol}
-                            {netBalance > 0 ? "+" : netBalance < 0 ? "-" : ""}
                             {Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                           <ChevronRight size={18} className="text-gray-400 dark:text-gray-600 shrink-0" />

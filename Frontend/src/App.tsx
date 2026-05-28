@@ -358,8 +358,8 @@ const Dashboard = () => {
                       ? "text-red-600 dark:text-red-400"
                       : "text-gray-500 dark:text-gray-400"
                 }`}>
-                  {summary.netBalance > 0 ? "+" : ""}
-                  {currencySymbol}{fmt(summary.netBalance)}
+                  {summary.netBalance > 0 ? "+ " : summary.netBalance < 0 ? "- " : ""}
+                  {currencySymbol}{fmt(Math.abs(summary.netBalance))}
                 </span>
               </div>
             </div>
@@ -445,7 +445,7 @@ const Dashboard = () => {
                   </div>
                   <div className="ml-3 shrink-0">
                     <MarqueeText
-                      text={`${tx.type === "credit" ? "+" : "-"}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN")}`}
+                      text={`${tx.type === "credit" ? "+ " : "- "}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       className={`text-base font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
                       containerClassName="justify-end min-w-[60px]"
                     />
