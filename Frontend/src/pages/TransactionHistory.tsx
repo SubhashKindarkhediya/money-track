@@ -84,7 +84,7 @@ const TransactionHistory: React.FC = () => {
     });
   }, [transactions, filterType, searchQuery, statusFilter]);
 
-  // Group by date
+  // Group by date — each group sorted latest-first inside
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, Transaction[]> = {};
     filteredTransactions.forEach((tx) => {
@@ -92,8 +92,22 @@ const TransactionHistory: React.FC = () => {
       if (!groups[date]) groups[date] = [];
       groups[date].push(tx);
     });
+    // Sort transactions within each group: latest createdAt first
+    Object.keys(groups).forEach((date) => {
+      groups[date].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    });
     return groups;
   }, [filteredTransactions]);
+
+  // Date keys sorted newest-first
+  const sortedDates = useMemo(() => {
+    return Object.keys(groupedTransactions).sort((a, b) => {
+      // Parse "30 May 2026" style dates for comparison
+      return new Date(b).getTime() - new Date(a).getTime();
+    });
+  }, [groupedTransactions]);
 
   // Calculate summary for display
   const summary = useMemo(() => {
@@ -329,7 +343,7 @@ const TransactionHistory: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-8">
-            {Object.keys(groupedTransactions).map((date) => (
+            {sortedDates.map((date) => (
               <div key={date} className="space-y-4">
                 <div className="flex items-center gap-3">
                   <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">

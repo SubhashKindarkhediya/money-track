@@ -226,7 +226,9 @@ const Dashboard = () => {
         setSummary({ totalCredit: udhar.totalCredit || 0, totalDebit: udhar.totalDebit || 0, netBalance: udhar.netBalance || 0 });
 
         if (Array.isArray(txRes.data)) {
-          const pendingTxs = txRes.data.filter((tx: any) => tx.status === "pending");
+          const pendingTxs = txRes.data
+            .filter((tx: any) => tx.status === "pending")
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           setRecentTransactions(pendingTxs.slice(0, 3));
         }
 
