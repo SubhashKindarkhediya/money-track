@@ -1,5 +1,5 @@
 import { Eye, EyeOff } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Mail,
@@ -7,6 +7,8 @@ import {
   LogIn as LogInIcon,
   ChevronRight,
   Loader2,
+  KeyRound,
+  ArrowLeft,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
@@ -79,18 +81,149 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  // OTP verification state (when user didn't verify email during signup)
+  const [showOtp, setShowOtp] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // OTP resend countdown timer
+  useEffect(() => {
+    let timer: any;
+    if (showOtp && !canResend && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    } else if (timeLeft === 0) {
+      setCanResend(true);
+    }
+    return () => clearInterval(timer);
+  }, [showOtp, timeLeft, canResend]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const finalValue = name === "email" ? value.toLowerCase() : value;
     setFormData({ ...formData, [name]: finalValue });
   };
 
+  // ─── OTP Input Handlers ────────────────────────────────────────────────────
+
+  const handleOtpChange = (index: number, value: string) => {
+    const cleanedValue = value.replace(/\D/g, "");
+
+    // Handle paste (multiple chars)
+    if (cleanedValue.length > 1) {
+      const pastedData = cleanedValue.slice(0, 6);
+      const newOtp = [...otp];
+      for (let i = 0; i < 6; i++) {
+        newOtp[i] = i < pastedData.length ? pastedData[i] : newOtp[i];
+      }
+      setOtp(newOtp);
+      const focusIndex = Math.min(pastedData.length, 5);
+      otpRefs.current[focusIndex]?.focus();
+      if (pastedData.length === 6) {
+        setTimeout(() => handleVerifyOtp(undefined, pastedData), 300);
+      }
+      return;
+    }
+
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value.slice(-1);
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    } else if (value && index === 5) {
+      const fullOtp = newOtp.join("");
+      if (fullOtp.length === 6) {
+        setTimeout(() => handleVerifyOtp(undefined, fullOtp), 300);
+      }
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pastedData.length) return;
+    const newOtp = [...otp];
+    for (let i = 0; i < 6; i++) {
+      newOtp[i] = i < pastedData.length ? pastedData[i] : newOtp[i];
+    }
+    setOtp(newOtp);
+    otpRefs.current[Math.min(pastedData.length, 5)]?.focus();
+    if (pastedData.length === 6) {
+      setTimeout(() => handleVerifyOtp(undefined, pastedData), 300);
+    }
+  };
+
+  // ─── Verify OTP after login error ─────────────────────────────────────────
+
+  const handleVerifyOtp = async (e?: React.FormEvent, autoOtp?: string) => {
+    if (e) e.preventDefault();
+    const otpString = autoOtp || otp.join("");
+    if (otpString.length !== 6) {
+      setError("Please enter the complete 6-digit OTP");
+      return;
+    }
+
+    setError("");
+    setOtpLoading(true);
+    try {
+      const response = await api.post("/auth/verify-signup-otp", {
+        email: pendingEmail,
+        otp: otpString,
+      });
+
+      const { user, token } = response.data;
+
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      login(token, user);
+      setTimeout(() => navigate("/"), 150);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Invalid OTP. Please check and try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // ─── Resend OTP (re-triggers signup with same email to resend OTP) ─────────
+
+  const handleResendOtp = async () => {
+    setError("");
+    setResendLoading(true);
+    try {
+      // Re-calling signup with existing email triggers OTP resend (backend handles unverified users)
+      await api.post("/auth/resend-otp", { email: pendingEmail });
+      setTimeLeft(60);
+      setCanResend(false);
+      setOtp(["", "", "", "", "", ""]);
+      otpRefs.current[0]?.focus();
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to resend OTP. Please try again.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  // ─── Google Login ──────────────────────────────────────────────────────────
+
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setIsGoogleLoading(true);
       setError("");
       try {
-        // Send Google token directly to backend for instant login
         const response = await api.post("/auth/google-login", {
           credential: tokenResponse.access_token,
           isAccessToken: true
@@ -98,8 +231,6 @@ const Login: React.FC = () => {
 
         const { user, token } = response.data;
         login(token, user);
-
-        // Success! Go to home
         navigate("/");
       } catch (err: any) {
         setError(err.response?.data?.error || "Google login failed.");
@@ -113,13 +244,14 @@ const Login: React.FC = () => {
     },
   });
 
+  // ─── Regular Login ─────────────────────────────────────────────────────────
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
-      // Regular email/password login
       const response = await api.post("/auth/login", {
         email: formData.email,
         password: formData.password,
@@ -132,18 +264,147 @@ const Login: React.FC = () => {
         document.activeElement.blur();
       }
 
-      setTimeout(() => {
-        navigate("/");
-      }, 150);
+      setTimeout(() => navigate("/"), 150);
     } catch (err: any) {
-      setError(
-        err.response?.data?.error ||
-        "Failed to login. Please check your credentials.",
-      );
+      const errorMsg: string =
+        err.response?.data?.error || "Failed to login. Please check your credentials.";
+
+      // ✅ If email is not verified → show OTP screen automatically
+      if (
+        errorMsg.toLowerCase().includes("verify your email") ||
+        errorMsg.toLowerCase().includes("otp was sent")
+      ) {
+        setPendingEmail(formData.email);
+        setOtp(["", "", "", "", "", ""]);
+        setTimeLeft(60);
+        setCanResend(false);
+        setError("");
+        setShowOtp(true);
+        // Focus first OTP box after render
+        setTimeout(() => otpRefs.current[0]?.focus(), 300);
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  // ─── OTP Screen ───────────────────────────────────────────────────────────
+
+  if (showOtp) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] flex items-center justify-center p-4 font-sans selection:bg-indigo-100 dark:selection:bg-indigo-900 selection:text-indigo-900 dark:selection:text-indigo-100 transition-colors duration-300">
+        {/* Background Ornaments */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/5 dark:bg-indigo-500/10 blur-[100px] rounded-full"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-500/10 blur-[100px] rounded-full"></div>
+        </div>
+
+        <div className="w-full max-w-[460px] relative z-10 animate-in fade-in zoom-in-95 duration-500">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none rounded-[2.5rem] p-6 md:p-8">
+
+            {/* Header */}
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-14 h-14 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 border border-indigo-100 dark:border-slate-700 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm mb-5">
+                <KeyRound size={28} />
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
+                Verify Your Email
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed px-2">
+                An OTP was sent to <span className="font-bold text-indigo-600 dark:text-indigo-400">{pendingEmail}</span> during signup. Please enter it to continue.
+              </p>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-2xl text-xs font-bold flex items-center gap-3 animate-in slide-in-from-top-2">
+                <div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div>
+                {error}
+              </div>
+            )}
+
+            {/* OTP Inputs */}
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <div className="otp-container">
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => { otpRefs.current[index] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="one-time-code"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    onPaste={handleOtpPaste}
+                    className="otp-box bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-lg sm:text-2xl font-bold text-center text-slate-900 dark:text-white"
+                  />
+                ))}
+              </div>
+
+              {/* Resend Timer */}
+              <div className="text-center flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => canResend ? handleResendOtp() : null}
+                  disabled={!canResend || resendLoading}
+                  className={`text-xs font-bold uppercase tracking-widest transition-colors ${
+                    canResend
+                      ? "text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                      : "text-slate-400 cursor-not-allowed"
+                  }`}
+                >
+                  {resendLoading ? "Sending..." : "Resend OTP"}
+                </button>
+                {!canResend && (
+                  <span className="text-xs font-bold text-slate-500">
+                    Resend in {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
+                  </span>
+                )}
+              </div>
+
+              {/* Verify Button */}
+              <button
+                disabled={otpLoading || otp.join("").length !== 6}
+                className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 disabled:opacity-70 text-white font-bold rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                {otpLoading ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <>
+                    <span className="text-sm uppercase tracking-widest">Verify OTP</span>
+                    <ChevronRight size={18} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Back to Login */}
+            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOtp(false);
+                  setOtp(["", "", "", "", "", ""]);
+                  setError("");
+                }}
+                className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors uppercase tracking-widest"
+              >
+                <ArrowLeft size={14} />
+                Back to Login
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Login Screen ──────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] flex items-center justify-center p-4 font-sans selection:bg-indigo-100 dark:selection:bg-indigo-900 selection:text-indigo-900 dark:selection:text-indigo-100 transition-colors duration-300">

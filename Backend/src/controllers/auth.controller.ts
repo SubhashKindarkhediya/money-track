@@ -49,6 +49,24 @@ export class AuthController {
   };
 
   /**
+   * Resend signup OTP for unverified users (called from login page when email not verified)
+   */
+  resendSignupOtp = async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        res.status(400).json({ error: "Email is required" });
+        return;
+      }
+
+      const result = await this.authService.requestOtp(email);
+      res.status(200).json({ message: "OTP resent to your email", ...result });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  };
+
+  /**
    * Verify signup OTP
    */
   verifySignupOtp = async (req: Request, res: Response) => {
