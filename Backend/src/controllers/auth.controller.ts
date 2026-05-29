@@ -60,7 +60,7 @@ export class AuthController {
       }
 
       const result = await this.authService.requestOtp(email);
-      res.status(200).json({ message: "OTP resent to your email", ...result });
+      res.status(200).json({ ...result, message: "OTP resent to your email" });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
