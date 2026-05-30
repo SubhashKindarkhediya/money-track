@@ -144,20 +144,24 @@ const TransactionHistory: React.FC = () => {
     let netLabelStr = "";
 
     if (showCredit && showDebit) {
-      const netBalance = summary.credit - summary.debit;
-      if (isSinglePerson) {
-        const personFirstName = singlePersonName?.split(' ')[0] || "Person";
-
-        if (netBalance > 0) {
-          netLabelStr = `${personFirstName} will pay: ${Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}/-`;
-        } else if (netBalance < 0) {
-          netLabelStr = `${personFirstName} will get: ${Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}/-`;
-        } else {
-          netLabelStr = `All Settled: 0.00/-`;
-        }
+      if (statusFilter === "completed") {
+        netLabelStr = `All Settled: 0.00/-`;
       } else {
-        const prefix = netBalance >= 0 ? "You'll Get" : "You Owe";
-        netLabelStr = `${prefix}: ${Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}/-`;
+        const netBalance = summary.credit - summary.debit;
+        if (isSinglePerson) {
+          const personFirstName = singlePersonName?.split(' ')[0] || "Person";
+
+          if (netBalance > 0) {
+            netLabelStr = `${personFirstName} will pay: ${Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}/-`;
+          } else if (netBalance < 0) {
+            netLabelStr = `${personFirstName} will get: ${Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}/-`;
+          } else {
+            netLabelStr = `All Settled: 0.00/-`;
+          }
+        } else {
+          const prefix = netBalance >= 0 ? "You'll Get" : "You Owe";
+          netLabelStr = `${prefix}: ${Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}/-`;
+        }
       }
     }
 
@@ -297,7 +301,7 @@ const TransactionHistory: React.FC = () => {
         </div>
 
         {/* Status Tabs */}
-        <div className="flex border-b border-gray-100 dark:border-gray-800 mb-8 relative">
+        <div className="flex border-b border-gray-100 dark:border-gray-800 mb-4 relative">
           <button
             onClick={() => setStatusFilter("pending")}
             className={`flex-1 py-4 font-bold text-sm transition-all duration-300 relative ${statusFilter === "pending"
@@ -369,37 +373,42 @@ const TransactionHistory: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-5 mt-6 space-y-2">
-        {/* Net Balance text above Quick Summary */}
-        {filterType === "all" && (
-          <div className="flex justify-end px-2">
-            <span className="text-sm font-black text-gray-900 dark:text-white">
-              {summary.credit - summary.debit >= 0 ? "You'll Get: " : "You Owe: "}
-              <span className={summary.credit - summary.debit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
-                {currencySymbol}{Math.abs(summary.credit - summary.debit).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-              </span>
-            </span>
-          </div>
-        )}
-        {/* Quick Summary */}
-        <div className="bg-white dark:bg-[#151624] p-4 sm:p-5 rounded-[1.5rem] border border-gray-100 dark:border-gray-800 shadow-sm flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Found</span>
-            <span className="text-lg sm:text-xl font-black text-gray-900 dark:text-white">{filteredTransactions.length}</span>
-          </div>
-          <div className="flex items-center gap-4 sm:gap-8">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Total Credit</span>
-              <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                {currencySymbol}{summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+      <div className="px-5 mt-6 space-y-6">
+        {/* Unified Quick Summary Card */}
+        <div className="bg-white dark:bg-[#151624] rounded-[1.5rem] border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+          
+          {/* Top Section: Net Balance */}
+          {filterType === "all" && (
+            <div className="px-4 sm:px-5 py-3 border-b border-gray-50 dark:border-gray-800/50 bg-gray-50/50 dark:bg-[#1b1c2e]/30 flex justify-end">
+              <span className="text-[13px] sm:text-sm font-black text-gray-900 dark:text-white">
+                {statusFilter === "completed" ? "All Settled: " : (summary.credit - summary.debit >= 0 ? "You'll Get: " : "You Owe: ")}
+                <span className={statusFilter === "completed" ? 'text-gray-500' : (summary.credit - summary.debit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
+                  {currencySymbol}{statusFilter === "completed" ? "0.00" : Math.abs(summary.credit - summary.debit).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
               </span>
             </div>
-            <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0"></div>
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Total Debit</span>
-              <span className="text-sm font-black text-rose-600 dark:text-rose-400">
-                {currencySymbol}{summary.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-              </span>
+          )}
+
+          {/* Bottom Section: Stats */}
+          <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Total Found</span>
+              <span className="text-lg sm:text-xl font-black text-indigo-600 dark:text-indigo-400">{filteredTransactions.length}</span>
+            </div>
+            <div className="flex items-center gap-4 sm:gap-8">
+              <div className="flex flex-col items-center sm:items-end">
+                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Total Credit</span>
+                <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400">
+                  {currencySymbol}{summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0"></div>
+              <div className="flex flex-col items-center sm:items-end">
+                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Total Debit</span>
+                <span className="text-sm sm:text-base font-black text-rose-600 dark:text-rose-400">
+                  {currencySymbol}{summary.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
             </div>
           </div>
         </div>
