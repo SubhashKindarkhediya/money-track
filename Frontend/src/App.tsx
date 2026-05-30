@@ -1444,15 +1444,20 @@ function AppContent() {
                           onClick={() => !act.isRead && markAsRead(act.id)}
                           className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${!act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
                             }`}>
-                          {/* Icon — connection response or transaction */}
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'response'
-                            ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
-                            : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                          {/* Icon — connection response, contact added, or transaction */}
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'contact_added'
+                            ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10'
+                            : act.subType === 'response'
+                              ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                              : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
                             }`}>
-                            {act.subType === 'response'
-                              ? (act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />)
-                              : (act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />)
-                            }
+                            {act.subType === 'contact_added' ? (
+                              <UserPlus size={18} />
+                            ) : act.subType === 'response' ? (
+                              act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />
+                            ) : (
+                              act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
@@ -1490,15 +1495,20 @@ function AppContent() {
                           onClick={() => !act.isRead && markAsRead(act.id)}
                           className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${!act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
                             }`}>
-                          {/* Icon — connection response or transaction */}
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'response'
-                            ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
-                            : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                          {/* Icon — connection response, contact added, or transaction */}
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'contact_added'
+                            ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10'
+                            : act.subType === 'response'
+                              ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
+                              : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
                             }`}>
-                            {act.subType === 'response'
-                              ? (act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />)
-                              : (act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />)
-                            }
+                            {act.subType === 'contact_added' ? (
+                              <UserPlus size={18} />
+                            ) : act.subType === 'response' ? (
+                              act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />
+                            ) : (
+                              act.type === 'received' ? <TrendingUp size={18} /> : <TrendingDown size={18} />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>

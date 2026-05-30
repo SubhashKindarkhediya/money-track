@@ -34,6 +34,23 @@ export class PersonService {
     // Step 2: Create Subhash's Person entry (Ramesh in Subhash's list)
     const newPerson = await Person.create({ ...data, linked_user_id });
 
+    // Step 3: Send notification to the linked user if they exist
+    if (linked_user_id) {
+      const currentUser = await User.findByPk(data.uid);
+      if (currentUser) {
+        await this.notificationService.createNotification({
+          recipient_id: linked_user_id,
+          sender_id: data.uid,
+          type: "system",
+          data: {
+            message: `${currentUser.name} has added you as a contact in Money Track.`,
+            senderName: currentUser.name,
+            subType: "contact_added",
+          },
+        });
+      }
+    }
+
     return newPerson;
   }
 
@@ -212,6 +229,7 @@ export class PersonService {
       throw new Error("Person not found");
     }
 
+    const previousLinkedUserId = person.linked_user_id;
     const updateData: any = { ...data };
 
     // If phone number is updated, re-evaluate linked_user_id
@@ -227,6 +245,24 @@ export class PersonService {
     }
 
     await person.update(updateData);
+
+    // If the person has been newly linked to a registered user, send them a notification
+    if (updateData.linked_user_id && updateData.linked_user_id !== previousLinkedUserId) {
+      const currentUser = await User.findByPk(uid);
+      if (currentUser) {
+        await this.notificationService.createNotification({
+          recipient_id: updateData.linked_user_id,
+          sender_id: uid,
+          type: "system",
+          data: {
+            message: `${currentUser.name} has added you as a contact in Money Track.`,
+            senderName: currentUser.name,
+            subType: "contact_added",
+          },
+        });
+      }
+    }
+
     return await this.getPersonById(id, uid);
   }
 
