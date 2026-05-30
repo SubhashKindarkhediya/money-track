@@ -207,7 +207,8 @@ const Person: React.FC = () => {
     if (!justAddedPerson) return;
     
     const { name, phone } = justAddedPerson;
-    const appUrl = window.location.origin;
+    // Remove the protocol prefix (https:// or http://) to prevent the messaging client from showing a link preview containing the product logo
+    const appUrl = window.location.origin.replace(/^https?:\/\//, "");
     const userName = user?.name || "Money Track";
     const msg = `Hello ${name},\n\nI have added you on the Money Track app to easily and transparently manage our shared transactions and balances. You can view our live ledger and track transaction history here:\n${appUrl}\n\nRegards,\n${userName}`;
     
@@ -451,6 +452,9 @@ const Person: React.FC = () => {
     // Fallback name if user is not loaded
     const senderName = user?.name || "Your Friend";
 
+    // URL without protocol prefix (https://) to prevent the messaging client from showing a link preview containing the product logo
+    const appUrl = "moneytrackflow.vercel.app";
+
     const message = `Hi ${selectedPerson.name}! 👋
 
 I've been using *Money Track* to manage shared expenses with friends and contacts — and it's been really helpful!
@@ -458,7 +462,7 @@ I've been using *Money Track* to manage shared expenses with friends and contact
 We already have some transactions recorded together. Join Money Track to easily see what we owe each other, all in one place.
 
 🔗 Get started for free:
-https://moneytrackflow.vercel.app/
+${appUrl}
 
 Takes less than a minute. See you there! 😊
 
