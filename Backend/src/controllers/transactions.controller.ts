@@ -308,4 +308,31 @@ export class TransactionsController {
       res.status(500).json({ error: error.message });
     }
   };
+  /**
+   * Settle a person's net balance
+   */
+  settlePerson = async (req: Request, res: Response) => {
+    try {
+      const { personId } = req.params;
+      const { settleAmount, date, note } = req.body;
+      const uid = (req as any).user.uid;
+
+      if (settleAmount === undefined || settleAmount === null || isNaN(Number(settleAmount)) || Number(settleAmount) <= 0) {
+        res.status(400).json({ error: "Invalid settleAmount. It must be a positive number." });
+        return;
+      }
+
+      const result = await this.transactionsService.settlePersonNetBalance(
+        personId,
+        uid,
+        Number(settleAmount),
+        date ? new Date(date) : undefined,
+        note
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
 }

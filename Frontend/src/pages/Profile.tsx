@@ -12,8 +12,9 @@ import {
   Calendar,
   ChevronRight,
   ChevronDown,
-  Check,
   Trash2,
+  CreditCard,
+  Pencil,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -65,6 +66,7 @@ const Profile: React.FC = () => {
     address: user?.address || "",
     dob: user?.dob || "",
     profile_picture: user?.profile_picture || "",
+    upi_id: user?.upi_id || "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{
@@ -72,6 +74,12 @@ const Profile: React.FC = () => {
     text: string;
   } | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  // UPI Modal State
+  const [isUpiModalOpen, setIsUpiModalOpen] = useState(false);
+  const [upiIdInput, setUpiIdInput] = useState("");
+  const [upiSubmitLoading, setUpiSubmitLoading] = useState(false);
+  const [upiError, setUpiError] = useState("");
 
   const genderOptions = ["Male", "Female", "Other"];
 
@@ -90,6 +98,7 @@ const Profile: React.FC = () => {
         address: user.address || "",
         dob: user.dob || "",
         profile_picture: user.profile_picture || "",
+        upi_id: user.upi_id || "",
       });
     }
   }, [user]);
@@ -174,6 +183,29 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleUpiSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpiError("");
+    
+    if (!upiIdInput.trim()) {
+      setUpiError("UPI ID is required");
+      return;
+    }
+    
+    try {
+      setUpiSubmitLoading(true);
+      const response = await api.patch("/auth/profile", { upi_id: upiIdInput.trim() });
+      updateUser(response.data.user);
+      setIsUpiModalOpen(false);
+      setMessage({ type: "success", text: "UPI ID updated successfully!" });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err: any) {
+      setUpiError(err.response?.data?.error || "Failed to save UPI ID");
+    } finally {
+      setUpiSubmitLoading(false);
+    }
+  };
+
   // ---------------------------------------------------------
   // VIEW MODE SCREEN
   // ---------------------------------------------------------
@@ -248,6 +280,7 @@ const Profile: React.FC = () => {
                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{user?.phone_number || "-"}</span>
               </div>
 
+
               <div className="flex items-center justify-between p-5 border-b border-gray-50 dark:border-gray-800/50">
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#1b1c2e] text-indigo-500 dark:text-indigo-400">
@@ -285,7 +318,35 @@ const Profile: React.FC = () => {
             </div>
           </div>
 
-          {/* 3. Address Section */}
+          {/* 3. Payment Details Section */}
+          <div>
+            <h3 className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-3 px-2">
+              Payment Details
+            </h3>
+            <div 
+              className="rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm overflow-hidden p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1b2a] transition-colors"
+              onClick={() => {
+                setUpiIdInput(user?.upi_id || "");
+                setUpiError("");
+                setIsUpiModalOpen(true);
+              }}
+            >
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#1b1c2e] text-indigo-500 dark:text-indigo-400 mt-1 shrink-0">
+                  <CreditCard size={18} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Primary UPI ID</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white leading-relaxed">
+                    {user?.upi_id || "Not provided"}
+                  </span>
+                </div>
+              </div>
+              <Pencil size={18} className="text-indigo-500 shrink-0 hover:text-indigo-600 transition-colors" />
+            </div>
+          </div>
+
+          {/* 4. Address Section */}
           <div>
             <h3 className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-3 px-2">
               Address
@@ -309,6 +370,65 @@ const Profile: React.FC = () => {
 
           </div>
         </div>
+
+        {/* UPI ID Modal */}
+        {isUpiModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+              onClick={() => setIsUpiModalOpen(false)}
+            ></div>
+            <div className="relative w-full max-w-sm bg-white dark:bg-[#0a0a1a] rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-indigo-700"></div>
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl mx-auto flex items-center justify-center mb-4 text-indigo-600 dark:text-indigo-400">
+                  <CreditCard size={32} />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Setup UPI ID</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  Enter your UPI ID so friends can send money directly to your bank account.
+                </p>
+                
+                <form onSubmit={handleUpiSubmit} className="space-y-4">
+                  <div className="text-left">
+                    <label className="text-[10px] font-black tracking-widest uppercase text-gray-400 dark:text-gray-500 block mb-2 px-1">UPI ID</label>
+                    {upiError && <p className="text-red-500 text-xs font-bold mb-2 px-1">{upiError}</p>}
+                    <input
+                      type="text"
+                      required
+                      placeholder={`e.g. ${user?.phone_number || "9876543210"}@ybl`}
+                      value={upiIdInput}
+                      onChange={(e) => setUpiIdInput(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#151624] border border-slate-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl px-5 py-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsUpiModalOpen(false)}
+                      className="w-1/3 h-14 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest rounded-2xl text-[10px] active:scale-95 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={upiSubmitLoading}
+                      className="flex-1 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black uppercase tracking-widest rounded-2xl text-xs disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center shadow-lg shadow-indigo-500/20"
+                    >
+                      {upiSubmitLoading ? (
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : "Save & Enable"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -432,6 +552,27 @@ const Profile: React.FC = () => {
                     value={user?.email || ""}
                     disabled
                     className="w-full pl-14 pr-5 py-4 bg-gray-100 dark:bg-gray-800/30 border border-indigo-100/50 dark:border-gray-700 rounded-2xl font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {/* UPI ID */}
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 ml-1">
+                  UPI ID
+                </label>
+                <div className="relative group">
+                  <CreditCard
+                    size={18}
+                    className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors"
+                  />
+                  <input
+                    type="text"
+                    name="upi_id"
+                    value={formData.upi_id}
+                    onChange={handleChange}
+                    placeholder="e.g. 9876543210@ybl"
+                    className="w-full pl-14 pr-5 py-4 bg-white/80 dark:bg-gray-800/50 border border-indigo-100 dark:border-gray-700 rounded-2xl outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all shadow-inner shadow-indigo-900/5 text-gray-900 dark:text-white placeholder:transition-opacity focus:placeholder:opacity-0"
                   />
                 </div>
               </div>

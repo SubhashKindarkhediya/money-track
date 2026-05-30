@@ -103,6 +103,20 @@ const AddTransaction: React.FC = () => {
     setErrors(newErrors);
     if (!isValid) return;
 
+    let finalDate = txForm.date || undefined;
+    if (finalDate) {
+      if (isEditing && editingTx?.date && finalDate === new Date(editingTx.date).toISOString().split('T')[0]) {
+        // Keep original time if date wasn't changed
+        finalDate = editingTx.date;
+      } else if (finalDate.length === 10) {
+        // Append current local time to the selected date
+        const now = new Date();
+        const [year, month, day] = finalDate.split('-');
+        const localDate = new Date(Number(year), Number(month) - 1, Number(day), now.getHours(), now.getMinutes(), now.getSeconds());
+        finalDate = localDate.toISOString();
+      }
+    }
+
     try {
       setTxLoading(true);
 
@@ -111,7 +125,7 @@ const AddTransaction: React.FC = () => {
           await api.put(`/transactions/${editingTx.id}`, {
             amount: parseFloat(txForm.amount),
             reason: txForm.reason || undefined,
-            date: txForm.date || undefined,
+            date: finalDate,
             status: txForm.status,
           });
         } else {
@@ -120,7 +134,7 @@ const AddTransaction: React.FC = () => {
             type: txForm.type,
             amount: parseFloat(txForm.amount),
             reason: txForm.reason || undefined,
-            date: txForm.date || undefined,
+            date: finalDate,
             status: txForm.status,
           });
         }
@@ -137,7 +151,7 @@ const AddTransaction: React.FC = () => {
               type: "credit",
               amount: amountPerPerson,
               reason: txForm.reason ? `${txForm.reason} (Group Split)` : "Group Expense Split",
-              date: txForm.date || undefined,
+              date: finalDate,
               status: "pending",
             })
           );
@@ -150,7 +164,7 @@ const AddTransaction: React.FC = () => {
             type: "debit",
             amount: amountPerPerson,
             reason: txForm.reason ? `${txForm.reason} (Group Split)` : "Group Expense Split",
-            date: txForm.date || undefined,
+            date: finalDate,
             status: "pending",
           });
         }

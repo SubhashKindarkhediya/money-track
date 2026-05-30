@@ -283,6 +283,81 @@ export class TransactionsService {
   }
 
   /**
+   * Settle a person's net balance (Option 1 - Splitwise style).
+   * Adds a new offsetting transaction. If net balance becomes 0, marks all pending as completed.
+   */
+  async settlePersonNetBalance(
+    personId: string,
+    uid: string,
+    settleAmount: number,
+    date?: Date,
+    note?: string
+  ) {
+    const { default: Transaction } = await import("../models/transaction.model");
+    
+    // 1. Get all pending transactions for this person
+    const pendingTxs = await Transaction.findAll({
+      where: { uid, person_id: personId, status: "pending" }
+    });
+
+    if (pendingTxs.length === 0) {
+      throw new Error("No pending transactions to settle.");
+    }
+
+    // 2. Calculate net balance
+    let credit = 0;
+    let debit = 0;
+    pendingTxs.forEach((t: any) => {
+      if (t.type === 'credit') credit += Number(t.amount);
+      if (t.type === 'debit') debit += Number(t.amount);
+    });
+    
+    const netBalance = credit - debit;
+    if (netBalance === 0) {
+      throw new Error("Net balance is already 0.");
+    }
+    
+    if (settleAmount > Math.abs(netBalance)) {
+      throw new Error(`Settle amount cannot exceed the pending balance of ${Math.abs(netBalance)}.`);
+    }
+
+    // 3. Create the offsetting transaction
+    // If netBalance > 0 (You'll Get / Credit), we need to create a 'debit' to offset it.
+    // If netBalance < 0 (You Owe / Debit), we need to create a 'credit' to offset it.
+    const typeToCreate = netBalance > 0 ? 'debit' : 'credit';
+    
+    const newTx = await this.createTransaction({
+      uid,
+      person_id: personId,
+      type: typeToCreate,
+      amount: settleAmount,
+      reason: "Settlement",
+      note: note || `Settled ${settleAmount} towards balance`,
+      status: "pending", // Initially pending
+      date: date || new Date()
+    });
+
+    // 4. Recalculate net balance with the new transaction included
+    if (typeToCreate === 'credit') credit += settleAmount;
+    if (typeToCreate === 'debit') debit += settleAmount;
+    
+    const newNetBalance = credit - debit;
+
+    // 5. If new net balance is 0 (exactly settled), mark ALL as completed
+    if (Math.abs(newNetBalance) < 0.01) { // Floating point safe check
+      const allTxs = [...pendingTxs, newTx];
+      for (const tx of allTxs) {
+        const updated = await (tx as any).update({ status: "completed" });
+        // Attempt to sync mirror for each (in background to avoid slow response)
+        this.syncMirrorCompletion(updated, uid, "Settled via Net Balance").catch(e => console.error(e));
+      }
+      return { message: "Full settlement successful. All transactions marked as completed.", newTx, isFullySettled: true };
+    }
+
+    return { message: "Partial settlement successful. Balance updated.", newTx, isFullySettled: false };
+  }
+
+  /**
    * Delete a transaction
    */
   async deleteTransaction(id: string, uid: string) {

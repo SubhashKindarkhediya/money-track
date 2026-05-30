@@ -66,7 +66,7 @@ export class PersonService {
         {
           model: User,
           as: "linkedUser",
-          attributes: ["phone_number", "email", "name"],
+          attributes: ["phone_number", "email", "name", "upi_id"],
         },
       ],
     });
@@ -146,7 +146,8 @@ export class PersonService {
         phone: displayPhone,
         totalCredit: finalCredit,
         totalDebit: finalDebit,
-        connection_status
+        connection_status,
+        upi_id: personData.linkedUser?.upi_id || null,
       };
     });
   }
@@ -165,7 +166,7 @@ export class PersonService {
         {
           model: User,
           as: "linkedUser",
-          attributes: ["phone_number", "email", "name"],
+          attributes: ["phone_number", "email", "name", "upi_id"],
         },
       ]
     });
@@ -208,6 +209,7 @@ export class PersonService {
       person.setDataValue('connection_status' as any, connection_status);
       const displayPhone = (person as any).linkedUser?.phone_number || person.phone;
       person.setDataValue('phone', displayPhone);
+      person.setDataValue('upi_id' as any, (person as any).linkedUser?.upi_id || null);
     }
     
     return person;

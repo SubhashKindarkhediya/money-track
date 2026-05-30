@@ -14,6 +14,7 @@ interface User {
   currency?: string;
   monthly_budget?: number;
   profile_picture?: string;
+  upi_id?: string;
 }
 
 interface AuthContextType {
@@ -49,8 +50,13 @@ const verifySessionWithBackend = async (token: string): Promise<boolean> => {
         'Content-Type': 'application/json',
       },
     });
-    // 200 = user exists, anything else (401/404/500) = force logout
-    return response.ok;
+    // Only force logout if explicitly unauthorized (401) or user not found (404)
+    if (response.status === 401 || response.status === 404) {
+      return false;
+    }
+    
+    // For 200, or 5xx server errors, assume valid to avoid aggressive logouts
+    return true;
   } catch {
     // Network error — don't force logout, assume offline
     // We only force logout when we get a clear 401 from server

@@ -144,7 +144,7 @@ export class AuthController {
       const { 
         name, phone_number, gender, address,
         first_name, last_name, dob, id_card_no,
-        currency, monthly_budget, profile_picture
+        currency, monthly_budget, profile_picture, upi_id
       } = req.body;
 
       const updatedUser = await this.authService.updateProfile(userId, { 
@@ -158,7 +158,8 @@ export class AuthController {
         id_card_no,
         currency,
         monthly_budget,
-        profile_picture
+        profile_picture,
+        upi_id
       });
 
       res.status(200).json({

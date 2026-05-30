@@ -20,5 +20,6 @@ router.put("/:id", transactionsController.update);        // Update transaction
 router.post("/:id/settle", transactionsController.settle);  // Settle transaction (partial/full)
 router.delete("/:id", transactionsController.delete);     // Delete transaction
 router.get("/person/:person_id", transactionsController.getByPerson); // By person
+router.post("/person/:personId/settle", transactionsController.settlePerson); // Settle person net balance
 
 export default router;

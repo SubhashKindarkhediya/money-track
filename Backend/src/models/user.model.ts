@@ -20,6 +20,7 @@ interface UserAttributes {
   monthly_budget?: number;
   profile_picture?: string;
   is_verified?: boolean;
+  upi_id?: string;
 }
 
 interface UserCreationAttributes extends Optional<UserAttributes, "id"> { }
@@ -45,6 +46,7 @@ class User
   public monthly_budget?: number;
   public profile_picture?: string;
   public is_verified?: boolean;
+  public upi_id?: string;
 
 
   public readonly createdAt!: Date;
@@ -129,6 +131,10 @@ User.init(
     },
     profile_picture: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    upi_id: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
   },

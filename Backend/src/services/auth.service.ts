@@ -167,7 +167,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error("Invalid email, phone number or password");
+      throw new Error("Invalid email or phone number");
     }
 
     if (!user.is_verified) {
@@ -177,7 +177,7 @@ export class AuthService {
     // 2. Compare passwords
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new Error("Invalid email, phone number or password");
+      throw new Error("Incorrect password");
     }
 
     // 3. Generate JWT Token
@@ -272,7 +272,7 @@ export class AuthService {
     const { 
       name, phone_number, gender, address, 
       first_name, last_name, dob, id_card_no,
-      currency, monthly_budget, profile_picture
+      currency, monthly_budget, profile_picture, upi_id
     } = data;
 
     const user = await User.findByPk(userId);
@@ -314,6 +314,7 @@ export class AuthService {
     if (currency !== undefined) user.currency = currency;
     if (monthly_budget !== undefined) user.monthly_budget = monthly_budget;
     if (profile_picture !== undefined) user.profile_picture = profile_picture;
+    if (upi_id !== undefined) user.upi_id = upi_id;
     
     await user.save();
 

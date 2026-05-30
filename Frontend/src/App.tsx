@@ -167,10 +167,44 @@ const Dashboard = () => {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [isFabOpen, setIsFabOpen] = useState(false);
-  const { user, currencySymbol } = useAuth();
+  const { user, currencySymbol, updateUser } = useAuth();
   const [showTooltip, setShowTooltip] = useState(false);
   const [showPersonOnboarding, setShowPersonOnboarding] = useState(false);
   const [personsCount, setPersonsCount] = useState<number | null>(null);
+
+  // UPI Banner State
+  const [isUpiModalOpen, setIsUpiModalOpen] = useState(false);
+  const [upiIdInput, setUpiIdInput] = useState("");
+  const [upiSubmitLoading, setUpiSubmitLoading] = useState(false);
+  const [upiError, setUpiError] = useState("");
+  const [showUpiHook, setShowUpiHook] = useState(() => {
+    return sessionStorage.getItem("hideUpiHook") !== "true";
+  });
+
+  const handleUpiSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpiError("");
+    
+    if (!upiIdInput.trim()) {
+      setUpiError("UPI ID is required");
+      return;
+    }
+    
+    try {
+      setUpiSubmitLoading(true);
+      const { default: api } = await import("./services/api");
+      const res = await api.patch("/auth/profile", { upi_id: upiIdInput.trim() });
+      if (res.data && res.data.user) {
+        updateUser(res.data.user);
+        setIsUpiModalOpen(false);
+        navigate("/profile");
+      }
+    } catch (err: any) {
+      setUpiError(err.response?.data?.error || "Failed to save UPI ID");
+    } finally {
+      setUpiSubmitLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Dismiss mobile keyboard on mount with a small delay
@@ -318,6 +352,42 @@ const Dashboard = () => {
             Manage your digital finances with precision.
           </p>
         </div>
+
+        {/* The Money Hook Banner (UPI ID) - Indigo Theme */}
+        {!user?.upi_id && summary.netBalance > 0 && showUpiHook && (
+          <div className="relative bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[1.5rem] p-5 shadow-lg shadow-indigo-500/20 overflow-hidden group animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="absolute -right-4 -top-10 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+            <button 
+              onClick={() => {
+                setShowUpiHook(false);
+                sessionStorage.setItem("hideUpiHook", "true");
+              }}
+              className="absolute top-3 right-3 p-1.5 text-indigo-200 hover:text-white hover:bg-white/20 rounded-full transition-all z-20"
+              title="Hide for now"
+            >
+              <X size={16} strokeWidth={2.5} />
+            </button>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0">
+                  <span className="text-2xl text-white drop-shadow-md">⚡</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-black text-lg">Setup Direct Payments</h3>
+                  <p className="text-indigo-100 font-medium text-xs sm:text-sm mt-0.5 max-w-[280px]">
+                    Your friends owe you <span className="font-black bg-white/20 px-1.5 py-0.5 rounded text-white">{currencySymbol}{summary.netBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>! Add your UPI ID to receive payments directly.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsUpiModalOpen(true)}
+                className="w-full sm:w-auto px-6 py-3 bg-white text-indigo-600 hover:bg-indigo-50 font-black rounded-xl shadow-lg shadow-black/10 active:scale-95 transition-all text-sm uppercase tracking-wider whitespace-nowrap"
+              >
+                Add UPI ID
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Header Pill */}
         {!summaryLoading && (
@@ -586,6 +656,65 @@ const Dashboard = () => {
               >
                 Explore Dashboard First
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add UPI ID Modal - Indigo Theme */}
+      {isUpiModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsUpiModalOpen(false)}
+          ></div>
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#0a0a1a] rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-indigo-700"></div>
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl mx-auto flex items-center justify-center mb-4 text-indigo-600 dark:text-indigo-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.5 15H7a4 4 0 0 1-4-4v-2"/><path d="M21.5 11.5V7a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v4.5"/><path d="m15 19 3 3 3-3"/><path d="M18 22v-8"/></svg>
+              </div>
+              <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Setup UPI ID</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                Enter your UPI ID so friends can send money directly to your bank account.
+              </p>
+              
+              <form onSubmit={handleUpiSubmit} className="space-y-4">
+                <div className="text-left">
+                  <label className="text-[10px] font-black tracking-widest uppercase text-gray-400 dark:text-gray-500 block mb-2 px-1">UPI ID</label>
+                  {upiError && <p className="text-red-500 text-xs font-bold mb-2 px-1">{upiError}</p>}
+                  <input
+                    type="text"
+                    required
+                    placeholder={`e.g. ${user?.phone_number || "9876543210"}@ybl`}
+                    value={upiIdInput}
+                    onChange={(e) => setUpiIdInput(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-[#151624] border border-slate-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl px-5 py-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                  />
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsUpiModalOpen(false)}
+                    className="w-1/3 h-14 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest rounded-2xl text-[10px] active:scale-95 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={upiSubmitLoading}
+                    className="flex-1 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black uppercase tracking-widest rounded-2xl text-xs disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center shadow-lg shadow-indigo-500/20"
+                  >
+                    {upiSubmitLoading ? (
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : "Save & Enable"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
