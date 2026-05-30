@@ -1344,11 +1344,11 @@ function AppContent() {
                                   </button>
                                 </div>
                               ) : req.status === 'accepted' ? (
-                                <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100 dark:border-emerald-500/20 animate-in zoom-in duration-300">
+                                <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100 dark:border-emerald-500/20 animate-in zoom-in duration-300 whitespace-nowrap shrink-0">
                                   ✓ Accepted
                                 </div>
                               ) : req.status === 'rejected' ? (
-                                <div className="px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-rose-100 dark:border-rose-500/20 animate-in zoom-in duration-300">
+                                <div className="px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-rose-100 dark:border-rose-500/20 animate-in zoom-in duration-300 whitespace-nowrap shrink-0">
                                   ✕ Rejected
                                 </div>
                               ) : null}
@@ -1413,9 +1413,9 @@ function AppContent() {
                                   </button>
                                 </div>
                               ) : req.status === 'accepted' ? (
-                                <div className="px-4 py-2 text-emerald-500 text-[10px] font-black uppercase tracking-widest">✓ Accepted</div>
+                                <div className="px-4 py-2 text-emerald-500 text-[10px] font-black uppercase tracking-widest whitespace-nowrap shrink-0">✓ Accepted</div>
                               ) : req.status === 'rejected' ? (
-                                <div className="px-4 py-2 text-rose-500 text-[10px] font-black uppercase tracking-widest">✕ Rejected</div>
+                                <div className="px-4 py-2 text-rose-500 text-[10px] font-black uppercase tracking-widest whitespace-nowrap shrink-0">✕ Rejected</div>
                               ) : null}
 
                               {/* Unread dot for response notifications */}
