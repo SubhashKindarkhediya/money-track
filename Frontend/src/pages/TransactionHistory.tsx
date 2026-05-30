@@ -24,7 +24,7 @@ interface Transaction {
 }
 
 const TransactionHistory: React.FC = () => {
-  const { currencySymbol } = useAuth();
+  const { currencySymbol, user } = useAuth();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,62 +126,123 @@ const TransactionHistory: React.FC = () => {
       return;
     }
     const doc = new jsPDF();
-    
-    // Header
+
+    // Detect if all transactions belong to the same single person
+    const uniquePersonNames = [...new Set(filteredTransactions.map(tx => tx.Person?.name || "Unknown"))];
+    const isSinglePerson = uniquePersonNames.length === 1;
+    const singlePersonName = isSinglePerson ? uniquePersonNames[0] : null;
+
+    // Header title
     doc.setFontSize(20);
     doc.setTextColor(40);
-    const reportTitle = `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Transactions Report`;
+    const statusLabel = statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
+    const reportTitle = `${statusLabel} Transactions Report`;
     doc.text(reportTitle, 14, 22);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 30);
 
     const showCredit = filterType === "all" || filterType === "credit";
     const showDebit = filterType === "all" || filterType === "debit";
+    let netLabelStr = "";
 
-    // Table data
-    const tableColumn = ["Sr. No.", "Date", "Person", "Reason / Note"];
+    if (showCredit && showDebit) {
+      const netBalance = summary.credit - summary.debit;
+      if (isSinglePerson) {
+        const personFirstName = singlePersonName?.split(' ')[0] || "Person";
+
+        if (netBalance > 0) {
+          netLabelStr = `${personFirstName} will pay: ${Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}/-`;
+        } else if (netBalance < 0) {
+          netLabelStr = `${personFirstName} will get: ${Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}/-`;
+        } else {
+          netLabelStr = `All Settled: 0.00/-`;
+        }
+      } else {
+        const prefix = netBalance >= 0 ? "You'll Get" : "You Owe";
+        netLabelStr = `${prefix}: ${Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}/-`;
+      }
+    }
+
+    if (netLabelStr) {
+      doc.setFontSize(10);
+      doc.setTextColor(79, 70, 229); // indigo-600
+      doc.text("Net Balance", 196, 30, { align: "right" });
+      doc.setFontSize(11);
+      doc.setTextColor(17, 24, 39); // gray-900 (darker)
+      doc.text(netLabelStr, 196, 36, { align: "right" });
+    }
+
+    // Subtitle: Person name (for single-person reports)
+    let tableStartY = 38;
+    if (isSinglePerson) {
+      doc.setFontSize(12);
+      doc.setTextColor(79, 70, 229); // indigo-600
+      doc.text(`Person: ${singlePersonName}`, 14, 30);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 36);
+      tableStartY = 42;
+    } else {
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 30);
+    }
+
+    // Build table columns — skip Person column for single-person reports
+    const tableColumn = ["Sr. No.", "Date"];
+    if (!isSinglePerson) tableColumn.push("Person");
+    tableColumn.push("Reason / Note");
     if (showCredit) tableColumn.push("Credit (Rs.)");
     if (showDebit) tableColumn.push("Debit (Rs.)");
 
     const tableRows: any[] = [];
 
     filteredTransactions.forEach((tx, index) => {
-      const txData = [
+      const txData: any[] = [
         index + 1,
         formatDate(tx.date || tx.createdAt),
-        tx.Person?.name || "Unknown",
-        tx.reason || tx.note || "-"
       ];
+      if (!isSinglePerson) txData.push(tx.Person?.name || "Unknown");
+      txData.push(tx.reason || tx.note || "-");
       if (showCredit) {
-        txData.push(tx.type === "credit" ? Number(tx.amount).toLocaleString("en-IN") : "-");
+        txData.push(tx.type === "credit" ? Number(tx.amount).toLocaleString("en-IN") + "/-" : "-");
       }
       if (showDebit) {
-        txData.push(tx.type === "debit" ? Number(tx.amount).toLocaleString("en-IN") : "-");
+        txData.push(tx.type === "debit" ? Number(tx.amount).toLocaleString("en-IN") + "/-" : "-");
       }
       tableRows.push(txData);
     });
 
-    // Add total row at the bottom
-    const totalRow = ["", "", "", "Total"];
-    if (showCredit) totalRow.push(summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 }));
-    if (showDebit) totalRow.push(summary.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 }));
+    // Total row
+    let totalLabel = "Total";
+    if (filterType === "credit") totalLabel = "Total Credit";
+    else if (filterType === "debit") totalLabel = "Total Debit";
+
+    const leadingCells = isSinglePerson ? ["", "", totalLabel] : ["", "", "", totalLabel];
+    const totalRow: any[] = [...leadingCells];
+    if (showCredit) totalRow.push(summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 }) + "/-");
+    if (showDebit) totalRow.push(summary.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 }) + "/-");
     tableRows.push(totalRow);
 
-    // Dynamic column styles for amount alignment
+
+
+    // Dynamic column styles for right-aligning amount columns
+    const reasonColIndex = isSinglePerson ? 2 : 3;   // index of "Reason / Note"
+    const amountStartIndex = reasonColIndex + 1;       // first amount column
     const colStyles: any = { 0: { cellWidth: 15 } };
     if (showCredit && showDebit) {
-      colStyles[4] = { halign: 'right' };
-      colStyles[5] = { halign: 'right' };
+      colStyles[amountStartIndex] = { halign: 'right' };
+      colStyles[amountStartIndex + 1] = { halign: 'right' };
     } else if (showCredit || showDebit) {
-      colStyles[4] = { halign: 'right' };
+      colStyles[amountStartIndex] = { halign: 'right' };
     }
+
+    // Determine which rows are special (Total row)
+    const totalRowIndex = tableRows.length - 1;
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 38,
+      startY: tableStartY,
       theme: 'grid',
       styles: { fontSize: 9, cellPadding: 4, halign: 'center' },
       columnStyles: colStyles,
@@ -189,20 +250,24 @@ const TransactionHistory: React.FC = () => {
       alternateRowStyles: { fillColor: [249, 250, 251] }, // gray-50
       didParseCell: function (data) {
         // Highlight the Total row
-        if (data.row.index === tableRows.length - 1) {
+        if (data.row.index === totalRowIndex) {
           data.cell.styles.fontStyle = 'bold';
-          data.cell.styles.fillColor = [240, 245, 255]; // slight indigo tint for total row
-          
-          // Right-align the "Total" text as well
-          if (data.column.index === 3) {
+          data.cell.styles.fillColor = [240, 245, 255]; // slight indigo tint
+
+          // Right-align the "Total" label cell
+          if (data.column.index === reasonColIndex) {
             data.cell.styles.halign = 'right';
           }
         }
       }
     });
 
-    doc.save("Transaction_Report.pdf");
+    const fileName = isSinglePerson
+      ? `Report_${singlePersonName?.replace(/\s+/g, "_")}.pdf`
+      : "Transaction_Report.pdf";
+    doc.save(fileName);
   };
+
 
   return (
     <div className="max-w-4xl mx-auto w-full font-sans pb-24 animate-in slide-in-from-bottom-6 duration-300">
@@ -220,7 +285,7 @@ const TransactionHistory: React.FC = () => {
               Transaction History
             </h2>
           </div>
-          
+
           <button
             onClick={generatePDF}
             className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors border border-indigo-100 dark:border-indigo-500/20 flex items-center gap-2 shadow-sm"
@@ -304,7 +369,18 @@ const TransactionHistory: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-5 mt-6 space-y-6">
+      <div className="px-5 mt-6 space-y-2">
+        {/* Net Balance text above Quick Summary */}
+        {filterType === "all" && (
+          <div className="flex justify-end px-2">
+            <span className="text-sm font-black text-gray-900 dark:text-white">
+              {summary.credit - summary.debit >= 0 ? "You'll Get: " : "You Owe: "}
+              <span className={summary.credit - summary.debit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                {currencySymbol}{Math.abs(summary.credit - summary.debit).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              </span>
+            </span>
+          </div>
+        )}
         {/* Quick Summary */}
         <div className="bg-white dark:bg-[#151624] p-4 sm:p-5 rounded-[1.5rem] border border-gray-100 dark:border-gray-800 shadow-sm flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-col">
@@ -373,13 +449,13 @@ const TransactionHistory: React.FC = () => {
                         </div>
 
                         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                          <MarqueeText 
-                            text={tx.Person ? tx.Person.name : "Unknown"} 
+                          <MarqueeText
+                            text={tx.Person ? tx.Person.name : "Unknown"}
                             className="text-sm font-bold text-gray-900 dark:text-white"
                           />
                           {tx.reason && (
-                            <MarqueeText 
-                              text={tx.reason} 
+                            <MarqueeText
+                              text={tx.reason}
                               className="text-[11px] font-semibold text-indigo-600/80 dark:text-indigo-400/80"
                             />
                           )}
@@ -391,12 +467,12 @@ const TransactionHistory: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
-                        <MarqueeText 
+                        <MarqueeText
                           text={`${tx.type === "credit" ? "+ " : "- "}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                           className={`text-base font-black ${tx.type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
                           containerClassName="justify-end min-w-[70px]"
                         />
-                        <div 
+                        <div
                           className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
                         >
                           <ChevronRight size={16} />
