@@ -845,6 +845,7 @@ function AppContent() {
     autoAdded: n.data?.autoAdded || false,
     subType: n.data?.subType || null,
     responseStatus: n.data?.status || null,
+    personId: n.data?.personId || null,
   }));
 
   const handleAccept = async (id: string) => {
@@ -1570,17 +1571,23 @@ function AppContent() {
                       {activities.filter(a => a.date === 'Today').map(act => (
                         <div
                           key={act.id}
-                          onClick={() => !act.isRead && markAsRead(act.id)}
-                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${!act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
+                          onClick={() => {
+                            if (!act.isRead) markAsRead(act.id);
+                            if (act.subType === 'old_transactions_synced' && act.personId) {
+                              setNotifScreenOpen(false);
+                              navigate(`/person/${act.personId}?tab=transactions`);
+                            }
+                          }}
+                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${!act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800'
                             }`}>
                           {/* Icon — connection response, contact added, or transaction */}
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'contact_added'
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'contact_added' || act.subType === 'old_transactions_synced'
                             ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10'
                             : act.subType === 'response'
                               ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
                               : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
                             }`}>
-                            {act.subType === 'contact_added' ? (
+                            {act.subType === 'contact_added' || act.subType === 'old_transactions_synced' ? (
                               <UserPlus size={18} />
                             ) : act.subType === 'response' ? (
                               act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />
@@ -1592,11 +1599,16 @@ function AppContent() {
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
                               {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ${currencySymbol}${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
                             </p>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{act.time}</span>
                               {act.autoAdded && (
                                 <span className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[8px] font-black uppercase tracking-tighter rounded-md border border-indigo-100 dark:border-indigo-500/20">
                                   <RefreshCw size={8} /> Synced
+                                </span>
+                              )}
+                              {act.subType === 'old_transactions_synced' && act.personId && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-tighter rounded-md border border-emerald-100 dark:border-emerald-500/20 shadow-sm ml-auto mr-4 group-hover:bg-emerald-100 transition-colors">
+                                  View History ➔
                                 </span>
                               )}
                             </div>
@@ -1621,17 +1633,23 @@ function AppContent() {
                       {activities.filter(a => a.date !== 'Today').map(act => (
                         <div
                           key={act.id}
-                          onClick={() => !act.isRead && markAsRead(act.id)}
-                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${!act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent'
+                          onClick={() => {
+                            if (!act.isRead) markAsRead(act.id);
+                            if (act.subType === 'old_transactions_synced' && act.personId) {
+                              setNotifScreenOpen(false);
+                              navigate(`/person/${act.personId}?tab=transactions`);
+                            }
+                          }}
+                          className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer ${!act.isRead ? 'bg-indigo-50/30 dark:bg-indigo-500/5 hover:bg-indigo-100/40 dark:hover:bg-indigo-500/10' : 'opacity-60 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800'
                             }`}>
                           {/* Icon — connection response, contact added, or transaction */}
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'contact_added'
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${act.subType === 'contact_added' || act.subType === 'old_transactions_synced'
                             ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10'
                             : act.subType === 'response'
                               ? (act.responseStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
                               : (act.type === 'received' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10')
                             }`}>
-                            {act.subType === 'contact_added' ? (
+                            {act.subType === 'contact_added' || act.subType === 'old_transactions_synced' ? (
                               <UserPlus size={18} />
                             ) : act.subType === 'response' ? (
                               act.responseStatus === 'accepted' ? <UserCheck size={18} /> : <UserX size={18} />
@@ -1643,11 +1661,16 @@ function AppContent() {
                             <p className={`text-sm ${!act.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>
                               {act.message || `${act.type === 'received' ? 'Received' : 'Sent'} ${currencySymbol}${act.amount} ${act.type === 'received' ? 'from' : 'to'} ${act.person}`}
                             </p>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{act.time}</span>
                               {act.autoAdded && (
                                 <span className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[8px] font-black uppercase tracking-tighter rounded-md border border-indigo-100 dark:border-indigo-500/20">
                                   <RefreshCw size={8} /> Synced
+                                </span>
+                              )}
+                              {act.subType === 'old_transactions_synced' && act.personId && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-tighter rounded-md border border-emerald-100 dark:border-emerald-500/20 shadow-sm ml-auto mr-4 group-hover:bg-emerald-100 transition-colors">
+                                  View History ➔
                                 </span>
                               )}
                             </div>

@@ -7,7 +7,7 @@ import { NotificationService } from "./notification.service";
 
 @singleton()
 export class TransactionsService {
-  constructor(private notificationService: NotificationService) {}
+  constructor(private notificationService: NotificationService) { }
 
   /**
    * Add a new transaction
@@ -294,7 +294,7 @@ export class TransactionsService {
     note?: string
   ) {
     const { default: Transaction } = await import("../models/transaction.model");
-    
+
     // 1. Get all pending transactions for this person
     const pendingTxs = await Transaction.findAll({
       where: { uid, person_id: personId, status: "pending" }
@@ -311,12 +311,12 @@ export class TransactionsService {
       if (t.type === 'credit') credit += Number(t.amount);
       if (t.type === 'debit') debit += Number(t.amount);
     });
-    
+
     const netBalance = credit - debit;
     if (netBalance === 0) {
       throw new Error("Net balance is already 0.");
     }
-    
+
     if (settleAmount > Math.abs(netBalance)) {
       throw new Error(`Settle amount cannot exceed the pending balance of ${Math.abs(netBalance)}.`);
     }
@@ -325,7 +325,7 @@ export class TransactionsService {
     // If netBalance > 0 (You'll Get / Credit), we need to create a 'debit' to offset it.
     // If netBalance < 0 (You Owe / Debit), we need to create a 'credit' to offset it.
     const typeToCreate = netBalance > 0 ? 'debit' : 'credit';
-    
+
     const newTx = await this.createTransaction({
       uid,
       person_id: personId,
@@ -340,7 +340,7 @@ export class TransactionsService {
     // 4. Recalculate net balance with the new transaction included
     if (typeToCreate === 'credit') credit += settleAmount;
     if (typeToCreate === 'debit') debit += settleAmount;
-    
+
     const newNetBalance = credit - debit;
 
     // 5. If new net balance is 0 (exactly settled), mark ALL as completed
@@ -365,7 +365,138 @@ export class TransactionsService {
     if (!transaction) {
       throw new Error("Transaction not found");
     }
+
+    // Attempt to delete mirror transaction if connected
+    if (transaction.person_id) {
+      const person = await Person.findByPk(transaction.person_id);
+      if (person && person.linked_user_id) {
+        const mirrorPerson = await Person.findOne({
+          where: {
+            uid: person.linked_user_id,
+            linked_user_id: uid
+          }
+        });
+
+        if (mirrorPerson) {
+          const mirrorType: TransactionType = transaction.type === 'credit' ? 'debit' : 'credit';
+          const mirrorTx = await Transaction.findOne({
+            where: {
+              uid: person.linked_user_id,
+              person_id: mirrorPerson.id,
+              type: mirrorType,
+              amount: transaction.amount,
+              status: transaction.status
+            },
+            order: [['date', 'DESC']]
+          });
+
+          if (mirrorTx) {
+            await mirrorTx.destroy();
+            // Notify the linked user about the deletion
+            const currentUser = await User.findByPk(uid);
+            await this.notificationService.createNotification({
+              recipient_id: person.linked_user_id,
+              sender_id: uid,
+              type: "system",
+              data: {
+                message: `${currentUser?.name} has deleted a transaction of ₹${transaction.amount} (${transaction.reason || 'No reason'}). It has also been removed from your history to keep balances synced.`,
+                subType: "transaction_deleted",
+              },
+            });
+          }
+        }
+      }
+    }
+
     await transaction.destroy();
     return true;
+  }
+
+  /**
+   * Sync pending transactions between two users when they connect.
+   */
+  async syncOldTransactionsOnConnect(
+    userAId: string,
+    userBId: string,
+    personAInBId: string,
+    personBInAId: string
+  ) {
+    // Fetch all pending transactions created by User A for Person B
+    const pendingTxsByA = await Transaction.findAll({
+      where: { uid: userAId, person_id: personBInAId, status: "pending" }
+    });
+
+    // Fetch all pending transactions created by User B for Person A
+    const pendingTxsByB = await Transaction.findAll({
+      where: { uid: userBId, person_id: personAInBId, status: "pending" }
+    });
+
+    let syncCountForB = 0;
+    // Mirror A's transactions to B
+    for (const tx of pendingTxsByA) {
+      if (tx.type === 'credit' || tx.type === 'debit') {
+        const mirrorType: TransactionType = tx.type === 'credit' ? 'debit' : 'credit';
+        await Transaction.create({
+          uid: userBId,
+          person_id: personAInBId,
+          type: mirrorType,
+          amount: tx.amount,
+          reason: tx.reason,
+          note: tx.note ? `${tx.note} (Old Transaction Auto-Added)` : "Old Transaction Auto-Added",
+          status: tx.status,
+          date: tx.date || new Date(),
+        });
+        syncCountForB++;
+      }
+    }
+
+    let syncCountForA = 0;
+    // Mirror B's transactions to A
+    for (const tx of pendingTxsByB) {
+      if (tx.type === 'credit' || tx.type === 'debit') {
+        const mirrorType: TransactionType = tx.type === 'credit' ? 'debit' : 'credit';
+        await Transaction.create({
+          uid: userAId,
+          person_id: personBInAId,
+          type: mirrorType,
+          amount: tx.amount,
+          reason: tx.reason,
+          note: tx.note ? `${tx.note} (Old Transaction Auto-Added)` : "Old Transaction Auto-Added",
+          status: tx.status,
+          date: tx.date || new Date(),
+        });
+        syncCountForA++;
+      }
+    }
+
+    // Notify User B if A had transactions
+    if (syncCountForB > 0) {
+      const userA = await User.findByPk(userAId);
+      await this.notificationService.createNotification({
+        recipient_id: userBId,
+        sender_id: userAId,
+        type: "system",
+        data: {
+          message: `${userA?.name} and you are now connected. Their previously recorded pending transactions with you have been added to your history. If you see any duplicate transactions from before you connected, you can safely delete them.`,
+          subType: "old_transactions_synced",
+          personId: personAInBId, // This allows frontend to route directly to the person's page
+        },
+      });
+    }
+
+    // Notify User A if B had transactions
+    if (syncCountForA > 0) {
+      const userB = await User.findByPk(userBId);
+      await this.notificationService.createNotification({
+        recipient_id: userAId,
+        sender_id: userBId,
+        type: "system",
+        data: {
+          message: `${userB?.name} and you are now connected. Their previously recorded pending transactions with you have been added to your history. If you see any duplicate transactions from before you connected, you can safely delete them.`,
+          subType: "old_transactions_synced",
+          personId: personBInAId, // This allows frontend to route directly to the person's page
+        },
+      });
+    }
   }
 }

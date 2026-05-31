@@ -68,13 +68,13 @@ export class NotificationService {
 
     if (status === "accepted" && notification.type === "request") {
       const { default: Person } = await import("../models/person.model");
-      
+
       const sender = await User.findByPk(notification.sender_id);
       const recipient = await User.findByPk(notification.recipient_id);
 
       if (sender && recipient) {
         // 1. Ensure Sender is in Recipient's list
-        const senderInRecipientList = await Person.findOne({
+        let senderInRecipientList = await Person.findOne({
           where: {
             uid: notification.recipient_id,
             linked_user_id: notification.sender_id
@@ -82,7 +82,7 @@ export class NotificationService {
         });
 
         if (!senderInRecipientList) {
-          await Person.create({
+          senderInRecipientList = await Person.create({
             uid: notification.recipient_id,
             name: sender.name,
             phone: sender.phone_number,
@@ -91,7 +91,7 @@ export class NotificationService {
         }
 
         // 2. Ensure Recipient is in Sender's list
-        const recipientInSenderList = await Person.findOne({
+        let recipientInSenderList = await Person.findOne({
           where: {
             uid: notification.sender_id,
             linked_user_id: notification.recipient_id
@@ -99,12 +99,27 @@ export class NotificationService {
         });
 
         if (!recipientInSenderList) {
-          await Person.create({
+          recipientInSenderList = await Person.create({
             uid: notification.sender_id,
             name: recipient.name,
             phone: recipient.phone_number,
             linked_user_id: notification.recipient_id
           });
+        }
+
+        // Sync old transactions between the newly connected users
+        try {
+          const { TransactionsService } = await import("./transactions.service");
+          const { container } = await import("tsyringe");
+          const transactionsService = container.resolve(TransactionsService);
+          await transactionsService.syncOldTransactionsOnConnect(
+            notification.sender_id,
+            notification.recipient_id,
+            senderInRecipientList.id,
+            recipientInSenderList.id
+          );
+        } catch (error) {
+          console.error("Error syncing old transactions on connection:", error);
         }
       }
     }

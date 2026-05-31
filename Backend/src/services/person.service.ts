@@ -278,6 +278,22 @@ export class PersonService {
     if (!person) {
       throw new Error("Person not found");
     }
+    
+    // If person has a linked_user_id, delete any request notifications between them
+    // This breaks the connection so the other user will see "Send Request" again
+    if (person.linked_user_id) {
+      const { default: Notification } = await import("../models/notification.model");
+      await Notification.destroy({
+        where: {
+          type: 'request',
+          [Op.or]: [
+            { sender_id: uid, recipient_id: person.linked_user_id },
+            { sender_id: person.linked_user_id, recipient_id: uid }
+          ]
+        }
+      });
+    }
+
     await person.destroy();
     return true;
   }

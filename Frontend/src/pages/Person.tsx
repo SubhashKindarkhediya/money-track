@@ -1625,28 +1625,29 @@ Takes less than a minute. See you there! 😊
               return (
                 <div
                   key={person.id}
-                  className="relative bg-white dark:bg-[#151624] rounded-[1.5rem] border border-gray-100 dark:border-gray-800/80 shadow-sm hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-500/30 transition-all group flex flex-col overflow-hidden"
+                  className="relative bg-slate-50 dark:bg-[#151624] rounded-[1.5rem] border border-slate-100 dark:border-gray-800/80 shadow-sm hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-500/30 transition-all group flex flex-col overflow-hidden"
                 >
+                  {/* Top Section */}
                   <div
                     onClick={() => handlePersonClick(person, "profile")}
-                    className="flex items-start justify-between p-5 pb-4 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors active:bg-gray-100 dark:active:bg-gray-800"
+                    className="flex items-start justify-between p-5 pb-5 cursor-pointer"
                   >
                     <div className="flex items-center gap-4">
                       {/* Avatar */}
-                      <div className="w-12 h-12 rounded-[1rem] bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-105 transition-transform">
+                      <div className="w-12 h-12 rounded-[1.2rem] bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-105 transition-transform shadow-sm">
                         {person.name.charAt(0).toUpperCase()}
                       </div>
 
-                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                      <div className="flex flex-col gap-0.5 min-w-0 flex-1 mt-0.5">
                         <div className="flex items-center gap-2 min-w-0">
                           <MarqueeText
                             text={person.name}
                             containerClassName="max-w-[120px] sm:max-w-[180px]"
-                            className="text-base font-bold text-gray-900 dark:text-white"
+                            className="text-base font-black text-gray-900 dark:text-white"
                           />
                         </div>
                         {person.phone && (
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 tracking-wide">
+                          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wide mt-0.5">
                             {person.phone}
                           </span>
                         )}
@@ -1654,99 +1655,103 @@ Takes less than a minute. See you there! 😊
                     </div>
 
                     {/* Right Side Status & Menu */}
-                    <div className="absolute top-4 right-4 flex flex-col items-end gap-4">
+                    <div className="absolute top-5 right-4 flex flex-col items-end gap-3.5">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveMenuId(person.id);
                         }}
-                        className="p-1.5 -mr-1.5 -mt-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        className="p-1 -mr-1 -mt-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-gray-800 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                       >
                         <MoreVertical size={18} />
                       </button>
 
                       {person.linked_user_id ? (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 shadow-sm animate-in zoom-in duration-300">
-                          <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
-                          <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">On App</span>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 shadow-sm border border-emerald-100 dark:border-emerald-500/20 animate-in zoom-in duration-300">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                          <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none">On App</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm animate-in zoom-in duration-300">
-                          <div className="w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-500"></div>
-                          <span className="text-[8px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Not on App</span>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-gray-800 shadow-sm border border-slate-200 dark:border-gray-700 animate-in zoom-in duration-300">
+                          <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500"></div>
+                          <span className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest leading-none">Not on App</span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Financial Summary */}
+                  {/* Financial Summary (Bottom Section) */}
                   <div
                     onClick={() => handlePersonClick(person, "transactions")}
-                    className="px-5 pb-3.5 cursor-pointer"
+                    className="bg-white dark:bg-[#1a1b2f] p-3 sm:p-4 cursor-pointer mt-auto"
                   >
-                    <div className="pt-3 border-t border-gray-50 dark:border-gray-800/50">
-                      <div className="flex items-center justify-between gap-3 py-2.5 px-3.5 rounded-2xl bg-slate-50/50 dark:bg-[#151624] hover:bg-slate-100/50 dark:hover:bg-[#1a1b2f] transition-all border border-slate-100/50 dark:border-gray-800/50 shadow-sm mt-0.5">
-                        <div className="flex items-center gap-3.5">
-                          {/* Icon */}
-                          {netBalance > 0 ? (
-                            <TrendingUp size={24} className="text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2.5} />
-                          ) : netBalance < 0 ? (
-                            <TrendingDown size={24} className="text-rose-600 dark:text-rose-400 shrink-0" strokeWidth={2.5} />
-                          ) : (
-                            <CheckCircle2 size={24} className="text-slate-400 dark:text-slate-500 shrink-0" strokeWidth={2.5} />
-                          )}
-
-                          {/* Text Stack */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                              Net Balance
-                            </span>
-                            <span className={`text-[10px] font-black tracking-wider uppercase ${netBalance > 0
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : netBalance < 0
-                                ? "text-rose-600 dark:text-rose-400"
-                                : "text-slate-400 dark:text-slate-500"
-                              }`}>
-                              {netBalance > 0 ? "You'll Get" : netBalance < 0 ? "You Owe" : "Settled"}
-                            </span>
+                    <div className="flex items-center justify-between gap-3 py-3.5 px-4 rounded-[1.2rem] bg-white dark:bg-[#151624] border border-slate-100 dark:border-gray-800/80 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:border-indigo-100 transition-all">
+                      <div className="flex items-center gap-3.5">
+                        {/* Icon */}
+                        {netBalance > 0 ? (
+                          <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
+                            <TrendingUp size={16} className="text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
                           </div>
-                        </div>
+                        ) : netBalance < 0 ? (
+                          <div className="w-8 h-8 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center shrink-0">
+                            <TrendingDown size={16} className="text-rose-600 dark:text-rose-400" strokeWidth={3} />
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400 dark:text-slate-500">
+                            <CheckCircle2 size={18} strokeWidth={2.5} />
+                          </div>
+                        )}
 
-                        {/* Right Side: Amount & Chevron */}
-                        <div className="flex items-center gap-2.5">
-                          <span className={`text-base font-black tracking-tight ${netBalance > 0
+                        {/* Text Stack */}
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                            Net Balance
+                          </span>
+                          <span className={`text-[9px] font-black tracking-widest uppercase ${netBalance > 0
                             ? "text-emerald-600 dark:text-emerald-400"
                             : netBalance < 0
                               ? "text-rose-600 dark:text-rose-400"
-                              : "text-slate-500 dark:text-slate-400"
+                              : "text-slate-400 dark:text-slate-500"
                             }`}>
-                            {netBalance > 0 ? "+ " : netBalance < 0 ? "- " : ""}
-                            {currencySymbol}
-                            {Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {netBalance > 0 ? "You'll Get" : netBalance < 0 ? "You Owe" : "Settled"}
                           </span>
-                          <ChevronRight size={18} className="text-gray-400 dark:text-gray-600 shrink-0 ml-1" />
                         </div>
                       </div>
 
-                      {/* Pay Button Row */}
-                      {netBalance < 0 && person.linked_user_id && person.upi_id && (
-                        <div className="mt-3 flex justify-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedUpiPerson(person);
-                              setUpiPaymentAmount(Math.abs(netBalance).toString());
-                              setUpiPaymentStep("enter_amount");
-                              setUpiPaymentError(null);
-                              setIsUpiPaymentModalOpen(true);
-                            }}
-                            className="w-[75%] py-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-indigo-500/20 active:scale-[0.98]"
-                          >
-                            Pay Now <ChevronRight size={14} />
-                          </button>
-                        </div>
-                      )}
+                      {/* Right Side: Amount & Chevron */}
+                      <div className="flex items-center gap-2.5">
+                        <span className={`text-base font-black tracking-tight ${netBalance > 0
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : netBalance < 0
+                            ? "text-rose-600 dark:text-rose-400"
+                            : "text-slate-600 dark:text-slate-400"
+                          }`}>
+                          {netBalance > 0 ? "+ " : netBalance < 0 ? "- " : ""}
+                          {currencySymbol}
+                          {Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        <ChevronRight size={18} className="text-gray-400 dark:text-gray-600 shrink-0 ml-1" />
+                      </div>
                     </div>
+
+                    {/* Pay Button Row */}
+                    {netBalance < 0 && person.linked_user_id && person.upi_id && (
+                      <div className="mt-3 flex justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedUpiPerson(person);
+                            setUpiPaymentAmount(Math.abs(netBalance).toString());
+                            setUpiPaymentStep("enter_amount");
+                            setUpiPaymentError(null);
+                            setIsUpiPaymentModalOpen(true);
+                          }}
+                          className="w-full sm:w-[80%] py-3 rounded-[1rem] bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-[0.98]"
+                        >
+                          Pay Now <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
