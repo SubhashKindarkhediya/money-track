@@ -1587,7 +1587,7 @@ Takes less than a minute. See you there! 😊
         </div>
       </div>
 
-      <div className="px-5 mt-4 space-y-6">
+      <div className="px-5 mt-1 space-y-3">
 
         {/* Animated Search Bar */}
         <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showSearch ? 'max-h-20 opacity-100 mb-6' : 'max-h-0 opacity-0 mb-0'}`}>
@@ -2243,7 +2243,7 @@ Takes less than a minute. See you there! 😊
                           setUpiPaymentError("Please enter a valid amount.");
                           return;
                         }
-                        
+
                         // We must fetch this person's transactions to find the net balance
                         // since we don't have it globally inside the list view.
                         // Actually, I can pass the netBalance into the state instead!
@@ -2254,7 +2254,7 @@ Takes less than a minute. See you there! 😊
 
                         // Trigger deep link
                         window.location.href = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}`;
-                        
+
                         // Change step
                         setUpiPaymentError(null);
                         setUpiPaymentStep("confirm_payment");
