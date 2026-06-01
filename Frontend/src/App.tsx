@@ -750,6 +750,7 @@ function AppContent() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const showToast = (message: string) => {
     setToast({ message, visible: true });
@@ -849,26 +850,34 @@ function AppContent() {
   }));
 
   const handleAccept = async (id: string) => {
+    if (actionLoadingId) return;
+    setActionLoadingId(id);
     try {
       const { default: api } = await import("./services/api");
       // Get person name before fetching updated notifications
       const req = requests.find(r => r.id === id);
       await api.patch(`/notifications/${id}/response`, { status: 'accepted' });
-      fetchNotifications();
+      await fetchNotifications();
       // Show toast so User B knows the contact was added
       showToast(`"${req?.name || 'Contact'}" has been added to your person list.`);
     } catch (err) {
       console.error("Failed to accept request", err);
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleReject = async (id: string) => {
+    if (actionLoadingId) return;
+    setActionLoadingId(id);
     try {
       const { default: api } = await import("./services/api");
       await api.patch(`/notifications/${id}/response`, { status: 'rejected' });
-      fetchNotifications();
+      await fetchNotifications();
     } catch (err) {
       console.error("Failed to reject request", err);
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -1462,13 +1471,15 @@ function AppContent() {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleAccept(req.id)}
-                                    className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20"
+                                    disabled={actionLoadingId === req.id}
+                                    className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
-                                    Accept
+                                    {actionLoadingId === req.id ? "Wait..." : "Accept"}
                                   </button>
                                   <button
                                     onClick={() => handleReject(req.id)}
-                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors"
+                                    disabled={actionLoadingId === req.id}
+                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     Reject
                                   </button>
@@ -1531,13 +1542,15 @@ function AppContent() {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleAccept(req.id)}
-                                    className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20"
+                                    disabled={actionLoadingId === req.id}
+                                    className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
-                                    Accept
+                                    {actionLoadingId === req.id ? "Wait..." : "Accept"}
                                   </button>
                                   <button
                                     onClick={() => handleReject(req.id)}
-                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg"
+                                    disabled={actionLoadingId === req.id}
+                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     Reject
                                   </button>
