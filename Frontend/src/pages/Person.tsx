@@ -201,6 +201,7 @@ const Person: React.FC = () => {
   const [txSearch, setTxSearch] = useState("");
   const [showTxSearch, setShowTxSearch] = useState(false);
   const [activeTxMenuId, setActiveTxMenuId] = useState<string | null>(null);
+  const [txToDelete, setTxToDelete] = useState<string | null>(null);
   const [justAddedPerson, setJustAddedPerson] = useState<{ name: string; phone: string } | null>(null);
   const [formErrors, setFormErrors] = useState<{ first_name?: string; phone_number?: string }>({});
   const [editErrors, setEditErrors] = useState<{ first_name?: string; phone?: string }>({});
@@ -664,11 +665,11 @@ Takes less than a minute. See you there! 😊
   };
 
   const handleDeleteTransaction = async (txId: string) => {
-    if (!window.confirm("Are you sure you want to delete this transaction?")) return;
     try {
       await api.delete(`/transactions/${txId}`);
       setTransactions(prev => prev.filter(tx => tx.id !== txId));
       setSelectedTx(null);
+      setTxToDelete(null);
       fetchPersons();
     } catch (err) {
       console.error("Failed to delete transaction", err);
@@ -1975,7 +1976,7 @@ Takes less than a minute. See you there! 😊
               <div className="pt-2">
                 <button
                   onClick={() => {
-                    handleDeleteTransaction(activeTxMenuId!);
+                    setTxToDelete(activeTxMenuId);
                     setActiveTxMenuId(null);
                   }}
                   className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
@@ -1997,6 +1998,47 @@ Takes less than a minute. See you there! 😊
           </div>
         </div>
       )}
+
+      {/* Delete Transaction Confirmation Drawer */}
+      {txToDelete && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] animate-in fade-in duration-300 flex flex-col justify-end"
+          onClick={() => setTxToDelete(null)}
+        >
+          <div
+            className="bg-white dark:bg-[#151624] rounded-t-[2.5rem] p-5 sm:p-6 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full duration-300 sm:max-w-md sm:mx-auto sm:w-full sm:rounded-[2.5rem] sm:mb-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6"></div>
+
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-14 h-14 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-full flex items-center justify-center mb-4">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2">Delete Transaction?</h3>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                This action cannot be undone. Are you sure you want to delete this transaction?
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setTxToDelete(null)}
+                className="flex-1 py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors active:scale-95"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteTransaction(txToDelete)}
+                className="flex-1 py-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-lg shadow-rose-500/30 transition-all active:scale-95"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {persons.length > 0 && location.state?.from !== "bottom_nav" && (
         <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#0a0a1a]/80 backdrop-blur-xl border-t border-indigo-100/50 dark:border-gray-800 z-40">
           <div className="max-w-4xl mx-auto w-full">
