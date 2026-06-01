@@ -477,7 +477,7 @@ export class TransactionsService {
         sender_id: userAId,
         type: "system",
         data: {
-          message: `${userA?.name} and you are now connected. Their previously recorded pending transactions with you have been added to your history. If you see any duplicate transactions from before you connected, you can safely delete them.`,
+          message: `${userA?.name} and you are now connected. Their previously recorded pending transactions with you have been added to your history.`,
           subType: "old_transactions_synced",
           personId: personAInBId, // This allows frontend to route directly to the person's page
         },
@@ -492,7 +492,7 @@ export class TransactionsService {
         sender_id: userBId,
         type: "system",
         data: {
-          message: `${userB?.name} and you are now connected. Their previously recorded pending transactions with you have been added to your history. If you see any duplicate transactions from before you connected, you can safely delete them.`,
+          message: `${userB?.name} and you are now connected. Their previously recorded pending transactions with you have been added to your history.`,
           subType: "old_transactions_synced",
           personId: personBInAId, // This allows frontend to route directly to the person's page
         },
