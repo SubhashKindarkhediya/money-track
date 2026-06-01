@@ -14,7 +14,7 @@ const startServer = async () => {
     await sequelize.sync({ alter: true });
     console.log("✅ Models synced successfully");
 
-    app.listen(PORT, () => {
+    app.listen(PORT as number, "0.0.0.0", () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       startKeepAlive();
     });
