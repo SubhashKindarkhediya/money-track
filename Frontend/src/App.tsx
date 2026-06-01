@@ -136,12 +136,12 @@ const Card = ({
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 px-5">
-        <h3 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-1.5 ${current.text}`}>
-          <span className={`font-sans text-lg sm:text-xl ${current.label}`}>{currencySymbol}</span>
-          {isVisible ? amount : "*****"}
+      <div className="flex-1 px-5 overflow-hidden w-full">
+        <h3 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-1.5 overflow-x-auto hide-scrollbar whitespace-nowrap w-full ${current.text}`}>
+          <span className={`font-sans text-lg sm:text-xl shrink-0 ${current.label}`}>{currencySymbol}</span>
+          <span>{isVisible ? amount : "*****"}</span>
         </h3>
-        <p className={`text-xs font-bold uppercase tracking-widest mt-1 ${current.label}`}>
+        <p className={`text-xs font-bold uppercase tracking-widest mt-1 truncate shrink-0 ${current.label}`}>
           {title}
         </p>
       </div>
@@ -162,8 +162,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [visibility, setVisibility] = useState([false, false, false]);
-  const [summary, setSummary] = useState({ totalCredit: 0, totalDebit: 0, netBalance: 0 });
+  const [visibility, setVisibility] = useState([false, false, false, false]);
+  const [summary, setSummary] = useState({ totalCredit: 0, totalDebit: 0, netBalance: 0, totalIncome: 0, totalExpense: 0 });
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [isFabOpen, setIsFabOpen] = useState(false);
@@ -184,12 +184,12 @@ const Dashboard = () => {
   const handleUpiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpiError("");
-    
+
     if (!upiIdInput.trim()) {
       setUpiError("UPI ID is required");
       return;
     }
-    
+
     try {
       setUpiSubmitLoading(true);
       const { default: api } = await import("./services/api");
@@ -256,8 +256,14 @@ const Dashboard = () => {
           api.get("/person")
         ]);
 
-        const { udhar } = sumRes.data.data;
-        setSummary({ totalCredit: udhar.totalCredit || 0, totalDebit: udhar.totalDebit || 0, netBalance: udhar.netBalance || 0 });
+        const { udhar, personal } = sumRes.data.data;
+        setSummary({
+          totalCredit: udhar.totalCredit || 0,
+          totalDebit: udhar.totalDebit || 0,
+          netBalance: udhar.netBalance || 0,
+          totalIncome: personal?.totalIncome || 0,
+          totalExpense: personal?.totalExpense || 0
+        });
 
         if (Array.isArray(txRes.data)) {
           const pendingTxs = txRes.data
@@ -271,7 +277,7 @@ const Dashboard = () => {
           const userData = user || JSON.parse(localStorage.getItem("user") || "{}");
           const userKey = userData?.id || userData?.email || "guest";
           const dismissed = localStorage.getItem(`dismissedPersonOnboarding_${userKey}`);
-          
+
           if (personRes.data.length === 0 && dismissed !== "true") {
             setShowPersonOnboarding(true);
           }
@@ -338,6 +344,13 @@ const Dashboard = () => {
       color: "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-500/10 dark:to-emerald-500/5 border border-emerald-200/60 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 shadow-md shadow-emerald-500/5 dark:shadow-none",
       path: "/add-transaction",
       state: { type: "credit" }
+    },
+    {
+      label: "Add Expense",
+      icon: <Wallet size={20} strokeWidth={2.5} />,
+      color: "bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-500/10 dark:to-indigo-500/5 border border-indigo-200/60 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 shadow-md shadow-indigo-500/5 dark:shadow-none",
+      path: "/add-transaction",
+      state: { type: "expense" }
     }
   ];
 
@@ -357,7 +370,7 @@ const Dashboard = () => {
         {!user?.upi_id && summary.netBalance > 0 && showUpiHook && (
           <div className="relative bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[1.5rem] p-5 shadow-lg shadow-indigo-500/20 overflow-hidden group animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="absolute -right-4 -top-10 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-            <button 
+            <button
               onClick={() => {
                 setShowUpiHook(false);
                 sessionStorage.setItem("hideUpiHook", "true");
@@ -379,7 +392,7 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsUpiModalOpen(true)}
                 className="w-full sm:w-auto px-6 py-3 bg-white text-indigo-600 hover:bg-indigo-50 font-black rounded-xl shadow-lg shadow-black/10 active:scale-95 transition-all text-sm uppercase tracking-wider whitespace-nowrap"
               >
@@ -396,46 +409,43 @@ const Dashboard = () => {
             className="group w-full bg-white/90 dark:bg-gray-800/80 backdrop-blur-md border border-gray-100/80 dark:border-gray-700/60 shadow-lg shadow-indigo-950/5 px-5 py-3.5 rounded-[1.5rem] flex items-center justify-between gap-4 transition-all hover:scale-[1.01] active:scale-[0.99] duration-300 cursor-pointer animate-in slide-in-from-top-4 duration-300"
           >
             <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                  summary.netBalance > 0
-                    ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    : summary.netBalance < 0
-                      ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
-                      : "bg-gray-50 dark:bg-gray-800 text-gray-500"
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center ${summary.netBalance > 0
+                ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : summary.netBalance < 0
+                  ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
+                  : "bg-gray-50 dark:bg-gray-800 text-gray-500"
                 }`}>
-                  <Wallet size={18} className="stroke-[2]" />
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
-                    Net Balance
-                  </span>
-                  <span className={`text-[9px] font-black uppercase tracking-wider ${
-                    summary.netBalance > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : summary.netBalance < 0
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-gray-400"
-                  }`}>
-                    {summary.netBalance > 0 ? "You'll Get" : summary.netBalance < 0 ? "You Owe" : "Settled"}
-                  </span>
-                </div>
+                <Wallet size={18} className="stroke-[2]" />
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-black tracking-tight ${
-                  summary.netBalance > 0
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : summary.netBalance < 0
-                      ? "text-red-600 dark:text-red-400"
-                      : "text-gray-500 dark:text-gray-400"
-                }`}>
-                  {summary.netBalance > 0 ? "+ " : summary.netBalance < 0 ? "- " : ""}
-                  {currencySymbol}{fmt(Math.abs(summary.netBalance))}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
+                  Net Balance
+                </span>
+                <span className={`text-[9px] font-black uppercase tracking-wider ${summary.netBalance > 0
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : summary.netBalance < 0
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-gray-400"
+                  }`}>
+                  {summary.netBalance > 0 ? "You'll Get" : summary.netBalance < 0 ? "You Owe" : "Settled"}
                 </span>
               </div>
             </div>
-          )}
+
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-black tracking-tight ${summary.netBalance > 0
+                ? "text-emerald-600 dark:text-emerald-400"
+                : summary.netBalance < 0
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-gray-500 dark:text-gray-400"
+                }`}>
+                {summary.netBalance > 0 ? "+ " : summary.netBalance < 0 ? "- " : ""}
+                {currencySymbol}{fmt(Math.abs(summary.netBalance))}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Carousel Container */}
         <div className="relative -mx-6 md:mx-0">
@@ -474,7 +484,54 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Income & Expense Cards */}
+        <div className="relative z-20 grid grid-cols-2 gap-4 animate-in slide-in-from-bottom-6 duration-500">
+          {/* Income Card */}
+          <div className="relative bg-emerald-50/50 dark:bg-emerald-500/5 rounded-[2rem] p-5 border border-emerald-100/60 dark:border-emerald-500/10 flex flex-col items-start gap-4 transition-transform hover:-translate-y-1 duration-300 shadow-sm">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleVisibility(2); }}
+              className="absolute top-4 right-4 z-50 p-2 rounded-xl text-emerald-600 hover:text-emerald-800 bg-emerald-100/50 hover:bg-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 transition-colors cursor-pointer"
+            >
+              {visibility[2] ? <Eye size={18} /> : <EyeOff size={18} />}
+            </button>
+            <div className="w-12 h-12 bg-emerald-100/80 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full border-[1.5px] border-emerald-600 dark:border-emerald-400 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-sans font-bold text-sm">
+                {currencySymbol}
+              </div>
+            </div>
+            <div className="flex flex-col gap-0.5 w-full overflow-hidden">
+              <span className="text-[10px] font-black text-emerald-600/80 dark:text-emerald-400/80 uppercase tracking-[0.15em] shrink-0">Total Income</span>
+              <span className="text-xl sm:text-2xl font-black text-emerald-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full">
+                <span className="text-emerald-600 dark:text-emerald-400 font-sans text-sm mr-0.5 shrink-0">{currencySymbol}</span>
+                <span>{summaryLoading ? "..." : visibility[2] ? fmt(summary.totalIncome) : "*****"}</span>
+              </span>
+            </div>
+          </div>
 
+          {/* Expense Card */}
+          <div className="relative bg-rose-50/50 dark:bg-rose-500/5 rounded-[2rem] p-5 border border-rose-100/60 dark:border-rose-500/10 flex flex-col items-start gap-4 transition-transform hover:-translate-y-1 duration-300 shadow-sm">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleVisibility(3); }}
+              className="absolute top-4 right-4 z-50 p-2 rounded-xl text-rose-600 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-500/20 dark:text-rose-400 transition-colors cursor-pointer"
+            >
+              {visibility[3] ? <Eye size={18} /> : <EyeOff size={18} />}
+            </button>
+            <div className="w-12 h-12 bg-rose-100/80 dark:bg-rose-500/20 rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full border-[1.5px] border-rose-600 dark:border-rose-400 flex items-center justify-center text-rose-600 dark:text-rose-400 font-sans font-bold text-sm">
+                {currencySymbol}
+              </div>
+            </div>
+            <div className="flex flex-col gap-0.5 w-full overflow-hidden">
+              <span className="text-[10px] font-black text-rose-600/80 dark:text-rose-400/80 uppercase tracking-[0.15em] shrink-0">Total Expense</span>
+              <span className="text-xl sm:text-2xl font-black text-rose-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full">
+                <span className="text-rose-600 dark:text-rose-400 font-sans text-sm mr-0.5 shrink-0">{currencySymbol}</span>
+                <span>{summaryLoading ? "..." : visibility[3] ? fmt(summary.totalExpense) : "*****"}</span>
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* Recent Activity */}
         <div className="bg-white/80 backdrop-blur-md dark:bg-gray-800/40 rounded-[2.5rem] p-5 md:p-8 border border-indigo-50 dark:border-gray-700/50 shadow-xl shadow-indigo-900/5">
@@ -538,9 +595,9 @@ const Dashboard = () => {
       )}
 
       {/* Floating Add Transaction Menu */}
-      <div className="fixed bottom-28 right-6 lg:bottom-10 lg:right-10 z-[100] flex flex-col items-end gap-8">
+      <div className="fixed bottom-28 right-6 lg:bottom-10 lg:right-10 z-[100] flex flex-col items-end gap-8 pointer-events-none">
         {/* FAB Options */}
-        <div className={`flex flex-col items-end gap-3 transition-all duration-300 ${isFabOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"}`}>
+        <div className={`flex flex-col items-end gap-3 transition-all duration-300 ${isFabOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-10 pointer-events-none"}`}>
           {fabOptions.map((opt, i) => (
             <div key={i} className="flex items-center gap-3 group">
               <span className="bg-white dark:bg-gray-800 px-3 py-1.5 rounded-xl text-xs font-black shadow-lg border border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-200 opacity-100 transition-opacity">
@@ -560,7 +617,7 @@ const Dashboard = () => {
         </div>
 
         {/* Main FAB */}
-        <div className="relative">
+        <div className="relative pointer-events-auto">
           {/* Onboarding Tooltip */}
           {showTooltip && !isFabOpen && (
             <div className="absolute bottom-20 right-0 w-64 animate-in slide-in-from-bottom-2 duration-500">
@@ -672,13 +729,13 @@ const Dashboard = () => {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-indigo-700"></div>
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl mx-auto flex items-center justify-center mb-4 text-indigo-600 dark:text-indigo-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.5 15H7a4 4 0 0 1-4-4v-2"/><path d="M21.5 11.5V7a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v4.5"/><path d="m15 19 3 3 3-3"/><path d="M18 22v-8"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.5 15H7a4 4 0 0 1-4-4v-2" /><path d="M21.5 11.5V7a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v4.5" /><path d="m15 19 3 3 3-3" /><path d="M18 22v-8" /></svg>
               </div>
               <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Setup UPI ID</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                 Enter your UPI ID so friends can send money directly to your bank account.
               </p>
-              
+
               <form onSubmit={handleUpiSubmit} className="space-y-4">
                 <div className="text-left">
                   <label className="text-[10px] font-black tracking-widest uppercase text-gray-400 dark:text-gray-500 block mb-2 px-1">UPI ID</label>
@@ -692,7 +749,7 @@ const Dashboard = () => {
                     className="w-full bg-slate-50 dark:bg-[#151624] border border-slate-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl px-5 py-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-700"
                   />
                 </div>
-                
+
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -861,15 +918,15 @@ function AppContent() {
       const req = requests.find(r => r.id === id);
       await api.patch(`/notifications/${id}/response`, { status: 'accepted' });
       const newNotifs = await fetchNotifications();
-      
+
       if (newNotifs) {
         // If there's an old transactions synced notification or no pending requests left, move to activity tab
-        const hasOldTxNotif = newNotifs.some((n: any) => 
-          n.status !== 'read' && 
+        const hasOldTxNotif = newNotifs.some((n: any) =>
+          n.status !== 'read' &&
           n.data?.subType === 'old_transactions_synced'
         );
         const pendingRequests = newNotifs.filter((n: any) => n.type === 'request' && n.status === 'pending').length;
-        
+
         if (hasOldTxNotif || pendingRequests === 0) {
           setActiveTab('activity');
         }
@@ -960,10 +1017,10 @@ function AppContent() {
   const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage || isSettingsPage;
 
   // Show bottom nav on "/" or if we are on one of the main pages and came from bottom nav
-  const showBottomNav = 
-    location.pathname === "/" || 
-    ((location.pathname === "/person" || location.pathname === "/transactions" || location.pathname === "/analytics") && 
-     location.state?.from === "bottom_nav");
+  const showBottomNav =
+    location.pathname === "/" ||
+    ((location.pathname === "/person" || location.pathname === "/transactions" || location.pathname === "/analytics") &&
+      location.state?.from === "bottom_nav");
 
   const navigation = [
     { name: "Home", icon: Home, path: "/", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },

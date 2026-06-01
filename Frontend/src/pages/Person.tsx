@@ -188,6 +188,7 @@ const Person: React.FC = () => {
   const [isUpiPaymentModalOpen, setIsUpiPaymentModalOpen] = useState(false);
   const [upiPaymentStep, setUpiPaymentStep] = useState<"enter_amount" | "confirm_payment">("enter_amount");
   const [upiPaymentAmount, setUpiPaymentAmount] = useState("");
+  const [upiPaymentMaxAmount, setUpiPaymentMaxAmount] = useState<number>(0);
   const [selectedUpiPerson, setSelectedUpiPerson] = useState<Person | null>(null);
   const [upiPaymentError, setUpiPaymentError] = useState<string | null>(null);
   const [settlePersonError, setSettlePersonError] = useState<string | null>(null);
@@ -919,7 +920,22 @@ Takes less than a minute. See you there! 😊
                           {currencySymbol}{Math.abs(netBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
+                        {netBalance < 0 && selectedPerson.linked_user_id && selectedPerson.upi_id && (
+                          <button
+                            onClick={() => {
+                              setSelectedUpiPerson(selectedPerson);
+                              setUpiPaymentAmount(Math.abs(netBalance).toString());
+                              setUpiPaymentMaxAmount(Math.abs(netBalance));
+                              setUpiPaymentStep("enter_amount");
+                              setUpiPaymentError(null);
+                              setIsUpiPaymentModalOpen(true);
+                            }}
+                            className="px-4 sm:px-6 py-2.5 rounded-full bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20 text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-100/80 dark:hover:bg-indigo-500/20 transition-all active:scale-[0.98] flex justify-center items-center gap-1 shadow-sm"
+                          >
+                            Pay Now <ChevronRight size={14} className="-mr-1" />
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setSettlePersonError(null);
@@ -927,7 +943,7 @@ Takes less than a minute. See you there! 😊
                             setSettleNote("");
                             setIsSettlePersonModalOpen(true);
                           }}
-                          className="px-6 sm:px-8 py-2.5 rounded-full bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20 text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-100/80 dark:hover:bg-indigo-500/20 transition-all active:scale-[0.98] flex justify-center items-center gap-2 shadow-sm"
+                          className="px-4 sm:px-6 py-2.5 rounded-full bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20 text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-100/80 dark:hover:bg-indigo-500/20 transition-all active:scale-[0.98] flex justify-center items-center gap-2 shadow-sm"
                         >
                           Settle
                         </button>
@@ -1752,6 +1768,7 @@ Takes less than a minute. See you there! 😊
                             e.stopPropagation();
                             setSelectedUpiPerson(person);
                             setUpiPaymentAmount(Math.abs(netBalance).toString());
+                            setUpiPaymentMaxAmount(Math.abs(netBalance));
                             setUpiPaymentStep("enter_amount");
                             setUpiPaymentError(null);
                             setIsUpiPaymentModalOpen(true);
@@ -2244,13 +2261,10 @@ Takes less than a minute. See you there! 😊
                           return;
                         }
 
-                        // We must fetch this person's transactions to find the net balance
-                        // since we don't have it globally inside the list view.
-                        // Actually, I can pass the netBalance into the state instead!
-                        // But for now, we just proceed.
-                        // I'll skip max limit validation here because transactions are not fetched for all persons.
-                        // Or I can calculate it if I have it. Wait, the netBalance was available where they clicked.
-                        // Let me change the check.
+                        if (Number(upiPaymentAmount) > upiPaymentMaxAmount) {
+                          setUpiPaymentError(`Cannot pay more than your total pending debit of ${currencySymbol}${upiPaymentMaxAmount.toLocaleString("en-IN")}.`);
+                          return;
+                        }
 
                         // Trigger deep link
                         window.location.href = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}`;

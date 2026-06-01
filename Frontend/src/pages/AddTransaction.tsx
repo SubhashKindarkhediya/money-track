@@ -20,7 +20,7 @@ const AddTransaction: React.FC = () => {
     amount: editingTx?.amount?.toString() || "",
     reason: editingTx?.reason || "",
     date: editingTx?.date ? new Date(editingTx.date).toISOString().split('T')[0] : "",
-    status: editingTx?.status || location.state?.status || "pending"
+    status: editingTx?.status || location.state?.status || (location.state?.type === "expense" || location.state?.type === "income" ? "completed" : "pending")
   });
   const [txLoading, setTxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -82,12 +82,16 @@ const AddTransaction: React.FC = () => {
     const newErrors: { person?: string; amount?: string; reason?: string } = {};
     let isValid = true;
 
-    if (mode === "single" && !txForm.person_id) {
-      newErrors.person = "Please select a person";
-      isValid = false;
-    } else if (mode === "group" && selectedPersons.length === 0) {
-      newErrors.person = "Please select at least one person";
-      isValid = false;
+    const isPersonalTx = txForm.type === "expense" || txForm.type === "income";
+
+    if (!isPersonalTx) {
+      if (mode === "single" && !txForm.person_id) {
+        newErrors.person = "Please select a person";
+        isValid = false;
+      } else if (mode === "group" && selectedPersons.length === 0) {
+        newErrors.person = "Please select at least one person";
+        isValid = false;
+      }
     }
 
     if (!txForm.amount || parseFloat(txForm.amount) <= 0) {
@@ -126,16 +130,16 @@ const AddTransaction: React.FC = () => {
             amount: parseFloat(txForm.amount),
             reason: txForm.reason || undefined,
             date: finalDate,
-            status: txForm.status,
+            status: isPersonalTx ? "completed" : txForm.status,
           });
         } else {
           await api.post("/transactions", {
-            person_id: txForm.person_id,
+            person_id: isPersonalTx ? undefined : txForm.person_id,
             type: txForm.type,
             amount: parseFloat(txForm.amount),
             reason: txForm.reason || undefined,
             date: finalDate,
-            status: txForm.status,
+            status: isPersonalTx ? "completed" : txForm.status,
           });
         }
       } else {
@@ -207,12 +211,14 @@ const AddTransaction: React.FC = () => {
             <ArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
           </button>
           <h2 className="text-base font-black text-gray-900 dark:text-white tracking-wide">
-            {isEditing ? "Update Transaction" : "New Transaction"}
+            {isEditing 
+              ? `Update ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}` 
+              : `New ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}`}
           </h2>
         </div>
 
-        {/* Transaction Mode Tabs - Only show if not coming from a specific person's profile and not editing */}
-        {!preSelectedPersonId && !isEditing && (
+        {/* Transaction Mode Tabs - Only show if not coming from a specific person's profile, not editing, and not personal tx */}
+        {!preSelectedPersonId && !isEditing && txForm.type !== "expense" && txForm.type !== "income" && (
           <div className="flex border-b border-indigo-100/30 dark:border-gray-800/50 bg-white/50 dark:bg-[#151624]/30">
             <button
               type="button"
@@ -244,8 +250,8 @@ const AddTransaction: React.FC = () => {
           <form onSubmit={handleAddTransaction} className="space-y-6 relative">
             {mode === "single" ? (
               <>
-                {/* Title for Single Transaction - Hide if person is pre-selected */}
-                {!preSelectedPersonId && (
+                {/* Title for Single Transaction - Hide if person is pre-selected or if personal tx */}
+                {!preSelectedPersonId && txForm.type !== "expense" && txForm.type !== "income" && (
                   <div className="flex justify-center mb-2">
                     <h3 className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em] bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2 rounded-full border border-indigo-100 dark:border-indigo-500/20 shadow-sm shadow-indigo-500/5">
                       Single Transaction
@@ -253,81 +259,83 @@ const AddTransaction: React.FC = () => {
                   </div>
                 )}
 
-                {/* Person Selector (Searchable) - Only show if not pre-selected */}
-                {!preSelectedPersonId ? (
-                  <div className="relative z-20">
-                    <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Search Person</label>
-                    <div className="relative">
-                      <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input
-                        type="text"
-                        required={!txForm.person_id && mode === "single"}
-                        placeholder="Type to search contacts..."
-                        value={searchQuery}
-                        onChange={(e) => {
-                          setSearchQuery(e.target.value);
-                          setIsDropdownOpen(true);
-                          setTxForm({ ...txForm, person_id: "" }); // Reset selected person when typing
-                          if (errors.person) setErrors({ ...errors, person: undefined });
-                        }}
-                        onFocus={() => setIsDropdownOpen(true)}
-                        className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`}
-                      />
-                      <ChevronDown size={18} className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''} pointer-events-none`} />
-                    </div>
-                    {errors.person && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.person}</p>}
+                {/* Person Selector (Searchable) - Only show if not pre-selected and not a personal tx */}
+                {txForm.type !== "expense" && txForm.type !== "income" && (
+                  !preSelectedPersonId ? (
+                    <div className="relative z-20">
+                      <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Search Person</label>
+                      <div className="relative">
+                        <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          required={!txForm.person_id && mode === "single"}
+                          placeholder="Type to search contacts..."
+                          value={searchQuery}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setIsDropdownOpen(true);
+                            setTxForm({ ...txForm, person_id: "" }); // Reset selected person when typing
+                            if (errors.person) setErrors({ ...errors, person: undefined });
+                          }}
+                          onFocus={() => setIsDropdownOpen(true)}
+                          className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`}
+                        />
+                        <ChevronDown size={18} className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''} pointer-events-none`} />
+                      </div>
+                      {errors.person && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.person}</p>}
 
-                    {/* Dropdown Menu */}
-                    {isDropdownOpen && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                        <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl shadow-indigo-900/10 overflow-hidden max-h-60 overflow-y-auto">
-                          {filteredPersons.length > 0 ? (
-                            filteredPersons.map(p => (
-                              <div
-                                key={p.id}
-                                onClick={() => {
-                                  setTxForm({ ...txForm, person_id: p.id });
-                                  setSearchQuery(p.name);
-                                  setIsDropdownOpen(false);
-                                }}
-                                className={`px-4 py-3 cursor-pointer transition-colors flex items-center justify-between ${txForm.person_id === p.id
-                                  ? 'bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-700 dark:text-indigo-400 font-bold'
-                                  : 'hover:bg-gray-50 dark:hover:bg-[#1b1c2e] text-gray-700 dark:text-gray-300 font-medium'
-                                  }`}
-                              >
-                                <span>{p.name}</span>
-                                {p.phone && <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">{p.phone}</span>}
+                      {/* Dropdown Menu */}
+                      {isDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                          <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl shadow-indigo-900/10 overflow-hidden max-h-60 overflow-y-auto">
+                            {filteredPersons.length > 0 ? (
+                              filteredPersons.map(p => (
+                                <div
+                                  key={p.id}
+                                  onClick={() => {
+                                    setTxForm({ ...txForm, person_id: p.id });
+                                    setSearchQuery(p.name);
+                                    setIsDropdownOpen(false);
+                                  }}
+                                  className={`px-4 py-3 cursor-pointer transition-colors flex items-center justify-between ${txForm.person_id === p.id
+                                    ? 'bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-700 dark:text-indigo-400 font-bold'
+                                    : 'hover:bg-gray-50 dark:hover:bg-[#1b1c2e] text-gray-700 dark:text-gray-300 font-medium'
+                                    }`}
+                                >
+                                  <span>{p.name}</span>
+                                  {p.phone && <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">{p.phone}</span>}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
+                                No contacts found matching "{searchQuery}"
                               </div>
-                            ))
-                          ) : (
-                            <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
-                              No contacts found matching "{searchQuery}"
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
+                            )}
+                          </div>
+                        </>
+                      )}
 
-                    {loading && <p className="text-xs text-indigo-500 mt-2 font-medium px-1 animate-pulse">Loading contacts...</p>}
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-xl">
-                      {preSelectedPersonName?.charAt(0).toUpperCase()}
+                      {loading && <p className="text-xs text-indigo-500 mt-2 font-medium px-1 animate-pulse">Loading contacts...</p>}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Adding transaction for</p>
-                      <MarqueeText
-                        text={preSelectedPersonName || ""}
-                        className="text-lg font-black text-gray-900 dark:text-white"
-                      />
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-xl">
+                        {preSelectedPersonName?.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Adding transaction for</p>
+                        <MarqueeText
+                          text={preSelectedPersonName || ""}
+                          className="text-lg font-black text-gray-900 dark:text-white"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )
                 )}
 
-                {/* Type Toggle - Hide if editing (Type cannot be changed for existing records to prevent balance confusion) */}
-                {!isEditing && (
+                {/* Type Toggle - Hide if editing or if personal tx */}
+                {!isEditing && txForm.type !== "expense" && txForm.type !== "income" && (
                   <div>
                     <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Transaction Type</label>
                     <div className="flex gap-3">
@@ -421,61 +429,65 @@ const AddTransaction: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Status Dropdown */}
-                <div className="relative z-10">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Transaction Status</label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                      className="w-full px-5 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm flex items-center justify-between hover:border-indigo-500/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${txForm.status === "pending" ? "bg-amber-500 shadow-lg shadow-amber-500/30" : "bg-indigo-600 shadow-lg shadow-indigo-600/30"}`}>
-                          <Check size={14} className="text-white" strokeWidth={4} />
-                        </div>
-                        <span className="capitalize">{txForm.status}</span>
+                {/* Status Dropdown - Hide if personal tx */}
+                {txForm.type !== "expense" && txForm.type !== "income" && (
+                  <>
+                    <div className="relative z-10">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Transaction Status</label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                          className="w-full px-5 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm flex items-center justify-between hover:border-indigo-500/50"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${txForm.status === "pending" ? "bg-amber-500 shadow-lg shadow-amber-500/30" : "bg-indigo-600 shadow-lg shadow-indigo-600/30"}`}>
+                              <Check size={14} className="text-white" strokeWidth={4} />
+                            </div>
+                            <span className="capitalize">{txForm.status}</span>
+                          </div>
+                          <ChevronDown size={18} className={`text-gray-400 transition-transform duration-300 ${isStatusDropdownOpen ? "rotate-180" : ""}`} />
+                        </button>
+
+                        {isStatusDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)}></div>
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-[1.8rem] shadow-2xl z-[55] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                              <button
+                                type="button"
+                                onClick={() => { setTxForm({ ...txForm, status: "pending" }); setIsStatusDropdownOpen(false); }}
+                                className="w-full px-5 py-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#1e1f30] transition-colors"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${txForm.status === "pending" ? "border-amber-500 bg-amber-500 shadow-md shadow-amber-500/20" : "border-gray-300 dark:border-gray-700"}`}>
+                                    {txForm.status === "pending" && <Check size={14} className="text-white" strokeWidth={4} />}
+                                  </div>
+                                  <span className={`text-sm font-bold ${txForm.status === "pending" ? "text-amber-600 dark:text-amber-400" : "text-gray-600 dark:text-gray-400"}`}>Pending</span>
+                                </div>
+                              </button>
+                              <div className="h-px bg-gray-50 dark:bg-gray-800/50 mx-4"></div>
+                              <button
+                                type="button"
+                                onClick={() => { setTxForm({ ...txForm, status: "completed" }); setIsStatusDropdownOpen(false); }}
+                                className="w-full px-5 py-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#1e1f30] transition-colors"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${txForm.status === "completed" ? "border-indigo-600 bg-indigo-600 shadow-md shadow-indigo-600/20" : "border-gray-300 dark:border-gray-700"}`}>
+                                    {txForm.status === "completed" && <Check size={14} className="text-white" strokeWidth={4} />}
+                                  </div>
+                                  <span className={`text-sm font-bold ${txForm.status === "completed" ? "text-indigo-600 dark:text-indigo-400" : "text-gray-600 dark:text-gray-400"}`}>Completed</span>
+                                </div>
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
-                      <ChevronDown size={18} className={`text-gray-400 transition-transform duration-300 ${isStatusDropdownOpen ? "rotate-180" : ""}`} />
-                    </button>
+                    </div>
 
-                    {isStatusDropdownOpen && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)}></div>
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-[1.8rem] shadow-2xl z-[55] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                          <button
-                            type="button"
-                            onClick={() => { setTxForm({ ...txForm, status: "pending" }); setIsStatusDropdownOpen(false); }}
-                            className="w-full px-5 py-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#1e1f30] transition-colors"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${txForm.status === "pending" ? "border-amber-500 bg-amber-500 shadow-md shadow-amber-500/20" : "border-gray-300 dark:border-gray-700"}`}>
-                                {txForm.status === "pending" && <Check size={14} className="text-white" strokeWidth={4} />}
-                              </div>
-                              <span className={`text-sm font-bold ${txForm.status === "pending" ? "text-amber-600 dark:text-amber-400" : "text-gray-600 dark:text-gray-400"}`}>Pending</span>
-                            </div>
-                          </button>
-                          <div className="h-px bg-gray-50 dark:bg-gray-800/50 mx-4"></div>
-                          <button
-                            type="button"
-                            onClick={() => { setTxForm({ ...txForm, status: "completed" }); setIsStatusDropdownOpen(false); }}
-                            className="w-full px-5 py-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#1e1f30] transition-colors"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${txForm.status === "completed" ? "border-indigo-600 bg-indigo-600 shadow-md shadow-indigo-600/20" : "border-gray-300 dark:border-gray-700"}`}>
-                                {txForm.status === "completed" && <Check size={14} className="text-white" strokeWidth={4} />}
-                              </div>
-                              <span className={`text-sm font-bold ${txForm.status === "completed" ? "text-indigo-600 dark:text-indigo-400" : "text-gray-600 dark:text-gray-400"}`}>Completed</span>
-                            </div>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Dynamic Spacer with ID for auto-scroll (Increased height to prevent cutting) */}
-                {isStatusDropdownOpen && <div id="dropdown-spacer" className="h-64 animate-in fade-in duration-300" />}
+                    {/* Dynamic Spacer with ID for auto-scroll (Increased height to prevent cutting) */}
+                    {isStatusDropdownOpen && <div id="dropdown-spacer" className="h-64 animate-in fade-in duration-300" />}
+                  </>
+                )}
               </>
             ) : (
               <>
@@ -717,7 +729,9 @@ const AddTransaction: React.FC = () => {
               <>
                 <CheckCircle2 size={18} />
                 <span className="uppercase tracking-[0.1em] text-sm font-bold">
-                  {isEditing ? "Update Transaction" : "Save Transaction"}
+                  {isEditing 
+                    ? `Update ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}` 
+                    : `Save ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}`}
                 </span>
               </>
             )}
