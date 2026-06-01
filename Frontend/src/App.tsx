@@ -762,8 +762,10 @@ function AppContent() {
       const { default: api } = await import("./services/api");
       const res = await api.get("/notifications");
       setNotifications(res.data);
+      return res.data;
     } catch (err) {
       console.error("Failed to fetch notifications", err);
+      return null;
     } finally {
       setLoadingNotifs(false);
     }
@@ -858,7 +860,21 @@ function AppContent() {
       // Get person name before fetching updated notifications
       const req = requests.find(r => r.id === id);
       await api.patch(`/notifications/${id}/response`, { status: 'accepted' });
-      await fetchNotifications();
+      const newNotifs = await fetchNotifications();
+      
+      if (newNotifs) {
+        // If there's an old transactions synced notification or no pending requests left, move to activity tab
+        const hasOldTxNotif = newNotifs.some((n: any) => 
+          n.status !== 'read' && 
+          n.data?.subType === 'old_transactions_synced'
+        );
+        const pendingRequests = newNotifs.filter((n: any) => n.type === 'request' && n.status === 'pending').length;
+        
+        if (hasOldTxNotif || pendingRequests === 0) {
+          setActiveTab('activity');
+        }
+      }
+
       // Show toast so User B knows the contact was added
       showToast(`"${req?.name || 'Contact'}" has been added to your person list.`);
     } catch (err) {
