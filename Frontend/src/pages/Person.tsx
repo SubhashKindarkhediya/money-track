@@ -976,10 +976,15 @@ Takes less than a minute. See you there! 😊
                               {tx.type === "credit" ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
                             </div>
                             <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                              <MarqueeText
-                                text={tx.reason || (tx.type === "credit" ? "Credit" : "Debit")}
-                                className="text-sm font-bold text-gray-900 dark:text-white"
-                              />
+                              <div className="flex items-center gap-2">
+                                <MarqueeText
+                                  text={tx.reason || (tx.type === "credit" ? "Credit" : "Debit")}
+                                  className="text-sm font-bold text-gray-900 dark:text-white"
+                                />
+                                {tx.note?.includes("Old Transaction Auto-Added") && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/20 whitespace-nowrap">Old</span>
+                                )}
+                              </div>
                               <div className="flex flex-col gap-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-1.5">
                                 <div className="flex items-center gap-1.5">
                                   <Calendar size={11} className="text-gray-400 dark:text-gray-500 shrink-0" />

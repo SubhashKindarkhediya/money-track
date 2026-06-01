@@ -24,7 +24,7 @@ export class NotificationService {
    * Get all notifications for a user
    */
   async getNotificationsByUserId(userId: string) {
-    return await Notification.findAll({
+    const notifications = await Notification.findAll({
       where: {
         [Op.or]: [
           { recipient_id: userId },
@@ -40,6 +40,23 @@ export class NotificationService {
         },
       ],
     });
+
+    const { default: Transaction } = await import("../models/transaction.model");
+
+    return await Promise.all(notifications.map(async (n: any) => {
+      const notifData = n.get({ plain: true });
+      if (notifData.data?.subType === "old_transactions_synced" && notifData.data.personId) {
+        const pendingCount = await Transaction.count({
+          where: {
+            uid: userId,
+            person_id: notifData.data.personId,
+            status: "pending"
+          }
+        });
+        notifData.data.hasPendingOldTxs = pendingCount > 0;
+      }
+      return notifData;
+    }));
   }
 
   /**

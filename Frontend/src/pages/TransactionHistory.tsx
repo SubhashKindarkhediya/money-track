@@ -462,12 +462,17 @@ const TransactionHistory: React.FC = () => {
                             text={tx.Person ? tx.Person.name : "Unknown"}
                             className="text-sm font-bold text-gray-900 dark:text-white"
                           />
-                          {tx.reason && (
-                            <MarqueeText
-                              text={tx.reason}
-                              className="text-[11px] font-semibold text-indigo-600/80 dark:text-indigo-400/80"
-                            />
-                          )}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {tx.reason && (
+                              <MarqueeText
+                                text={tx.reason}
+                                className="text-[11px] font-semibold text-indigo-600/80 dark:text-indigo-400/80"
+                              />
+                            )}
+                            {tx.note?.includes("Old Transaction Auto-Added") && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/20 whitespace-nowrap">Old</span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
                             <Clock size={10} />
                             <span>{formatTime(tx.date || tx.createdAt)}</span>

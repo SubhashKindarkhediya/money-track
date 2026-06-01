@@ -847,6 +847,7 @@ function AppContent() {
     subType: n.data?.subType || null,
     responseStatus: n.data?.status || null,
     personId: n.data?.personId || null,
+    hasPendingOldTxs: n.data?.hasPendingOldTxs ?? true,
   }));
 
   const handleAccept = async (id: string) => {
@@ -1619,7 +1620,7 @@ function AppContent() {
                                   <RefreshCw size={8} /> Synced
                                 </span>
                               )}
-                              {act.subType === 'old_transactions_synced' && act.personId && (
+                              {act.subType === 'old_transactions_synced' && act.personId && act.hasPendingOldTxs && (
                                 <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-tighter rounded-md border border-emerald-100 dark:border-emerald-500/20 shadow-sm ml-auto mr-4 group-hover:bg-emerald-100 transition-colors">
                                   View History ➔
                                 </span>
@@ -1681,7 +1682,7 @@ function AppContent() {
                                   <RefreshCw size={8} /> Synced
                                 </span>
                               )}
-                              {act.subType === 'old_transactions_synced' && act.personId && (
+                              {act.subType === 'old_transactions_synced' && act.personId && act.hasPendingOldTxs && (
                                 <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-tighter rounded-md border border-emerald-100 dark:border-emerald-500/20 shadow-sm ml-auto mr-4 group-hover:bg-emerald-100 transition-colors">
                                   View History ➔
                                 </span>
