@@ -194,6 +194,7 @@ const Person: React.FC = () => {
   const [settleAmount, setSettleAmount] = useState("");
   const [settleNote, setSettleNote] = useState("");
   const [settleLoading, setSettleLoading] = useState(false);
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", notes: "" });
@@ -439,13 +440,16 @@ const Person: React.FC = () => {
   };
 
   const handleSendRequest = async () => {
-    if (!selectedPerson) return;
+    if (!selectedPerson || isSendingRequest) return;
+    setIsSendingRequest(true);
     try {
       await api.post(`/person/${selectedPerson.id}/request`);
       setSelectedPerson(prev => prev ? { ...prev, connection_status: "requested" } : null);
       setPersons(prev => prev.map(p => p.id === selectedPerson.id ? { ...p, connection_status: "requested" } : p));
     } catch (error) {
       console.error("Failed to send request", error);
+    } finally {
+      setIsSendingRequest(false);
     }
   };
 
@@ -821,8 +825,8 @@ Takes less than a minute. See you there! 😊
                       {selectedPerson.linked_user_id ? (
                         <>
                           {(!selectedPerson.connection_status || selectedPerson.connection_status === "none") && (
-                            <button onClick={handleSendRequest} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all active:scale-95">
-                              <UserPlus size={14} /> Send Request
+                            <button onClick={handleSendRequest} disabled={isSendingRequest} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                              {isSendingRequest ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />} {isSendingRequest ? "Sending..." : "Send Request"}
                             </button>
                           )}
                           {selectedPerson.connection_status === "requested" && (

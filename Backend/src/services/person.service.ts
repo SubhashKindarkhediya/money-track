@@ -292,6 +292,21 @@ export class PersonService {
           ]
         }
       });
+
+      // Send removal notification
+      const currentUser = await User.findByPk(uid);
+      if (currentUser) {
+        await this.notificationService.createNotification({
+          recipient_id: person.linked_user_id,
+          sender_id: uid,
+          type: "system",
+          data: {
+            message: `${currentUser.name} has removed you from their contacts. Transactions will no longer sync.`,
+            senderName: currentUser.name,
+            subType: "contact_removed",
+          },
+        });
+      }
     }
 
     await person.destroy();
