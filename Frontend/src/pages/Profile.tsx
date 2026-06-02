@@ -215,7 +215,7 @@ const Profile: React.FC = () => {
       <div className="fixed inset-0 z-[60] overflow-y-auto bg-white dark:bg-[#0a0a1a]">
         <div className="max-w-4xl mx-auto w-full font-sans pb-24 min-h-screen">
           {/* Header */}
-          <div className="sticky top-0 z-30 flex items-center gap-4 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-gray-100 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
+          <div className="sticky top-0 z-30 flex items-center gap-4 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
           {/* Back Button */}
           <button
             onClick={() => navigate("/")}

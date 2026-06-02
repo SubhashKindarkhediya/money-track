@@ -47,6 +47,7 @@ import Profile from "./pages/Profile";
 import Person from "./pages/Person";
 import AddTransaction from "./pages/AddTransaction";
 import TransactionHistory from "./pages/TransactionHistory";
+import PersonalHistory from "./pages/PersonalHistory";
 import Analytics from "./pages/Analytics";
 import ForgotPassword from "./pages/ForgotPassword";
 import SettingsPage from "./pages/Settings";
@@ -163,7 +164,7 @@ const Dashboard = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [visibility, setVisibility] = useState([false, false, false, false]);
-  const [summary, setSummary] = useState({ totalCredit: 0, totalDebit: 0, netBalance: 0, totalIncome: 0, totalExpense: 0 });
+  const [summary, setSummary] = useState({ totalCredit: 0, totalDebit: 0, netBalance: 0, totalIncome: 0, totalExpense: 0, todayExpense: 0 });
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [isFabOpen, setIsFabOpen] = useState(false);
@@ -257,12 +258,28 @@ const Dashboard = () => {
         ]);
 
         const { udhar, personal } = sumRes.data.data;
+
+        let todayExp = 0;
+        if (Array.isArray(txRes.data)) {
+          const today = new Date();
+          const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+          todayExp = txRes.data
+            .filter((tx: any) => {
+              if (tx.type !== "expense") return false;
+              const txDate = new Date(tx.date || tx.createdAt).getTime();
+              return txDate >= todayStart;
+            })
+            .reduce((sum: number, tx: any) => sum + Number(tx.amount), 0);
+        }
+
         setSummary({
           totalCredit: udhar.totalCredit || 0,
           totalDebit: udhar.totalDebit || 0,
           netBalance: udhar.netBalance || 0,
           totalIncome: personal?.totalIncome || 0,
-          totalExpense: personal?.totalExpense || 0
+          totalExpense: personal?.totalExpense || 0,
+          todayExpense: todayExp
         });
 
         if (Array.isArray(txRes.data)) {
@@ -348,7 +365,7 @@ const Dashboard = () => {
     {
       label: "Add Expense",
       icon: <Wallet size={20} strokeWidth={2.5} />,
-      color: "bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-500/10 dark:to-indigo-500/5 border border-indigo-200/60 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 shadow-md shadow-indigo-500/5 dark:shadow-none",
+      color: "bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-500/10 dark:to-amber-500/5 border border-amber-200/60 dark:border-amber-500/20 text-amber-700 dark:text-amber-400 shadow-md shadow-amber-500/5 dark:shadow-none",
       path: "/add-transaction",
       state: { type: "expense" }
     }
@@ -487,47 +504,53 @@ const Dashboard = () => {
         {/* Income & Expense Cards */}
         <div className="relative z-20 grid grid-cols-2 gap-4 animate-in slide-in-from-bottom-6 duration-500">
           {/* Income Card */}
-          <div className="relative bg-emerald-50/50 dark:bg-emerald-500/5 rounded-[2rem] p-5 border border-emerald-100/60 dark:border-emerald-500/10 flex flex-col items-start gap-4 transition-transform hover:-translate-y-1 duration-300 shadow-sm">
+          <div
+            onClick={() => navigate('/personal-history')}
+            className="cursor-pointer relative bg-indigo-50/50 dark:bg-indigo-500/5 rounded-[2rem] p-5 border border-indigo-100/60 dark:border-indigo-500/10 flex flex-col items-start gap-4 transition-transform hover:-translate-y-1 duration-300 shadow-sm"
+          >
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleVisibility(2); }}
-              className="absolute top-4 right-4 z-50 p-2 rounded-xl text-emerald-600 hover:text-emerald-800 bg-emerald-100/50 hover:bg-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 z-50 p-2 rounded-xl text-indigo-600 hover:text-indigo-800 bg-indigo-100/50 hover:bg-indigo-200/50 dark:bg-indigo-500/20 dark:text-indigo-400 transition-colors cursor-pointer"
             >
               {visibility[2] ? <Eye size={18} /> : <EyeOff size={18} />}
             </button>
-            <div className="w-12 h-12 bg-emerald-100/80 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center shrink-0">
-              <div className="w-8 h-8 rounded-full border-[1.5px] border-emerald-600 dark:border-emerald-400 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-sans font-bold text-sm">
+            <div className="w-12 h-12 bg-indigo-100/80 dark:bg-indigo-500/20 rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full border-[1.5px] border-indigo-600 dark:border-indigo-400 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-sans font-bold text-sm">
                 {currencySymbol}
               </div>
             </div>
             <div className="flex flex-col gap-0.5 w-full overflow-hidden">
-              <span className="text-[10px] font-black text-emerald-600/80 dark:text-emerald-400/80 uppercase tracking-[0.15em] shrink-0">Total Income</span>
-              <span className="text-xl sm:text-2xl font-black text-emerald-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full">
-                <span className="text-emerald-600 dark:text-emerald-400 font-sans text-sm mr-0.5 shrink-0">{currencySymbol}</span>
+              <span className="text-[10px] font-black text-indigo-600/80 dark:text-indigo-400/80 uppercase tracking-[0.15em] shrink-0">Total Income</span>
+              <span className="text-lg sm:text-xl font-black text-indigo-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full mt-0.5">
+                <span className="text-indigo-600 dark:text-indigo-400 font-sans text-sm mr-0.5 shrink-0">{currencySymbol}</span>
                 <span>{summaryLoading ? "..." : visibility[2] ? fmt(summary.totalIncome) : "*****"}</span>
               </span>
             </div>
           </div>
 
           {/* Expense Card */}
-          <div className="relative bg-rose-50/50 dark:bg-rose-500/5 rounded-[2rem] p-5 border border-rose-100/60 dark:border-rose-500/10 flex flex-col items-start gap-4 transition-transform hover:-translate-y-1 duration-300 shadow-sm">
+          <div
+            onClick={() => navigate('/personal-history')}
+            className="cursor-pointer relative bg-amber-50/50 dark:bg-amber-500/5 rounded-[2rem] p-5 border border-amber-100/60 dark:border-amber-500/10 flex flex-col items-start gap-4 transition-transform hover:-translate-y-1 duration-300 shadow-sm"
+          >
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleVisibility(3); }}
-              className="absolute top-4 right-4 z-50 p-2 rounded-xl text-rose-600 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-500/20 dark:text-rose-400 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 z-50 p-2 rounded-xl text-amber-600 hover:text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 transition-colors cursor-pointer"
             >
               {visibility[3] ? <Eye size={18} /> : <EyeOff size={18} />}
             </button>
-            <div className="w-12 h-12 bg-rose-100/80 dark:bg-rose-500/20 rounded-2xl flex items-center justify-center shrink-0">
-              <div className="w-8 h-8 rounded-full border-[1.5px] border-rose-600 dark:border-rose-400 flex items-center justify-center text-rose-600 dark:text-rose-400 font-sans font-bold text-sm">
+            <div className="w-12 h-12 bg-amber-100/80 dark:bg-amber-500/20 rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full border-[1.5px] border-amber-600 dark:border-amber-400 flex items-center justify-center text-amber-600 dark:text-amber-400 font-sans font-bold text-sm">
                 {currencySymbol}
               </div>
             </div>
             <div className="flex flex-col gap-0.5 w-full overflow-hidden">
-              <span className="text-[10px] font-black text-rose-600/80 dark:text-rose-400/80 uppercase tracking-[0.15em] shrink-0">Total Expense</span>
-              <span className="text-xl sm:text-2xl font-black text-rose-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full">
-                <span className="text-rose-600 dark:text-rose-400 font-sans text-sm mr-0.5 shrink-0">{currencySymbol}</span>
-                <span>{summaryLoading ? "..." : visibility[3] ? fmt(summary.totalExpense) : "*****"}</span>
+              <span className="text-[10px] font-black text-amber-600/80 dark:text-amber-400/80 uppercase tracking-[0.15em] shrink-0">Today's Expense</span>
+              <span className="text-lg sm:text-xl font-black text-amber-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full mt-0.5">
+                <span className="text-amber-600 dark:text-amber-400 font-sans text-sm mr-0.5 shrink-0">{currencySymbol}</span>
+                <span>{summaryLoading ? "..." : visibility[3] ? fmt(summary.todayExpense) : "*****"}</span>
               </span>
             </div>
           </div>
@@ -1331,6 +1354,14 @@ function AppContent() {
               element={
                 <ProtectedRoute>
                   <TransactionHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/personal-history"
+              element={
+                <ProtectedRoute>
+                  <PersonalHistory />
                 </ProtectedRoute>
               }
             />

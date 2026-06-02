@@ -171,7 +171,7 @@ const SettingsPage: React.FC = () => {
   return (
     <div className="max-w-xl mx-auto w-full font-sans pb-24 animate-in slide-in-from-bottom-6 duration-300 min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-30 px-4 py-5 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-4">
+      <div className="sticky top-0 z-30 px-4 py-5 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5 flex items-center gap-4">
         <button
           onClick={handleBack}
           type="button"

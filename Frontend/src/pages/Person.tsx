@@ -699,7 +699,7 @@ Takes less than a minute. See you there! 😊
       <div className="fixed inset-0 z-[60] overflow-y-auto bg-white dark:bg-[#0a0a1a]">
         <div className="max-w-4xl mx-auto w-full font-sans animate-in slide-in-from-bottom-6 duration-300 min-h-screen flex flex-col">
           {/* Header */}
-          <div className="sticky top-0 z-30 flex items-center gap-4 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-gray-100/50 dark:border-gray-800/50">
+          <div className="sticky top-0 z-30 flex items-center gap-4 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
             <button
               onClick={() => {
                 if (detailTab === "edit") {
@@ -773,7 +773,7 @@ Takes less than a minute. See you there! 😊
             )}
           </div>
 
-          <div className={`px-5 mt-0 ${detailTab === "profile" ? "space-y-6" : ""}`}>
+          <div className={`px-5 mt-1 ${detailTab === "profile" ? "space-y-6" : ""}`}>
 
             {/* Transaction Search Bar */}
             {detailTab === "transactions" && (
@@ -1574,7 +1574,7 @@ Takes less than a minute. See you there! 😊
     <div className="max-w-4xl mx-auto w-full font-sans transition-colors duration-300 pb-8">
 
       {/* Header */}
-      <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl">
+      <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate("/")}
@@ -1603,7 +1603,7 @@ Takes less than a minute. See you there! 😊
         </div>
       </div>
 
-      <div className="px-5 mt-1 space-y-3">
+      <div className="px-5 mt-6 space-y-4">
 
         {/* Animated Search Bar */}
         <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showSearch ? 'max-h-20 opacity-100 mb-6' : 'max-h-0 opacity-0 mb-0'}`}>

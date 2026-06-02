@@ -171,10 +171,12 @@ const Analytics: React.FC = () => {
     }
   };
 
-  const StatCard = ({ title, value, icon: Icon, theme, trend }: any) => {
+  const StatCard = ({ title, value, icon: Icon, theme, trend, onClick }: any) => {
     const c = colorMap[theme] || colorMap["indigo"];
     return (
-      <div className={`relative overflow-hidden p-6 rounded-[2rem] border ${c.bg} ${c.border} flex flex-col items-start transition-all hover:scale-[1.02] shadow-sm`}>
+      <div
+        onClick={onClick}
+        className={`relative overflow-hidden p-6 rounded-[2rem] border ${c.bg} ${c.border} flex flex-col items-start transition-all hover:scale-[1.02] shadow-sm ${onClick ? 'cursor-pointer' : ''}`}>
 
         <div className="flex items-start justify-between w-full mb-4">
           {/* Icon Box */}
@@ -183,11 +185,13 @@ const Analytics: React.FC = () => {
               <Icon size={16} strokeWidth={2.5} />
             </div>
           </div>
-          {trend && (
-            <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${trend > 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
-              {trend > 0 ? "+" : ""}{trend}%
-            </span>
-          )}
+          <div className="flex flex-col items-end gap-1.5">
+            {trend && (
+              <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${trend > 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                {trend > 0 ? "+" : ""}{trend}%
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Text Container */}
@@ -207,7 +211,7 @@ const Analytics: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto w-full font-sans pb-24 animate-in slide-in-from-bottom-6 duration-300">
       {/* Header */}
-      <div className="sticky top-0 z-30 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm">
+      <div className="sticky top-0 z-30 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <button
@@ -274,14 +278,16 @@ const Analytics: React.FC = () => {
               <StatCard
                 title="Monthly Income"
                 value={data?.summary?.income || 0}
-                icon={TrendingUp}
-                theme="emerald"
+                icon={IndianRupee}
+                theme="indigo"
+                onClick={() => navigate('/personal-history')}
               />
               <StatCard
                 title="Monthly Expense"
                 value={data?.summary?.expense || 0}
-                icon={TrendingDown}
-                theme="rose"
+                icon={IndianRupee}
+                theme="amber"
+                onClick={() => navigate('/personal-history')}
               />
             </>
           ) : (
@@ -289,14 +295,16 @@ const Analytics: React.FC = () => {
               <StatCard
                 title="Pending Credit"
                 value={summaryData?.udhar?.totalCredit || 0}
-                icon={IndianRupee}
+                icon={TrendingUp}
                 theme="emerald"
+                onClick={() => navigate('/transactions')}
               />
               <StatCard
                 title="Pending Debit"
                 value={summaryData?.udhar?.totalDebit || 0}
-                icon={IndianRupee}
+                icon={TrendingDown}
                 theme="rose"
+                onClick={() => navigate('/transactions')}
               />
             </>
           )}
