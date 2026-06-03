@@ -19,6 +19,7 @@ export class TransactionsService {
     person_id?: string | null;
     type: TransactionType;
     amount: number;
+    category?: string;
     reason?: string;
     note?: string;
     status?: "pending" | "completed";
@@ -209,7 +210,7 @@ export class TransactionsService {
    */
   async updateTransaction(
     id: string,
-    data: { amount?: number; reason?: string; note?: string; date?: Date; status?: "pending" | "completed" },
+    data: { amount?: number; category?: string; reason?: string; note?: string; date?: Date; status?: "pending" | "completed" },
     uid: string
   ) {
     const transaction = await this.getTransactionById(id, uid);

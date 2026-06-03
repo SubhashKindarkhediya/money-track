@@ -271,7 +271,7 @@ const PersonalHistory: React.FC = () => {
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search by name or reason..."
+            placeholder="Search by category, reason..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-sm font-medium text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0"
@@ -327,22 +327,22 @@ const PersonalHistory: React.FC = () => {
           )}
 
           {/* Bottom Section: Stats */}
-          <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-col">
+          <div className="p-4 sm:p-5 flex items-center justify-between gap-4 overflow-x-auto hide-scrollbar">
+            <div className="flex flex-col items-start">
               <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Total Found</span>
               <span className="text-lg sm:text-xl font-black text-indigo-600 dark:text-indigo-400">{filteredTransactions.length}</span>
             </div>
             <div className="flex items-center gap-4 sm:gap-8">
-              <div className="flex flex-col items-center sm:items-end">
-                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Total Income</span>
-                <span className="text-sm sm:text-base font-black text-indigo-600 dark:text-indigo-400">
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Total Income</span>
+                <span className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400">
                   {currencySymbol}{summary.income.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0"></div>
-              <div className="flex flex-col items-center sm:items-end">
-                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">Total Expense</span>
-                <span className="text-sm sm:text-base font-black text-amber-600 dark:text-amber-400">
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Total Expense</span>
+                <span className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400">
                   {currencySymbol}{summary.expense.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>

@@ -11,7 +11,7 @@ export class TransactionsController {
    */
   create = async (req: Request, res: Response) => {
     try {
-      const { person_id, type, amount, reason, note, date, status } = req.body;
+      const { person_id, type, amount, category, reason, note, date, status } = req.body;
       const uid = (req as any).user.uid;
 
       // Validation: person_id is only required for credit/debit (Udhar)
@@ -30,6 +30,7 @@ export class TransactionsController {
         person_id,
         type,
         amount,
+        category,
         reason,
         note,
         status,
@@ -95,12 +96,12 @@ export class TransactionsController {
   update = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { amount, reason, note, date, status } = req.body;
+      const { amount, category, reason, note, date, status } = req.body;
       const uid = (req as any).user.uid;
 
       const transaction = await this.transactionsService.updateTransaction(
         id,
-        { amount, reason, note, date: date ? new Date(date) : undefined, status },
+        { amount, category, reason, note, date: date ? new Date(date) : undefined, status },
         uid
       );
 

@@ -349,21 +349,21 @@ const Dashboard = () => {
 
   const fabOptions = [
     {
-      label: "Give Money",
+      label: "Add Give Money",
       icon: <TrendingDown size={20} strokeWidth={2.5} />,
       color: "bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-500/10 dark:to-red-500/5 border border-red-200/60 dark:border-red-500/20 text-red-700 dark:text-red-400 shadow-md shadow-red-500/5 dark:shadow-none",
       path: "/add-transaction",
       state: { type: "debit" }
     },
     {
-      label: "Receive Money",
+      label: "Add Receive Money",
       icon: <TrendingUp size={20} strokeWidth={2.5} />,
       color: "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-500/10 dark:to-emerald-500/5 border border-emerald-200/60 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 shadow-md shadow-emerald-500/5 dark:shadow-none",
       path: "/add-transaction",
       state: { type: "credit" }
     },
     {
-      label: "Add Expense",
+      label: "Add Expense / Income",
       icon: <Wallet size={20} strokeWidth={2.5} />,
       color: "bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-500/10 dark:to-amber-500/5 border border-amber-200/60 dark:border-amber-500/20 text-amber-700 dark:text-amber-400 shadow-md shadow-amber-500/5 dark:shadow-none",
       path: "/add-transaction",
@@ -511,9 +511,9 @@ const Dashboard = () => {
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleVisibility(2); }}
-              className="absolute top-4 right-4 z-50 p-2 rounded-xl text-indigo-600 hover:text-indigo-800 bg-indigo-100/50 hover:bg-indigo-200/50 dark:bg-indigo-500/20 dark:text-indigo-400 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 z-50 p-1.5 rounded-xl text-indigo-600 hover:text-indigo-800 bg-indigo-100/50 hover:bg-indigo-200/50 dark:bg-indigo-500/20 dark:text-indigo-400 transition-colors cursor-pointer"
             >
-              {visibility[2] ? <Eye size={18} /> : <EyeOff size={18} />}
+              {visibility[2] ? <Eye size={14} /> : <EyeOff size={14} />}
             </button>
             <div className="w-12 h-12 bg-indigo-100/80 dark:bg-indigo-500/20 rounded-2xl flex items-center justify-center shrink-0">
               <div className="w-8 h-8 rounded-full border-[1.5px] border-indigo-600 dark:border-indigo-400 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-sans font-bold text-sm">
@@ -521,12 +521,13 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex flex-col gap-0.5 w-full overflow-hidden">
-              <span className="text-[10px] font-black text-indigo-600/80 dark:text-indigo-400/80 uppercase tracking-[0.15em] shrink-0">Total Income</span>
-              <span className="text-lg sm:text-xl font-black text-indigo-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full mt-0.5">
+              <span className="text-[10px] font-black text-indigo-600/80 dark:text-indigo-400/80 uppercase tracking-[0.15em] shrink-0 block overflow-x-auto hide-scrollbar whitespace-nowrap w-full">Total Income</span>
+              <span className="text-lg sm:text-xl font-black text-indigo-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full mt-0.5 pr-6">
                 <span className="text-indigo-600 dark:text-indigo-400 font-sans text-sm mr-0.5 shrink-0">{currencySymbol}</span>
                 <span>{summaryLoading ? "..." : visibility[2] ? fmt(summary.totalIncome) : "*****"}</span>
               </span>
             </div>
+            <ChevronRight size={14} className="absolute bottom-5 right-4 text-indigo-600 dark:text-indigo-400 opacity-40" />
           </div>
 
           {/* Expense Card */}
@@ -537,9 +538,9 @@ const Dashboard = () => {
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleVisibility(3); }}
-              className="absolute top-4 right-4 z-50 p-2 rounded-xl text-amber-600 hover:text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 z-50 p-1.5 rounded-xl text-amber-600 hover:text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 transition-colors cursor-pointer"
             >
-              {visibility[3] ? <Eye size={18} /> : <EyeOff size={18} />}
+              {visibility[3] ? <Eye size={14} /> : <EyeOff size={14} />}
             </button>
             <div className="w-12 h-12 bg-amber-100/80 dark:bg-amber-500/20 rounded-2xl flex items-center justify-center shrink-0">
               <div className="w-8 h-8 rounded-full border-[1.5px] border-amber-600 dark:border-amber-400 flex items-center justify-center text-amber-600 dark:text-amber-400 font-sans font-bold text-sm">
@@ -547,12 +548,13 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex flex-col gap-0.5 w-full overflow-hidden">
-              <span className="text-[10px] font-black text-amber-600/80 dark:text-amber-400/80 uppercase tracking-[0.15em] shrink-0">Today's Expense</span>
-              <span className="text-lg sm:text-xl font-black text-amber-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full mt-0.5">
+              <span className="text-[10px] font-black text-amber-600/80 dark:text-amber-400/80 uppercase tracking-[0.15em] shrink-0 block overflow-x-auto hide-scrollbar whitespace-nowrap w-full">Today's Expense</span>
+              <span className="text-lg sm:text-xl font-black text-amber-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full mt-0.5 pr-6">
                 <span className="text-amber-600 dark:text-amber-400 font-sans text-sm mr-0.5 shrink-0">{currencySymbol}</span>
                 <span>{summaryLoading ? "..." : visibility[3] ? fmt(summary.todayExpense) : "*****"}</span>
               </span>
             </div>
+            <ChevronRight size={14} className="absolute bottom-5 right-4 text-amber-600 dark:text-amber-400 opacity-40" />
           </div>
         </div>
 
@@ -1045,6 +1047,14 @@ function AppContent() {
     ((location.pathname === "/person" || location.pathname === "/transactions" || location.pathname === "/analytics") &&
       location.state?.from === "bottom_nav");
 
+  const sidebarNavigation = [
+    { name: "Home", icon: Home, path: "/", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "Person List", icon: Users, path: "/person", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "Transaction History", icon: History, path: "/transactions", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "Personal History", icon: Wallet, path: "/personal-history", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "Analytics", icon: BarChart3, path: "/analytics", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+  ];
+
   const navigation = [
     { name: "Home", icon: Home, path: "/", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
     { name: "Person List", icon: Users, path: "/person", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
@@ -1127,7 +1137,7 @@ function AppContent() {
         </div>
 
         <nav className="flex-1 space-y-2">
-          {navigation.filter(item => item.name !== "Profile").map((item) => (
+          {sidebarNavigation.filter(item => item.name !== "Profile").map((item) => (
             <React.Fragment key={item.name}>
               <NavLink
                 to={item.path}

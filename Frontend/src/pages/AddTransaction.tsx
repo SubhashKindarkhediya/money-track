@@ -20,14 +20,17 @@ const AddTransaction: React.FC = () => {
     amount: editingTx?.amount?.toString() || "",
     reason: editingTx?.reason || "",
     date: editingTx?.date ? new Date(editingTx.date).toISOString().split('T')[0] : "",
+    category: editingTx?.category || "",
     status: editingTx?.status || location.state?.status || (location.state?.type === "expense" || location.state?.type === "income" ? "completed" : "pending")
   });
   const [txLoading, setTxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [errors, setErrors] = useState<{ person?: string; amount?: string; reason?: string }>({});
 
   const [searchQuery, setSearchQuery] = useState(preSelectedPersonName || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [mode, setMode] = useState<"single" | "group">(location.state?.mode || "single");
   const [selectedPersons, setSelectedPersons] = useState<{ id: string; name: string }[]>([]);
@@ -128,6 +131,7 @@ const AddTransaction: React.FC = () => {
         if (isEditing) {
           await api.put(`/transactions/${editingTx.id}`, {
             amount: parseFloat(txForm.amount),
+            category: txForm.category || undefined,
             reason: txForm.reason || undefined,
             date: finalDate,
             status: isPersonalTx ? "completed" : txForm.status,
@@ -137,6 +141,7 @@ const AddTransaction: React.FC = () => {
             person_id: isPersonalTx ? undefined : txForm.person_id,
             type: txForm.type,
             amount: parseFloat(txForm.amount),
+            category: txForm.category || undefined,
             reason: txForm.reason || undefined,
             date: finalDate,
             status: isPersonalTx ? "completed" : txForm.status,
@@ -154,6 +159,7 @@ const AddTransaction: React.FC = () => {
               person_id: p.id,
               type: "credit",
               amount: amountPerPerson,
+              category: txForm.category || undefined,
               reason: txForm.reason ? `${txForm.reason} (Group Split)` : "Group Expense Split",
               date: finalDate,
               status: "pending",
@@ -167,6 +173,7 @@ const AddTransaction: React.FC = () => {
             person_id: paidBy,
             type: "debit",
             amount: amountPerPerson,
+            category: txForm.category || undefined,
             reason: txForm.reason ? `${txForm.reason} (Group Split)` : "Group Expense Split",
             date: finalDate,
             status: "pending",
@@ -211,8 +218,8 @@ const AddTransaction: React.FC = () => {
             <ArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
           </button>
           <h2 className="text-base font-black text-gray-900 dark:text-white tracking-wide">
-            {isEditing 
-              ? `Update ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}` 
+            {isEditing
+              ? `Update ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}`
               : `New ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}`}
           </h2>
         </div>
@@ -240,6 +247,33 @@ const AddTransaction: React.FC = () => {
             >
               Group
               {mode === "group" && (
+                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-indigo-500 rounded-t-full shadow-[0_-2px_10px_rgba(99,102,241,0.3)]" />
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Personal Transaction Tabs - Expense vs Income */}
+        {!isEditing && (txForm.type === "expense" || txForm.type === "income") && (
+          <div className="flex border-b border-indigo-100/30 dark:border-gray-800/50 bg-white/50 dark:bg-[#151624]/30">
+            <button
+              type="button"
+              onClick={() => setTxForm({ ...txForm, type: "expense" })}
+              className={`flex-1 py-4 text-sm font-black transition-all relative flex items-center justify-center gap-2 ${txForm.type === "expense" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "text-gray-400 dark:text-gray-500"}`}
+            >
+              Add Expense
+              {txForm.type === "expense" && (
+                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-amber-500 rounded-t-full shadow-[0_-2px_10px_rgba(245,158,11,0.3)]" />
+              )}
+            </button>
+            <div className="w-px bg-indigo-100/20 dark:bg-gray-800/50 my-4" />
+            <button
+              type="button"
+              onClick={() => setTxForm({ ...txForm, type: "income" })}
+              className={`flex-1 py-4 text-sm font-black transition-all relative flex items-center justify-center gap-2 ${txForm.type === "income" ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "text-gray-400 dark:text-gray-500"}`}
+            >
+              Add Income
+              {txForm.type === "income" && (
                 <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-indigo-500 rounded-t-full shadow-[0_-2px_10px_rgba(99,102,241,0.3)]" />
               )}
             </button>
@@ -369,16 +403,106 @@ const AddTransaction: React.FC = () => {
                   </div>
                 )}
 
-                {/* Amount */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Amount</label>
-                  <div className="relative">
-                    <IndianRupee size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input type="number" placeholder="0.00" required value={txForm.amount}
-                      onChange={e => { setTxForm({ ...txForm, amount: e.target.value }); if (errors.amount) setErrors({ ...errors, amount: undefined }); }}
-                      className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`} />
+
+
+                {/* Amount and Category Wrapper for Ordering */}
+                <div className="flex flex-col gap-6 w-full">
+                  {/* Amount */}
+                  <div className={`${txForm.type === 'income' ? 'order-2' : 'order-1'}`}>
+                    <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Amount</label>
+                    <div className="relative">
+                      <IndianRupee size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input type="number" placeholder="0.00" required value={txForm.amount}
+                        onChange={e => { setTxForm({ ...txForm, amount: e.target.value }); if (errors.amount) setErrors({ ...errors, amount: undefined }); }}
+                        className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`} />
+                    </div>
+                    {errors.amount && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.amount}</p>}
                   </div>
-                  {errors.amount && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.amount}</p>}
+
+                  {/* Category for Income/Expense */}
+                  {(txForm.type === "expense" || txForm.type === "income") && (
+                    <div className={`animate-in fade-in slide-in-from-bottom-2 duration-300 relative z-30 ${txForm.type === 'income' ? 'order-1' : 'order-2'}`}>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">
+                        {txForm.type === 'income' ? 'Category' : 'Payment Type'}
+                      </label>
+                      <div className="relative">
+                        {!isCustomCategory ? (
+                          <>
+                            <div
+                              onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                              className={`w-full px-4 py-4 bg-white dark:bg-[#151624] border ${isCategoryDropdownOpen ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-gray-200 dark:border-gray-800'} rounded-2xl flex items-center justify-between cursor-pointer transition-all shadow-sm`}
+                            >
+                              <span className={`text-base font-bold ${!txForm.category ? "text-gray-400" : "text-gray-900 dark:text-white"}`}>
+                                {txForm.category || (txForm.type === 'income' ? "Select Category..." : "Select Payment Type...")}
+                              </span>
+                              <ChevronDown size={18} className={`text-gray-400 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                            </div>
+
+                            {isCategoryDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsCategoryDropdownOpen(false)} />
+                                <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl shadow-indigo-900/10 overflow-hidden">
+                                  {(txForm.type === 'income'
+                                    ? ["Salary", "Business", "Freelance", "Investment", "Gift"]
+                                    : ["CASH", "ONLINE", "UPI", "CARD", "BANK TRANSFER"]
+                                  ).map(cat => (
+                                    <div
+                                      key={cat}
+                                      onClick={() => {
+                                        if (txForm.category === cat) {
+                                          setTxForm({ ...txForm, category: "" }); // Unselect if already selected
+                                        } else {
+                                          setTxForm({ ...txForm, category: cat });
+                                        }
+                                        setIsCategoryDropdownOpen(false);
+                                      }}
+                                      className={`px-4 py-3 cursor-pointer transition-colors ${txForm.category === cat
+                                        ? 'bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-700 dark:text-indigo-400 font-bold'
+                                        : 'hover:bg-gray-50 dark:hover:bg-[#1b1c2e] text-gray-700 dark:text-gray-300 font-medium'
+                                        }`}
+                                    >
+                                      {cat}
+                                    </div>
+                                  ))}
+                                  <div
+                                    onClick={() => {
+                                      setIsCustomCategory(true);
+                                      setTxForm({ ...txForm, category: "" });
+                                      setIsCategoryDropdownOpen(false);
+                                    }}
+                                    className="px-4 py-3 cursor-pointer transition-colors border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1b1c2e] text-indigo-600 dark:text-indigo-400 font-bold"
+                                  >
+                                    Other (Type custom)
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </>
+                        ) : (
+                          <div className="relative flex items-center w-full">
+                            <input
+                              type="text"
+                              placeholder={txForm.type === 'income' ? "Enter custom category" : "Enter payment type"}
+                              value={txForm.category || ""}
+                              onChange={(e) => setTxForm({ ...txForm, category: e.target.value })}
+                              className={`w-full pr-12 pl-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10 rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm`}
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsCustomCategory(false);
+                                setTxForm({ ...txForm, category: "" });
+                              }}
+                              className="absolute right-2 p-2 text-gray-400 hover:text-rose-500 rounded-full transition-colors bg-gray-50 dark:bg-[#1e1f30] mr-1"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Reason */}
@@ -596,8 +720,8 @@ const AddTransaction: React.FC = () => {
                         type="button"
                         onClick={() => setPaidBy("me")}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-bold text-xs transition-all ${paidBy === "me"
-                            ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
-                            : "bg-white dark:bg-[#151624] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-amber-500/50"
+                          ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
+                          : "bg-white dark:bg-[#151624] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-amber-500/50"
                           }`}
                       >
                         <User size={14} />
@@ -611,8 +735,8 @@ const AddTransaction: React.FC = () => {
                           type="button"
                           onClick={() => setPaidBy(p.id)}
                           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-bold text-xs transition-all ${paidBy === p.id
-                              ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
-                              : "bg-white dark:bg-[#151624] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-amber-500/50"
+                            ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
+                            : "bg-white dark:bg-[#151624] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-amber-500/50"
                             }`}
                         >
                           <div className="w-4 h-4 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-[8px]">
@@ -633,8 +757,8 @@ const AddTransaction: React.FC = () => {
                   {/* Split Amount (Read Only) */}
                   <div className="animate-in slide-in-from-top-2 duration-300">
                     <div className={`p-5 rounded-[2rem] border-2 border-dashed transition-all ${paidBy === 'me'
-                        ? "bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20"
-                        : "bg-rose-50/50 dark:bg-rose-500/5 border-rose-100 dark:border-rose-500/20"
+                      ? "bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20"
+                      : "bg-rose-50/50 dark:bg-rose-500/5 border-rose-100 dark:border-rose-500/20"
                       }`}>
                       <div className="flex items-center justify-between mb-1">
                         <label className={`text-[10px] font-black uppercase tracking-widest ${paidBy === 'me' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -729,8 +853,8 @@ const AddTransaction: React.FC = () => {
               <>
                 <CheckCircle2 size={18} />
                 <span className="uppercase tracking-[0.1em] text-sm font-bold">
-                  {isEditing 
-                    ? `Update ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}` 
+                  {isEditing
+                    ? `Update ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}`
                     : `Save ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}`}
                 </span>
               </>

@@ -11,6 +11,7 @@ interface TransactionAttributes {
   person_id?: string | null;
   type: TransactionType;
   amount: number;
+  category?: string;
   reason?: string;
   note?: string;
   status: "pending" | "completed";
@@ -19,7 +20,7 @@ interface TransactionAttributes {
 
 interface TransactionCreationAttributes extends Optional<
   TransactionAttributes,
-  "id" | "date" | "reason" | "note" | "status"
+  "id" | "date" | "category" | "reason" | "note" | "status"
 > {}
 
 class Transaction
@@ -31,6 +32,7 @@ class Transaction
   public person_id!: string | null;
   public type!: TransactionType;
   public amount!: number;
+  public category!: string;
   public reason!: string;
   public note!: string;
   public status!: "pending" | "completed";
@@ -63,6 +65,10 @@ Transaction.init(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       validate: { min: 0 },
+    },
+    category: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     reason: {
       type: DataTypes.STRING,
