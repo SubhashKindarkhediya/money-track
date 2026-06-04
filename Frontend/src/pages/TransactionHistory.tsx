@@ -390,25 +390,28 @@ const TransactionHistory: React.FC = () => {
           )}
 
           {/* Bottom Section: Stats */}
-          <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Total Found</span>
-              <span className="text-lg sm:text-xl font-black text-indigo-600 dark:text-indigo-400">{filteredTransactions.length}</span>
+          <div className="p-4 sm:p-5 flex items-center justify-between gap-2 sm:gap-4 overflow-x-auto hide-scrollbar">
+            <div className="flex-1 min-w-0 flex flex-col items-start">
+              <span className="text-[9px] sm:text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-1 whitespace-nowrap">Total Found</span>
+              <span className="text-base sm:text-xl font-black text-indigo-600 dark:text-indigo-400 truncate w-full">{filteredTransactions.length}</span>
             </div>
-            <div className="flex items-center gap-4 sm:gap-8">
-              <div className="flex flex-col items-center sm:items-end">
-                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Total Credit</span>
-                <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400">
-                  {currencySymbol}{summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0"></div>
-              <div className="flex flex-col items-center sm:items-end">
-                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Total Debit</span>
-                <span className="text-sm sm:text-base font-black text-rose-600 dark:text-rose-400">
-                  {currencySymbol}{summary.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
+            
+            <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0 mx-1 sm:mx-2"></div>
+            
+            <div className="flex-1 min-w-0 flex flex-col items-start">
+              <span className="text-[9px] sm:text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-1 whitespace-nowrap">Total Credit</span>
+              <span className="text-base sm:text-xl font-black text-emerald-600 dark:text-emerald-400 truncate w-full">
+                {currencySymbol}{summary.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0 mx-1 sm:mx-2"></div>
+
+            <div className="flex-1 min-w-0 flex flex-col items-start">
+              <span className="text-[9px] sm:text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-1 whitespace-nowrap">Total Debit</span>
+              <span className="text-base sm:text-xl font-black text-rose-600 dark:text-rose-400 truncate w-full">
+                {currencySymbol}{summary.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
         </div>
