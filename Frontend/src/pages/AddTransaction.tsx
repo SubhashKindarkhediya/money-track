@@ -165,7 +165,19 @@ const AddTransaction: React.FC = () => {
               status: "pending",
             })
           );
-          await Promise.all(promises);
+          
+          // Also record the user's own share as a personal expense
+          const expensePromise = api.post("/transactions", {
+            person_id: undefined,
+            type: "expense",
+            amount: amountPerPerson,
+            category: txForm.category || undefined,
+            reason: txForm.reason ? `${txForm.reason} (My Share)` : "Group Expense (My Share)",
+            date: finalDate,
+            status: "completed",
+          });
+
+          await Promise.all([...promises, expensePromise]);
         } else {
           // Someone else paid for me -> Create a SINGLE DEBIT for that person
           // (User's logic: I owe this person)
