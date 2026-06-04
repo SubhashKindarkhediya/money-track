@@ -210,7 +210,7 @@ export class TransactionsService {
    */
   async updateTransaction(
     id: string,
-    data: { amount?: number; category?: string; reason?: string; note?: string; date?: Date; status?: "pending" | "completed" },
+    data: { amount?: number; category?: string; reason?: string; note?: string; date?: Date; status?: "pending" | "completed"; type?: TransactionType },
     uid: string
   ) {
     const transaction = await this.getTransactionById(id, uid);

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft, Download, X } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Clock, ChevronRight, ArrowLeft, Download, X, MoreVertical, Eye, SquarePen, Trash2, PlusCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import MarqueeText from "../components/MarqueeText";
+import toast from "react-hot-toast";
 
 interface Transaction {
   id: string;
@@ -16,6 +17,7 @@ interface Transaction {
   date: string;
   status: "pending" | "completed";
   createdAt: string;
+  category?: string;
   Person?: {
     id: string;
     name: string;
@@ -33,6 +35,25 @@ const PersonalHistory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [activeTxMenuId, setActiveTxMenuId] = useState<string | null>(null);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
+  const handleEditTransaction = (tx: Transaction) => {
+    navigate("/add-transaction", { state: { editingTx: tx, type: tx.type } });
+  };
+
+  const confirmDelete = async (txId: string) => {
+    try {
+      await api.delete(`/transactions/${txId}`);
+      setTransactions((prev) => prev.filter((t) => t.id !== txId));
+      setActiveTxMenuId(null);
+      setIsConfirmingDelete(false);
+      toast.success("Transaction deleted successfully");
+    } catch (err: any) {
+      console.error("Failed to delete transaction", err);
+      toast.error(err.response?.data?.error || "Failed to delete transaction.");
+    }
+  };
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -254,14 +275,23 @@ const PersonalHistory: React.FC = () => {
             </h2>
           </div>
 
-          <button
-            onClick={generatePDF}
-            className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors border border-indigo-100 dark:border-indigo-500/20 flex items-center gap-2 shadow-sm"
-            title="Download PDF Report"
-          >
-            <Download size={18} />
-            <span className="text-sm font-bold hidden sm:block pr-1">Report</span>
-          </button>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button
+              onClick={() => navigate("/add-transaction", { state: { type: "expense" } })}
+              className="p-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center shadow-lg shadow-indigo-600/30 active:scale-95"
+              title="Add Personal Transaction"
+            >
+              <PlusCircle size={22} strokeWidth={2.5} />
+            </button>
+            <button
+              onClick={generatePDF}
+              className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors border border-indigo-100 dark:border-indigo-500/20 flex items-center gap-2 shadow-sm active:scale-95"
+              title="Download PDF Report"
+            >
+              <Download size={18} />
+              <span className="text-sm font-bold hidden sm:block pr-1">Report</span>
+            </button>
+          </div>
         </div>
 
 
@@ -313,7 +343,7 @@ const PersonalHistory: React.FC = () => {
       <div className="px-5 mt-6 space-y-6">
         {/* Unified Quick Summary Card */}
         <div className="bg-white dark:bg-[#151624] rounded-[1.5rem] border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-          
+
           {/* Top Section: Net Flow */}
           {filterType === "all" && (
             <div className="px-4 sm:px-5 py-3 border-b border-gray-50 dark:border-gray-800/50 bg-gray-50/50 dark:bg-[#1b1c2e]/30 flex justify-end">
@@ -327,28 +357,28 @@ const PersonalHistory: React.FC = () => {
           )}
 
           {/* Bottom Section: Stats */}
-          <div className="p-4 sm:p-5 flex items-center justify-between gap-2 sm:gap-4 overflow-x-auto hide-scrollbar">
-            <div className="flex-1 min-w-0 flex flex-col items-start">
+          <div className="p-4 sm:p-5 flex items-center justify-between gap-2 sm:gap-4">
+            <div className="shrink-0 flex flex-col items-start pr-1 sm:pr-2">
               <span className="text-[9px] sm:text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-1 whitespace-nowrap">Total Found</span>
-              <span className="text-base sm:text-xl font-black text-indigo-600 dark:text-indigo-400 truncate w-full">{filteredTransactions.length}</span>
-            </div>
-            
-            <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0 mx-1 sm:mx-2"></div>
-            
-            <div className="flex-1 min-w-0 flex flex-col items-start">
-              <span className="text-[9px] sm:text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-1 whitespace-nowrap">Total Income</span>
-              <span className="text-base sm:text-xl font-black text-emerald-600 dark:text-emerald-400 truncate w-full">
-                {currencySymbol}{summary.income.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-              </span>
+              <span className="text-base sm:text-xl font-black text-indigo-600 dark:text-indigo-400 truncate max-w-[60px] sm:max-w-[80px]">{filteredTransactions.length}</span>
             </div>
 
-            <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0 mx-1 sm:mx-2"></div>
+            <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0 mx-1"></div>
 
-            <div className="flex-1 min-w-0 flex flex-col items-start">
-              <span className="text-[9px] sm:text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-1 whitespace-nowrap">Total Expense</span>
-              <span className="text-base sm:text-xl font-black text-rose-600 dark:text-rose-400 truncate w-full">
+            <div className="flex-1 min-w-0 flex flex-col items-end">
+              <span className="text-[9px] sm:text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-1 whitespace-nowrap text-right">Balance</span>
+              <div className={`text-base sm:text-xl font-black w-full text-right overflow-x-auto hide-scrollbar whitespace-nowrap ${summary.income - summary.expense >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                {currencySymbol}{(summary.income - summary.expense).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              </div>
+            </div>
+
+            <div className="w-px h-8 bg-gray-200 dark:bg-gray-800 shrink-0 mx-1"></div>
+
+            <div className="flex-1 min-w-0 flex flex-col items-end">
+              <span className="text-[9px] sm:text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-1 whitespace-nowrap text-right">Total Expense</span>
+              <div className="text-base sm:text-xl font-black text-rose-600 dark:text-rose-400 w-full text-right overflow-x-auto hide-scrollbar whitespace-nowrap">
                 {currencySymbol}{summary.expense.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-              </span>
+              </div>
             </div>
           </div>
         </div>
@@ -385,7 +415,7 @@ const PersonalHistory: React.FC = () => {
                         console.log("Opening Log Drawer for:", tx.id);
                         setSelectedTx(tx);
                       }}
-                      className="bg-white dark:bg-[#151624] p-4 rounded-[1.2rem] border border-gray-100 dark:border-gray-800/80 shadow-sm flex items-center justify-between group hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all cursor-pointer"
+                      className="bg-white dark:bg-[#151624] p-4 rounded-[1.2rem] border border-gray-100 dark:border-gray-800/80 shadow-sm flex items-center justify-between group hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all cursor-pointer relative"
                     >
                       <div className="flex items-center gap-4 min-w-0 flex-1 mr-3">
                         <div
@@ -400,30 +430,43 @@ const PersonalHistory: React.FC = () => {
                         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                           <MarqueeText
                             text={tx.reason || tx.note || "Personal"}
-                            className="text-sm font-bold text-gray-900 dark:text-white"
+                            className="text-sm font-bold text-gray-900 dark:text-white leading-none"
                           />
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {tx.note?.includes("Old Transaction Auto-Added") && (
+                          {tx.note?.includes("Old Transaction Auto-Added") && (
+                            <div className="flex items-center gap-2 mt-0.5">
                               <span className="px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/20 whitespace-nowrap">Old</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
-                            <Clock size={10} />
-                            <span>{formatTime(tx.date || tx.createdAt)}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center mt-0.5 w-full min-w-0 pr-2">
+                            <div className="flex items-center gap-1 text-[8px] font-medium text-gray-400 uppercase tracking-wider min-w-0">
+                              <Clock size={8} className="shrink-0" />
+                              <span className="whitespace-nowrap leading-none">{formatTime(tx.date || tx.createdAt)}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
-                        <MarqueeText
-                          text={`${tx.type === "income" ? "+ " : "- "}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                          className={`text-base font-black ${tx.type === "income" ? "text-indigo-600 dark:text-indigo-400" : "text-amber-600 dark:text-amber-400"}`}
-                          containerClassName="justify-end min-w-[70px]"
-                        />
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex flex-col items-end min-w-0">
+                          <MarqueeText
+                            text={`${tx.type === "income" ? "+ " : "- "}${currencySymbol}${Number(tx.amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                            className={`text-base font-black ${tx.type === "income" ? "text-indigo-600 dark:text-indigo-400" : "text-amber-600 dark:text-amber-400"}`}
+                            containerClassName="justify-end min-w-[70px]"
+                          />
+                          {tx.category && (
+                            <span className="mt-0.5 px-1.5 py-[1px] rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-[7px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest truncate max-w-[80px]">
+                              {tx.category}
+                            </span>
+                          )}
+                        </div>
                         <div
-                          className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveTxMenuId(tx.id);
+                          }}
+                          className="p-1.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors z-10 shrink-0"
                         >
-                          <ChevronRight size={16} />
+                          <MoreVertical size={16} />
                         </div>
                       </div>
                     </div>
@@ -471,6 +514,14 @@ const PersonalHistory: React.FC = () => {
                   {currencySymbol}{Number(selectedTx.amount).toLocaleString("en-IN")}
                 </span>
               </div>
+              {selectedTx.category && (
+                <div className="flex justify-between items-center p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800 gap-4 overflow-hidden">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider shrink-0">Category</span>
+                  <div className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-widest overflow-x-auto hide-scrollbar whitespace-nowrap text-right">
+                    {selectedTx.category}
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between items-center p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151624] border border-gray-100 dark:border-gray-800">
                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Date & Time</span>
                 <div className="text-right">
@@ -493,6 +544,96 @@ const PersonalHistory: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Action Bottom Drawer */}
+      {activeTxMenuId && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] animate-in fade-in duration-300 flex flex-col justify-end"
+          onClick={() => { setActiveTxMenuId(null); setIsConfirmingDelete(false); }}
+        >
+          <div
+            className="bg-white dark:bg-[#151624] rounded-t-[2.5rem] p-5 sm:p-6 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full duration-300 sm:max-w-md sm:mx-auto sm:w-full sm:rounded-[2.5rem] sm:mb-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6"></div>
+
+            {isConfirmingDelete ? (
+              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                <h3 className="text-lg font-black text-gray-900 dark:text-white text-center mb-2">Delete Transaction?</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-8 px-4 leading-relaxed">
+                  Are you sure you want to delete this transaction? This action cannot be undone.
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsConfirmingDelete(false)}
+                    className="flex-1 py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    No, Cancel
+                  </button>
+                  <button
+                    onClick={() => confirmDelete(activeTxMenuId)}
+                    className="flex-1 py-4 rounded-2xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20 active:scale-95"
+                  >
+                    Yes, Delete
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      const tx = transactions.find(t => t.id === activeTxMenuId);
+                      if (tx) setSelectedTx(tx);
+                      setActiveTxMenuId(null);
+                    }}
+                    className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                      <Eye size={20} />
+                    </div>
+                    Transaction Details
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const tx = transactions.find(t => t.id === activeTxMenuId);
+                      if (tx) handleEditTransaction(tx);
+                      setActiveTxMenuId(null);
+                    }}
+                    className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
+                      <SquarePen size={20} />
+                    </div>
+                    Edit Transaction
+                  </button>
+
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setIsConfirmingDelete(true)}
+                      className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
+                        <Trash2 size={20} />
+                      </div>
+                      Delete Transaction
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => { setActiveTxMenuId(null); setIsConfirmingDelete(false); }}
+                  className="w-full mt-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

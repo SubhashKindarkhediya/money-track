@@ -3,6 +3,7 @@ import { ArrowLeft, User, TrendingUp, TrendingDown, IndianRupee, FileText, Clock
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
 import MarqueeText from "../components/MarqueeText";
+import toast from "react-hot-toast";
 
 const AddTransaction: React.FC = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const AddTransaction: React.FC = () => {
   const [txLoading, setTxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isCustomCategory, setIsCustomCategory] = useState(false);
-  const [errors, setErrors] = useState<{ person?: string; amount?: string; reason?: string }>({});
+  const [errors, setErrors] = useState<{ person?: string; amount?: string; reason?: string; date?: string }>({});
 
   const [searchQuery, setSearchQuery] = useState(preSelectedPersonName || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -46,6 +47,15 @@ const AddTransaction: React.FC = () => {
     const [year, month, day] = isoDate.split("-");
     if (!year || !month || !day) return isoDate;
     return `${day}/${month}/${year}`;
+  };
+
+  // Helper to get today's date in local timezone YYYY-MM-DD
+  const getLocalTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Filter persons based on search query
@@ -82,7 +92,7 @@ const AddTransaction: React.FC = () => {
     if (e) e.preventDefault();
 
     // Validation
-    const newErrors: { person?: string; amount?: string; reason?: string } = {};
+    const newErrors: { person?: string; amount?: string; reason?: string; date?: string } = {};
     let isValid = true;
 
     const isPersonalTx = txForm.type === "expense" || txForm.type === "income";
@@ -105,6 +115,17 @@ const AddTransaction: React.FC = () => {
     if (!txForm.reason || txForm.reason.trim() === "") {
       newErrors.reason = "Please enter a description";
       isValid = false;
+    }
+
+    if (txForm.date) {
+      const selectedDate = new Date(txForm.date);
+      const today = new Date();
+      selectedDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate > today) {
+        newErrors.date = "Future dates are not allowed";
+        isValid = false;
+      }
     }
 
     setErrors(newErrors);
@@ -135,6 +156,7 @@ const AddTransaction: React.FC = () => {
             reason: txForm.reason || undefined,
             date: finalDate,
             status: isPersonalTx ? "completed" : txForm.status,
+            type: txForm.type,
           });
         } else {
           await api.post("/transactions", {
@@ -193,13 +215,22 @@ const AddTransaction: React.FC = () => {
         }
       }
 
-      if (preSelectedPersonId && mode === "single") {
-        navigate(`/person/${preSelectedPersonId}`, { state: { tab: "transactions", status: txForm.status } });
+      if (isEditing) {
+        toast.success("Transaction updated successfully!");
+      } else {
+        toast.success("Transaction added successfully!");
+      }
+
+      if (isPersonalTx) {
+        navigate("/personal-history");
+      } else if (mode === "single" && txForm.person_id) {
+        navigate(`/person/${txForm.person_id}`, { state: { tab: "transactions", status: txForm.status } });
       } else {
         navigate("/");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to add transaction", err);
+      toast.error(err?.response?.data?.error || "Failed to save transaction");
     } finally {
       setTxLoading(false);
     }
@@ -370,7 +401,9 @@ const AddTransaction: React.FC = () => {
                         {preSelectedPersonName?.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Adding transaction for</p>
+                        <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+                          {isEditing ? "Updating transaction for" : "Adding transaction for"}
+                        </p>
                         <MarqueeText
                           text={preSelectedPersonName || ""}
                           className="text-lg font-black text-gray-900 dark:text-white"
@@ -380,10 +413,10 @@ const AddTransaction: React.FC = () => {
                   )
                 )}
 
-                {/* Type Toggle - Hide if editing or if personal tx */}
-                {!isEditing && txForm.type !== "expense" && txForm.type !== "income" && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Transaction Type</label>
+                {/* Type Toggle */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Transaction Type</label>
+                  {(txForm.type === "credit" || txForm.type === "debit") ? (
                     <div className="flex gap-3">
                       <button type="button" onClick={() => setTxForm({ ...txForm, type: "credit" })}
                         className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "credit"
@@ -412,13 +445,34 @@ const AddTransaction: React.FC = () => {
                         </span>
                       </button>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex gap-3">
+                      <button type="button" onClick={() => setTxForm({ ...txForm, type: "income" })}
+                        className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "income"
+                          ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20 ring-offset-2 dark:ring-offset-[#0a0a1a]"
+                          : "bg-white dark:bg-[#151624] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e1f30]"
+                          }`}>
+                        <TrendingUp size={18} />
+                        <span>Income</span>
+                      </button>
+                      <button type="button" onClick={() => setTxForm({ ...txForm, type: "expense" })}
+                        className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "expense"
+                          ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30 ring-2 ring-amber-500/20 ring-offset-2 dark:ring-offset-[#0a0a1a]"
+                          : "bg-white dark:bg-[#151624] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e1f30]"
+                          }`}>
+                        <TrendingDown size={18} />
+                        <span>Expense</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
 
 
 
                 {/* Amount and Category Wrapper for Ordering */}
                 <div className="flex flex-col gap-6 w-full">
+
+
                   {/* Amount */}
                   <div className={`${txForm.type === 'income' ? 'order-2' : 'order-1'}`}>
                     <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Amount</label>
@@ -541,14 +595,15 @@ const AddTransaction: React.FC = () => {
                       placeholder="dd/mm/yyyy"
                       value={formatDateToDDMMYYYY(txForm.date)}
                       readOnly
-                      className="w-full pl-11 pr-12 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm cursor-pointer placeholder:transition-opacity focus:placeholder:opacity-0"
+                      className={`w-full pl-11 pr-12 py-4 bg-white dark:bg-[#151624] border ${errors.date ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm cursor-pointer placeholder:transition-opacity focus:placeholder:opacity-0`}
                     />
 
                     {/* Invisible Native Date Picker */}
                     <input
                       type="date"
                       value={txForm.date}
-                      onChange={e => setTxForm({ ...txForm, date: e.target.value })}
+                      max={getLocalTodayString()}
+                      onChange={e => { setTxForm({ ...txForm, date: e.target.value }); if (errors.date) setErrors({ ...errors, date: undefined }); }}
                       onClick={(e) => {
                         try {
                           if ('showPicker' in HTMLInputElement.prototype) {
@@ -563,6 +618,7 @@ const AddTransaction: React.FC = () => {
 
                     <CalendarDays size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
                   </div>
+                  {errors.date && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.date}</p>}
                 </div>
 
                 {/* Status Dropdown - Hide if personal tx */}

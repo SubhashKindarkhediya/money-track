@@ -8,6 +8,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import MarqueeText from "../components/MarqueeText";
+import toast from "react-hot-toast";
 
 interface Person {
   id: string;
@@ -407,8 +408,10 @@ const Person: React.FC = () => {
       fetchPersons();
       setDetailTab("profile");
       navigate(`/person/${selectedPerson.id}?tab=profile`, { replace: true });
-    } catch (error) {
+      toast.success("Details updated successfully!");
+    } catch (error: any) {
       console.error("Failed to update person", error);
+      toast.error(error.response?.data?.error || "Failed to update person");
     } finally {
       setSubmitLoading(false);
     }
@@ -436,8 +439,10 @@ const Person: React.FC = () => {
       fetchPersons();
       setActiveMenuId(null);
       setIsConfirmingDelete(false);
-    } catch (error) {
+      toast.success("Person deleted successfully!");
+    } catch (error: any) {
       console.error("Failed to delete person", error);
+      toast.error(error.response?.data?.error || "Failed to delete person");
     }
   };
 
@@ -448,8 +453,10 @@ const Person: React.FC = () => {
       await api.post(`/person/${selectedPerson.id}/request`);
       setSelectedPerson(prev => prev ? { ...prev, connection_status: "requested" } : null);
       setPersons(prev => prev.map(p => p.id === selectedPerson.id ? { ...p, connection_status: "requested" } : p));
-    } catch (error) {
+      toast.success("Connection request sent!");
+    } catch (error: any) {
       console.error("Failed to send request", error);
+      toast.error(error.response?.data?.error || "Failed to send connection request");
     } finally {
       setIsSendingRequest(false);
     }
@@ -672,8 +679,10 @@ Takes less than a minute. See you there! 😊
       setSelectedTx(null);
       setTxToDelete(null);
       fetchPersons();
-    } catch (err) {
+      toast.success("Transaction deleted successfully!");
+    } catch (err: any) {
       console.error("Failed to delete transaction", err);
+      toast.error(err.response?.data?.error || "Failed to delete transaction");
     }
   };
 
@@ -2266,8 +2275,8 @@ Takes less than a minute. See you there! 😊
                           return;
                         }
 
-                        // Trigger deep link
-                        window.location.href = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}`;
+                        // Trigger deep link with required cu=INR parameter for GPay compatibility
+                        window.location.href = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR&tn=MoneyTrack`;
 
                         // Change step
                         setUpiPaymentError(null);

@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import MarqueeText from "../components/MarqueeText";
+import toast from "react-hot-toast";
 
 // Tap to copy email + auto-scroll if overflow — works on mobile & desktop
 const TruncatedEmail: React.FC<{ email: string; className?: string }> = ({ email, className = "" }) => {
@@ -112,6 +113,15 @@ const Profile: React.FC = () => {
     return `${day}/${month}/${year}`;
   };
 
+  // Helper to get today's date in local timezone YYYY-MM-DD
+  const getLocalTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -170,15 +180,11 @@ const Profile: React.FC = () => {
     try {
       const response = await api.patch("/auth/profile", formData);
       updateUser(response.data.user);
-      setMessage({ type: "success", text: "Profile updated successfully!" });
       setIsEditing(false);
-      setTimeout(() => setMessage(null), 3000);
+      toast.success("Profile updated successfully!");
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
-      setMessage({
-        type: "error",
-        text: error.response?.data?.error || "Failed to update profile.",
-      });
+      toast.error(error.response?.data?.error || "Failed to update profile.");
     } finally {
       setIsLoading(false);
     }
@@ -198,10 +204,10 @@ const Profile: React.FC = () => {
       const response = await api.patch("/auth/profile", { upi_id: upiIdInput.trim() });
       updateUser(response.data.user);
       setIsUpiModalOpen(false);
-      setMessage({ type: "success", text: "UPI ID updated successfully!" });
-      setTimeout(() => setMessage(null), 3000);
+      toast.success("UPI ID updated successfully!");
     } catch (err: any) {
       setUpiError(err.response?.data?.error || "Failed to save UPI ID");
+      toast.error(err.response?.data?.error || "Failed to save UPI ID");
     } finally {
       setUpiSubmitLoading(false);
     }
@@ -670,6 +676,7 @@ const Profile: React.FC = () => {
                     type="date"
                     name="dob"
                     value={formData.dob}
+                    max={getLocalTodayString()}
                     onChange={handleChange}
                     onClick={(e) => {
                       try {

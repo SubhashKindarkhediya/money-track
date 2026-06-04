@@ -56,6 +56,7 @@ import RegisterPhone from "./pages/RegisterPhone";
 import { useTheme } from "./context/ThemeContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import MarqueeText from "./components/MarqueeText";
+import { Toaster } from "react-hot-toast";
 
 // inside component
 // Protected Route Component
@@ -521,10 +522,10 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex flex-col gap-0.5 w-full overflow-hidden">
-              <span className="text-[10px] font-black text-indigo-600/80 dark:text-indigo-400/80 uppercase tracking-[0.15em] shrink-0 block overflow-x-auto hide-scrollbar whitespace-nowrap w-full">Total Income</span>
+              <span className="text-[10px] font-black text-indigo-600/80 dark:text-indigo-400/80 uppercase tracking-[0.15em] shrink-0 block overflow-x-auto hide-scrollbar whitespace-nowrap w-full">Balance</span>
               <span className="text-lg sm:text-xl font-black text-indigo-950 dark:text-white tracking-tight flex items-center overflow-x-auto hide-scrollbar whitespace-nowrap w-full mt-0.5 pr-6">
                 <span className="text-indigo-600 dark:text-indigo-400 font-sans text-sm mr-0.5 shrink-0">{currencySymbol}</span>
-                <span>{summaryLoading ? "..." : visibility[2] ? fmt(summary.totalIncome) : "*****"}</span>
+                <span>{summaryLoading ? "..." : visibility[2] ? fmt(summary.totalIncome - summary.totalExpense) : "*****"}</span>
               </span>
             </div>
             <ChevronRight size={14} className="absolute bottom-5 right-4 text-indigo-600 dark:text-indigo-400 opacity-40" />
@@ -1844,6 +1845,41 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <Router>
+            <Toaster 
+              position="bottom-center" 
+              containerStyle={{
+                bottom: '130px'
+              }}
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  background: '#333',
+                  color: '#fff',
+                  borderRadius: '16px',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
+                },
+                success: {
+                  style: {
+                    background: '#333',
+                  },
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#fff',
+                  },
+                },
+                error: {
+                  style: {
+                    background: '#333',
+                  },
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
+                  },
+                },
+              }}
+            />
             <AppContent />
           </Router>
         </AuthProvider>

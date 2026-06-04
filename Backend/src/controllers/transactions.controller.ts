@@ -96,12 +96,12 @@ export class TransactionsController {
   update = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { amount, category, reason, note, date, status } = req.body;
+      const { amount, category, reason, note, date, status, type } = req.body;
       const uid = (req as any).user.uid;
 
       const transaction = await this.transactionsService.updateTransaction(
         id,
-        { amount, category, reason, note, date: date ? new Date(date) : undefined, status },
+        { amount, category, reason, note, date: date ? new Date(date) : undefined, status, type },
         uid
       );
 

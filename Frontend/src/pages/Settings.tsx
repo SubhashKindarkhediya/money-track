@@ -7,6 +7,7 @@ import {
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import toast from "react-hot-toast";
 
 type ViewType = "main" | "preferences" | "security" | "data" | "info";
 
@@ -40,7 +41,6 @@ const SettingsPage: React.FC = () => {
   };
 
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string; } | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const currencyOptions = [
@@ -50,8 +50,11 @@ const SettingsPage: React.FC = () => {
   ];
 
   const showMessage = (type: "success" | "error", text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
+    if (type === "success") {
+      toast.success(text);
+    } else {
+      toast.error(text);
+    }
   };
 
   const handleUpdatePreferences = async () => {
@@ -190,14 +193,6 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <div className="px-6">
-        {/* Message Banner (Global, except Security and Delete Confirm) */}
-        {message && view !== "security" && !showDeleteConfirm && (
-          <div className={`mt-6 p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
-            }`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${message.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
-            {message.text}
-          </div>
-        )}
 
         {view === "main" ? (
           <div className="mt-4 animate-in fade-in duration-500">
@@ -413,14 +408,6 @@ const SettingsPage: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleChangePassword} className="space-y-8 px-2">
-                  {/* Local Message Banner for Security View */}
-                  {message && view === "security" && (
-                    <div className={`p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
-                      }`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${message.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
-                      {message.text}
-                    </div>
-                  )}
 
                   {/* Current Password */}
                   <div className="space-y-2">
@@ -590,17 +577,6 @@ const SettingsPage: React.FC = () => {
               <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-8 max-w-[280px]">
                 This action is <span className="text-rose-600 font-bold">permanent</span>. All your transactions, contacts, and settings will be wiped forever.
               </p>
-
-              {/* Local Message Banner for Delete Account Drawer (Top) */}
-              {message && showDeleteConfirm && (
-                <div className={`w-full mb-6 p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2 flex items-center gap-3 ${message.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20"
-                  }`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${message.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
-                  {message.text}
-                </div>
-              )}
-
-
 
               <div className="w-full flex flex-row gap-3">
                 <button

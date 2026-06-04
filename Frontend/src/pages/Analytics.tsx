@@ -36,6 +36,14 @@ const Analytics: React.FC = () => {
     return `${d}/${m}/${y}`;
   };
 
+  const getLocalTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -587,7 +595,7 @@ const Analytics: React.FC = () => {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      max={endDate || undefined}
+                      max={endDate || getLocalTodayString()}
                       onClick={(e) => {
                         if ('showPicker' in HTMLInputElement.prototype) {
                           try { (e.target as any).showPicker(); } catch (err) { }
@@ -609,6 +617,7 @@ const Analytics: React.FC = () => {
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       min={startDate || undefined}
+                      max={getLocalTodayString()}
                       onClick={(e) => {
                         if ('showPicker' in HTMLInputElement.prototype) {
                           try { (e.target as any).showPicker(); } catch (err) { }
