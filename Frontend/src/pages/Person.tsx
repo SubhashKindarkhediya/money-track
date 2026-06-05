@@ -885,7 +885,7 @@ Takes less than a minute. See you there! 😊
                     {selectedPerson.connection_status === "connected" && (
                       <InfoRow 
                         icon={Mail} 
-                        label="Email Address" 
+                        label="Email" 
                         value={selectedPerson.email || "Not provided"} 
                         onClick={() => {
                           if (selectedPerson.email) {
