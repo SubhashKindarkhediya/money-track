@@ -101,14 +101,20 @@ const InfoRow = ({
   value,
   iconColor = "text-indigo-500 dark:text-indigo-400",
   last = false,
+  onClick,
 }: {
   icon: any;
   label: string;
   value?: string;
   iconColor?: string;
   last?: boolean;
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
 }) => (
-  <div className={`flex items-center justify-between p-5 ${!last ? "border-b border-gray-50 dark:border-gray-800/50" : ""}`}>
+  // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+  <div 
+    onClick={onClick}
+    className={`flex items-center justify-between p-5 ${!last ? "border-b border-gray-50 dark:border-gray-800/50" : ""} ${onClick ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1b2a] transition-colors" : ""}`}
+  >
     <div className="flex items-center gap-4 shrink-0">
       <div className={`p-2.5 rounded-xl bg-gray-50 dark:bg-[#1b1c2e] ${iconColor}`}>
         <Icon size={18} />
@@ -876,11 +882,21 @@ Takes less than a minute. See you there! 😊
                   <h3 className="text-xs font-black text-indigo-600 dark:text-indigo-400 tracking-wider mb-3 px-2">Contact Information</h3>
                   <div className="rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm overflow-hidden">
                     <InfoRow icon={Phone} label="Mobile Number" value={selectedPerson.phone} />
-                    {selectedPerson.connection_status === "connected" && selectedPerson.email && (
-                      <InfoRow icon={Mail} label="Email Address" value={selectedPerson.email} />
+                    {selectedPerson.connection_status === "connected" && (
+                      <InfoRow 
+                        icon={Mail} 
+                        label="Email Address" 
+                        value={selectedPerson.email || "Not provided"} 
+                        onClick={() => {
+                          if (selectedPerson.email) {
+                            navigator.clipboard.writeText(selectedPerson.email);
+                            toast.success("Email copied to clipboard");
+                          }
+                        }}
+                      />
                     )}
-                    {selectedPerson.connection_status === "connected" && selectedPerson.address && (
-                      <InfoRow icon={MapPin} label="Address" value={selectedPerson.address} />
+                    {selectedPerson.connection_status === "connected" && (
+                      <InfoRow icon={MapPin} label="Address" value={selectedPerson.address || "Not provided"} />
                     )}
                     <InfoRow icon={Calendar} label="Added On" value={formatDate(selectedPerson.createdAt)} last={!selectedPerson.notes} />
                     {selectedPerson.notes && <InfoRow icon={MessageSquare} label="Notes" value={selectedPerson.notes} last />}
@@ -1122,7 +1138,7 @@ Takes less than a minute. See you there! 😊
                         label="Email Address"
                         name="email"
                         value={selectedPerson.email}
-                        onChange={() => {}}
+                        onChange={() => { }}
                         placeholder=""
                       />
                       <div className="absolute inset-0 z-10 cursor-not-allowed" title="Email is managed by the connected user"></div>
@@ -1136,7 +1152,7 @@ Takes less than a minute. See you there! 😊
                         label="Address"
                         name="address"
                         value={selectedPerson.address}
-                        onChange={() => {}}
+                        onChange={() => { }}
                         placeholder=""
                       />
                       <div className="absolute inset-0 z-10 cursor-not-allowed" title="Address is managed by the connected user"></div>
