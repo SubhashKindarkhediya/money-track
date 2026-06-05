@@ -66,7 +66,7 @@ export class PersonService {
         {
           model: User,
           as: "linkedUser",
-          attributes: ["phone_number", "email", "name", "upi_id"],
+          attributes: ["phone_number", "email", "name", "upi_id", "address", "profile_picture"],
         },
       ],
     });
@@ -148,6 +148,9 @@ export class PersonService {
         totalDebit: finalDebit,
         connection_status,
         upi_id: personData.linkedUser?.upi_id || null,
+        email: personData.linkedUser?.email || null,
+        address: personData.linkedUser?.address || null,
+        profile_picture: personData.linkedUser?.profile_picture || null,
       };
     });
   }
@@ -166,7 +169,7 @@ export class PersonService {
         {
           model: User,
           as: "linkedUser",
-          attributes: ["phone_number", "email", "name", "upi_id"],
+          attributes: ["phone_number", "email", "name", "upi_id", "address", "profile_picture"],
         },
       ]
     });
@@ -210,6 +213,9 @@ export class PersonService {
       const displayPhone = (person as any).linkedUser?.phone_number || person.phone;
       person.setDataValue('phone', displayPhone);
       person.setDataValue('upi_id' as any, (person as any).linkedUser?.upi_id || null);
+      person.setDataValue('email' as any, (person as any).linkedUser?.email || null);
+      person.setDataValue('address' as any, (person as any).linkedUser?.address || null);
+      person.setDataValue('profile_picture' as any, (person as any).linkedUser?.profile_picture || null);
     }
     
     return person;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Search, User, Phone, ArrowLeft, UserPlus, Users,
   StickyNote, Loader2, Calendar, MessageSquare,
-  TrendingUp, TrendingDown, IndianRupee, MoreVertical, Clock, PlusCircle, Trash2, SquarePen, X, CheckCircle2, ChevronRight, Eye, AlertCircle, AlertTriangle
+  TrendingUp, TrendingDown, IndianRupee, MoreVertical, Clock, PlusCircle, Trash2, SquarePen, X, CheckCircle2, ChevronRight, Eye, AlertCircle, AlertTriangle, Mail, MapPin
 } from "lucide-react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../services/api";
@@ -21,6 +21,9 @@ interface Person {
   linked_user_id?: string;
   connection_status?: "none" | "requested" | "connected";
   upi_id?: string;
+  email?: string;
+  address?: string;
+  profile_picture?: string;
 }
 
 interface Transaction {
@@ -818,8 +821,12 @@ Takes less than a minute. See you there! 😊
               <div className="space-y-6">
                 {/* Profile Card */}
                 <div className="relative flex items-start gap-4 p-5 rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-indigo-500/20 shadow-lg shadow-indigo-900/5 dark:shadow-none">
-                  <div className="w-14 h-14 rounded-full border-2 border-indigo-500 shrink-0 bg-indigo-50 dark:bg-[#1e1a3b] flex items-center justify-center">
-                    <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{selectedPerson.name.charAt(0).toUpperCase()}</span>
+                  <div className="w-14 h-14 rounded-full border-2 border-indigo-500 shrink-0 bg-indigo-50 dark:bg-[#1e1a3b] flex items-center justify-center overflow-hidden">
+                    {selectedPerson.connection_status === "connected" && selectedPerson.profile_picture ? (
+                      <img src={selectedPerson.profile_picture} alt={selectedPerson.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{selectedPerson.name.charAt(0).toUpperCase()}</span>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
                     <MarqueeText
@@ -869,6 +876,12 @@ Takes less than a minute. See you there! 😊
                   <h3 className="text-xs font-black text-indigo-600 dark:text-indigo-400 tracking-wider mb-3 px-2">Contact Information</h3>
                   <div className="rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm overflow-hidden">
                     <InfoRow icon={Phone} label="Mobile Number" value={selectedPerson.phone} />
+                    {selectedPerson.connection_status === "connected" && selectedPerson.email && (
+                      <InfoRow icon={Mail} label="Email Address" value={selectedPerson.email} />
+                    )}
+                    {selectedPerson.connection_status === "connected" && selectedPerson.address && (
+                      <InfoRow icon={MapPin} label="Address" value={selectedPerson.address} />
+                    )}
                     <InfoRow icon={Calendar} label="Added On" value={formatDate(selectedPerson.createdAt)} last={!selectedPerson.notes} />
                     {selectedPerson.notes && <InfoRow icon={MessageSquare} label="Notes" value={selectedPerson.notes} last />}
                   </div>
@@ -1101,6 +1114,34 @@ Takes less than a minute. See you there! 😊
                     placeholder="Enter mobile number"
                     error={editErrors.phone}
                   />
+
+                  {selectedPerson.connection_status === "connected" && selectedPerson.email && (
+                    <div className="relative opacity-60">
+                      <FloatingInput
+                        icon={Mail}
+                        label="Email Address"
+                        name="email"
+                        value={selectedPerson.email}
+                        onChange={() => {}}
+                        placeholder=""
+                      />
+                      <div className="absolute inset-0 z-10 cursor-not-allowed" title="Email is managed by the connected user"></div>
+                    </div>
+                  )}
+
+                  {selectedPerson.connection_status === "connected" && selectedPerson.address && (
+                    <div className="relative opacity-60">
+                      <FloatingInput
+                        icon={MapPin}
+                        label="Address"
+                        name="address"
+                        value={selectedPerson.address}
+                        onChange={() => {}}
+                        placeholder=""
+                      />
+                      <div className="absolute inset-0 z-10 cursor-not-allowed" title="Address is managed by the connected user"></div>
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-1 flex items-center gap-2">
@@ -1669,8 +1710,12 @@ Takes less than a minute. See you there! 😊
                   >
                     <div className="flex items-center gap-4">
                       {/* Avatar */}
-                      <div className="w-12 h-12 rounded-[1.2rem] bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-105 transition-transform shadow-sm">
-                        {person.name.charAt(0).toUpperCase()}
+                      <div className="w-12 h-12 rounded-[1.2rem] bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-xl shrink-0 group-hover:scale-105 transition-transform shadow-sm overflow-hidden">
+                        {person.connection_status === "connected" && person.profile_picture ? (
+                          <img src={person.profile_picture} alt={person.name} className="w-full h-full object-cover" />
+                        ) : (
+                          person.name.charAt(0).toUpperCase()
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-0.5 min-w-0 flex-1 mt-0.5">
