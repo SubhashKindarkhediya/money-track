@@ -331,25 +331,28 @@ const Profile: React.FC = () => {
               Payment Details
             </h3>
             <div 
-              className="rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm overflow-hidden p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1b2a] transition-colors"
+              className="rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm overflow-hidden p-5 flex items-start justify-between gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1b2a] transition-colors"
               onClick={() => {
                 setUpiIdInput(user?.upi_id || "");
                 setUpiError("");
                 setIsUpiModalOpen(true);
               }}
             >
-              <div className="flex items-start gap-4 flex-1">
+              <div className="flex items-start gap-4 flex-1 min-w-0">
                 <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#1b1c2e] text-indigo-500 dark:text-indigo-400 mt-1 shrink-0">
                   <CreditCard size={18} />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Primary UPI ID</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white leading-relaxed">
-                    {user?.upi_id || "Not provided"}
-                  </span>
+                <div className="flex flex-col gap-1.5 min-w-0 w-full">
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">UPI ID</span>
+                  <div className="w-full overflow-hidden">
+                    <MarqueeText 
+                      text={user?.upi_id || "Not provided"} 
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                    />
+                  </div>
                 </div>
               </div>
-              <Pencil size={18} className="text-indigo-500 shrink-0 hover:text-indigo-600 transition-colors" />
+              <Pencil size={18} className="text-indigo-500 shrink-0 hover:text-indigo-600 transition-colors mt-2" />
             </div>
           </div>
 
