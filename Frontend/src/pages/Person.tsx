@@ -812,9 +812,11 @@ Takes less than a minute. See you there! 😊
                 </p>
               ) : (
                 detailTab === "profile" && selectedPerson.linked_user_id && (
-                  <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 shadow-sm self-start animate-in zoom-in duration-300">
-                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">On App</span>
+                  <div className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full shadow-sm self-start animate-in zoom-in duration-300 ${selectedPerson.connection_status === "connected" ? "bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20" : "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20"}`}>
+                    <div className={`w-1 h-1 rounded-full animate-pulse ${selectedPerson.connection_status === "connected" ? "bg-blue-500" : "bg-emerald-500"}`}></div>
+                    <span className={`text-[8px] font-black uppercase tracking-widest ${selectedPerson.connection_status === "connected" ? "text-blue-600 dark:text-blue-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                      {selectedPerson.connection_status === "connected" ? "Connected" : "On App"}
+                    </span>
                   </div>
                 )
               )}
@@ -1933,9 +1935,11 @@ Takes less than a minute. See you there! 😊
                       </button>
 
                       {person.linked_user_id ? (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 shadow-sm border border-emerald-100 dark:border-emerald-500/20 animate-in zoom-in duration-300">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                          <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none">On App</span>
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm animate-in zoom-in duration-300 ${person.connection_status === "connected" ? "bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20" : "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20"}`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${person.connection_status === "connected" ? "bg-blue-500" : "bg-emerald-500"}`}></div>
+                          <span className={`text-[9px] font-black uppercase tracking-widest leading-none ${person.connection_status === "connected" ? "text-blue-600 dark:text-blue-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                            {person.connection_status === "connected" ? "Connected" : "On App"}
+                          </span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-gray-800 shadow-sm border border-slate-200 dark:border-gray-700 animate-in zoom-in duration-300">
