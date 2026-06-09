@@ -303,12 +303,13 @@ const Person: React.FC = () => {
     const msg = `Hello ${name},\n\nI have added you on the Money Track app to easily and transparently manage our shared transactions and balances. You can view our live ledger and track transaction history here:\n${appUrl}\n\nRegards,\n${userName}`;
 
     if (method === "share") {
+      const shareData = {
+        title: "Money Track Invite",
+        text: msg,
+      };
       try {
-        if (navigator.share && navigator.canShare) {
-          await navigator.share({
-            title: "Money Track Invite",
-            text: msg,
-          });
+        if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+          await navigator.share(shareData);
           handleCloseInviteModal();
         } else {
           await navigator.clipboard.writeText(msg);
