@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Search, User, Phone, ArrowLeft, UserPlus, Users,
   StickyNote, Loader2, Calendar, MessageSquare,
-  TrendingUp, TrendingDown, IndianRupee, MoreVertical, Clock, PlusCircle, Trash2, SquarePen, X, CheckCircle2, ChevronRight, Eye, AlertCircle, AlertTriangle, Mail, MapPin
+  TrendingUp, TrendingDown, IndianRupee, MoreVertical, Clock, PlusCircle, Trash2, SquarePen, X, CheckCircle2, ChevronRight, Eye, AlertCircle, AlertTriangle, Mail, MapPin, Share2
 } from "lucide-react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../services/api";
@@ -293,7 +293,7 @@ const Person: React.FC = () => {
     setEditErrors({});
   }, [location.pathname, detailTab]);
 
-  const handleInvite = (method: "whatsapp" | "sms") => {
+  const handleInvite = async (method: "whatsapp" | "sms" | "share") => {
     if (!justAddedPerson) return;
 
     const { name, phone } = justAddedPerson;
@@ -301,6 +301,28 @@ const Person: React.FC = () => {
     const appUrl = window.location.origin.replace(/^https?:\/\//, "");
     const userName = user?.name || "Money Track";
     const msg = `Hello ${name},\n\nI have added you on the Money Track app to easily and transparently manage our shared transactions and balances. You can view our live ledger and track transaction history here:\n${appUrl}\n\nRegards,\n${userName}`;
+
+    if (method === "share") {
+      try {
+        if (navigator.share && navigator.canShare) {
+          await navigator.share({
+            title: "Money Track Invite",
+            text: msg,
+          });
+          handleCloseInviteModal();
+        } else {
+          await navigator.clipboard.writeText(msg);
+          toast.success("Message copied to clipboard!");
+        }
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          console.error("Error sharing:", err);
+          await navigator.clipboard.writeText(msg);
+          toast.success("Message copied to clipboard!");
+        }
+      }
+      return;
+    }
 
     if (method === "whatsapp") {
       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
@@ -1773,6 +1795,14 @@ Takes less than a minute. See you there! 😊
               </p>
 
               <div className="space-y-2.5">
+                <button
+                  onClick={() => handleInvite("share")}
+                  className="w-full h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 text-xs uppercase tracking-wider"
+                >
+                  <Share2 size={16} />
+                  Share / Choose App
+                </button>
+
                 <button
                   onClick={() => handleInvite("whatsapp")}
                   className="w-full h-12 bg-[#25d366] hover:bg-[#20ba59] text-white font-bold rounded-xl shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 text-xs uppercase tracking-wider"
