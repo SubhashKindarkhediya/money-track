@@ -37,6 +37,15 @@ interface Transaction {
   createdAt: string;
 }
 
+interface BulkContact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  notes: string;
+  error?: string;
+}
+
 const FloatingInput = ({
   icon: Icon,
   label,
@@ -140,28 +149,44 @@ const Person: React.FC = () => {
   const handleImportContact = async () => {
     try {
       const props = ["name", "tel"];
-      const opts = { multiple: false };
+      const opts = { multiple: true };
       const contacts = await (navigator as any).contacts.select(props, opts);
 
       if (contacts && contacts.length > 0) {
-        const contact = contacts[0];
-        const fullName = contact.name && contact.name[0] ? contact.name[0] : "";
-        const rawPhone = contact.tel && contact.tel[0] ? contact.tel[0] : "";
+        if (contacts.length === 1 && bulkContacts.length === 0) {
+          const contact = contacts[0];
+          const fullName = contact.name && contact.name[0] ? contact.name[0] : "";
+          const rawPhone = contact.tel && contact.tel[0] ? contact.tel[0] : "";
+          const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
+          const nameParts = fullName.trim().split(/\s+/);
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.slice(1).join(" ") || "";
 
-        // Clean phone number: remove all non-digits, keep last 10 digits
-        const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
-
-        // Split Name into First Name & Last Name
-        const nameParts = fullName.trim().split(/\s+/);
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || "";
-
-        setFormData(prev => ({
-          ...prev,
-          first_name: firstName,
-          last_name: lastName,
-          phone_number: cleanPhone
-        }));
+          setFormData(prev => ({
+            ...prev,
+            first_name: firstName,
+            last_name: lastName,
+            phone_number: cleanPhone
+          }));
+        } else {
+          const newBulkContacts = contacts.map((contact: any, index: number) => {
+            const fullName = contact.name && contact.name[0] ? contact.name[0] : "";
+            const rawPhone = contact.tel && contact.tel[0] ? contact.tel[0] : "";
+            const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
+            const nameParts = fullName.trim().split(/\s+/);
+            const firstName = nameParts[0] || "";
+            const lastName = nameParts.slice(1).join(" ") || "";
+            
+            return {
+              id: Date.now().toString() + index,
+              first_name: firstName,
+              last_name: lastName,
+              phone_number: cleanPhone,
+              notes: ""
+            };
+          });
+          setBulkContacts(prev => [...prev, ...newBulkContacts]);
+        }
       }
     } catch (error: any) {
       console.error("Contact picker error:", error);
@@ -181,6 +206,52 @@ const Person: React.FC = () => {
   const isAdding = location.pathname === "/person/add";
   const [formData, setFormData] = useState({ first_name: "", last_name: "", phone_number: "", notes: "" });
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [bulkContacts, setBulkContacts] = useState<BulkContact[]>([]);
+  const [bulkSubmitLoading, setBulkSubmitLoading] = useState(false);
+
+  const handleBulkSubmit = async () => {
+    let hasError = false;
+    const validatedContacts = bulkContacts.map(c => {
+      let error = "";
+      if (!c.first_name.trim()) error = "First name is required";
+      else if (!c.phone_number) error = "Mobile number is required";
+      else if (c.phone_number.replace(/\D/g, "").length !== 10) error = "Invalid 10-digit number";
+      else if (persons.some(p => p.phone?.replace(/\D/g, "") === c.phone_number.replace(/\D/g, ""))) {
+        error = "Number already exists in list";
+      }
+      if (error) hasError = true;
+      return { ...c, error };
+    });
+
+    if (hasError) {
+      setBulkContacts(validatedContacts);
+      toast.error("Please fix the errors before saving.");
+      return;
+    }
+
+    try {
+      setBulkSubmitLoading(true);
+      await Promise.all(
+        bulkContacts.map(c =>
+          api.post("/person", {
+            name: `${c.first_name} ${c.last_name}`.trim(),
+            phone: c.phone_number,
+            notes: c.notes,
+          })
+        )
+      );
+      toast.success(`${bulkContacts.length} contacts added successfully!`);
+      navigate("/person");
+      setBulkContacts([]);
+      setFormData({ first_name: "", last_name: "", phone_number: "", notes: "" });
+      fetchPersons();
+    } catch (error: any) {
+      console.error("Bulk add failed", error);
+      toast.error("Some contacts failed to save.");
+    } finally {
+      setBulkSubmitLoading(false);
+    }
+  };
 
   const { id } = useParams();
   // Detail View State
@@ -1541,44 +1612,143 @@ Takes less than a minute. See you there! 😊
 
           {/* Add Form Container */}
           <div className="px-6 py-8 w-full">
-            <div className="flex items-center justify-center mb-10">
-              <div className="w-16 h-16 bg-indigo-50 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm">
-                <UserPlus size={32} />
+            {bulkContacts.length > 0 ? (
+              <div className="space-y-4 pb-28">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white">Selected Contacts ({bulkContacts.length})</h3>
+                  <button onClick={() => setBulkContacts([])} className="text-xs font-bold text-rose-500 hover:text-rose-600 transition-colors px-2 py-1 bg-rose-50 dark:bg-rose-500/10 rounded-lg">Clear All</button>
+                </div>
+                
+                {bulkContacts.map((contact, index) => (
+                  <div key={contact.id} className="p-4 rounded-2xl bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 shadow-sm relative group transition-all hover:border-indigo-100 dark:hover:border-indigo-500/30">
+                    <button
+                      onClick={() => setBulkContacts(prev => prev.filter(c => c.id !== contact.id))}
+                      className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 pr-8">
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">First Name *</label>
+                        <input
+                          type="text"
+                          value={contact.first_name}
+                          onChange={(e) => {
+                            const newContacts = [...bulkContacts];
+                            newContacts[index].first_name = e.target.value;
+                            newContacts[index].error = undefined;
+                            setBulkContacts(newContacts);
+                          }}
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Last Name</label>
+                        <input
+                          type="text"
+                          value={contact.last_name}
+                          onChange={(e) => {
+                            const newContacts = [...bulkContacts];
+                            newContacts[index].last_name = e.target.value;
+                            setBulkContacts(newContacts);
+                          }}
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-medium"
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Mobile Number *</label>
+                      <input
+                        type="tel"
+                        value={contact.phone_number}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                          const newContacts = [...bulkContacts];
+                          newContacts[index].phone_number = val;
+                          newContacts[index].error = undefined;
+                          setBulkContacts(newContacts);
+                        }}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-medium"
+                      />
+                    </div>
+                    {contact.error && (
+                      <p className="text-[10px] font-bold text-rose-500 flex items-center gap-1 mt-1.5">
+                        <AlertCircle size={10} className="shrink-0" />
+                        {contact.error}
+                      </p>
+                    )}
+                  </div>
+                ))}
+                
+                <button
+                  onClick={handleImportContact}
+                  className="w-full py-4 rounded-2xl border-2 border-dashed border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors flex items-center justify-center gap-2"
+                >
+                  <PlusCircle size={18} />
+                  Add More Contacts
+                </button>
               </div>
-            </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAddSubmit();
-              }}
-              className="space-y-6 pb-28"
-            >
-              <FloatingInput icon={User} label="First Name *" name="first_name" placeholder="e.g. John" value={formData.first_name} onChange={handleChange} error={formErrors.first_name} />
-              <FloatingInput icon={User} label="Last Name" name="last_name" placeholder="e.g. Doe" value={formData.last_name} onChange={handleChange} />
-              <FloatingInput icon={Phone} label="Mobile Number *" name="phone_number" type="tel" placeholder="+91 00000 00000" value={formData.phone_number} onChange={handleChange} error={formErrors.phone_number} />
-              <FloatingInput icon={StickyNote} label="Notes (Optional)" name="notes" placeholder="Any extra info..." value={formData.notes} onChange={handleChange} />
-            </form>
+            ) : (
+              <>
+                <div className="flex items-center justify-center mb-10">
+                  <div className="w-16 h-16 bg-indigo-50 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm">
+                    <UserPlus size={32} />
+                  </div>
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleAddSubmit();
+                  }}
+                  className="space-y-6 pb-28"
+                >
+                  <FloatingInput icon={User} label="First Name *" name="first_name" placeholder="e.g. John" value={formData.first_name} onChange={handleChange} error={formErrors.first_name} />
+                  <FloatingInput icon={User} label="Last Name" name="last_name" placeholder="e.g. Doe" value={formData.last_name} onChange={handleChange} />
+                  <FloatingInput icon={Phone} label="Mobile Number *" name="phone_number" type="tel" placeholder="+91 00000 00000" value={formData.phone_number} onChange={handleChange} error={formErrors.phone_number} />
+                  <FloatingInput icon={StickyNote} label="Notes (Optional)" name="notes" placeholder="Any extra info..." value={formData.notes} onChange={handleChange} />
+                </form>
+              </>
+            )}
           </div>
 
           {/* Fixed Bottom Button Wrapper */}
           <div className="sticky bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#0a0a1a]/90 backdrop-blur-xl border-t border-indigo-100/50 dark:border-gray-800 z-50 mt-auto">
             <div className="max-w-4xl mx-auto w-full">
-              <button
-                onClick={handleAddSubmit}
-                disabled={submitLoading}
-                className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98]"
-              >
-                {submitLoading ? (
-                  <Loader2 size={20} className="animate-spin" />
-                ) : (
-                  <>
-                    <UserPlus size={18} />
-                    <span className="uppercase tracking-[0.1em] text-sm font-bold">
-                      Add Person
-                    </span>
-                  </>
-                )}
-              </button>
+              {bulkContacts.length > 0 ? (
+                <button
+                  onClick={handleBulkSubmit}
+                  disabled={bulkSubmitLoading || bulkContacts.length === 0}
+                  className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98]"
+                >
+                  {bulkSubmitLoading ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle2 size={18} />
+                      <span className="uppercase tracking-[0.1em] text-sm font-bold">
+                        Save All Contacts ({bulkContacts.length})
+                      </span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleAddSubmit}
+                  disabled={submitLoading}
+                  className="w-full h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98]"
+                >
+                  {submitLoading ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <>
+                      <UserPlus size={18} />
+                      <span className="uppercase tracking-[0.1em] text-sm font-bold">
+                        Add Person
+                      </span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
