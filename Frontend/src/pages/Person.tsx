@@ -2546,7 +2546,12 @@ Takes less than a minute. See you there! 😊
                         }
 
                         const upiUrl = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR`;
-                        window.location.href = upiUrl;
+                        
+                        const link = document.createElement('a');
+                        link.href = upiUrl;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
 
                         // Change step
                         setUpiPaymentError(null);
