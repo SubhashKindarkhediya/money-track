@@ -2541,8 +2541,8 @@ Takes less than a minute. See you there! 😊
                           return;
                         }
 
-                        // Trigger deep link with required cu=INR parameter for GPay compatibility
-                        window.location.href = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR&tn=MoneyTrack`;
+                        const trRef = `MT${Date.now()}`;
+                        window.location.href = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&tr=${trRef}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR&tn=MoneyTrack%20Settle`;
 
                         // Change step
                         setUpiPaymentError(null);
