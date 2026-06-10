@@ -267,7 +267,7 @@ const Person: React.FC = () => {
   const [settleTx, setSettleTx] = useState<Transaction | null>(null);
   const [isSettlePersonModalOpen, setIsSettlePersonModalOpen] = useState(false);
   const [isUpiPaymentModalOpen, setIsUpiPaymentModalOpen] = useState(false);
-  const [upiPaymentStep, setUpiPaymentStep] = useState<"enter_amount" | "confirm_payment">("enter_amount");
+  const [upiPaymentStep, setUpiPaymentStep] = useState<"enter_amount" | "confirm_payment" | "success">("enter_amount");
   const [upiPaymentAmount, setUpiPaymentAmount] = useState("");
   const [upiPaymentMaxAmount, setUpiPaymentMaxAmount] = useState<number>(0);
   const [selectedUpiPerson, setSelectedUpiPerson] = useState<Person | null>(null);
@@ -762,8 +762,12 @@ Takes less than a minute. See you there! 😊
         note: "Paid via UPI"
       });
 
-      setIsUpiPaymentModalOpen(false);
-      setSelectedUpiPerson(null);
+      setUpiPaymentStep("success");
+      setTimeout(() => {
+        setIsUpiPaymentModalOpen(false);
+        setSelectedUpiPerson(null);
+      }, 2500);
+
       if (selectedPerson && selectedPerson.id === selectedUpiPerson.id) {
         fetchTransactions(selectedPerson.id);
       }
@@ -2543,7 +2547,7 @@ Takes less than a minute. See you there! 😊
 
                         const trRef = `MT${Date.now()}`;
                         const upiUrl = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&tr=${trRef}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR&tn=MoneyTrack%20Settle`;
-                        window.open(upiUrl, "_blank");
+                        window.location.href = upiUrl;
 
                         // Change step
                         setUpiPaymentError(null);
@@ -2556,21 +2560,11 @@ Takes less than a minute. See you there! 😊
                   </div>
                 </div>
               </>
-            ) : (
+            ) : upiPaymentStep === "confirm_payment" ? (
               <>
                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-6">
                   Did your payment of <span className="font-bold text-gray-700 dark:text-gray-300">{currencySymbol}{Number(upiPaymentAmount).toLocaleString("en-IN")}</span> succeed?
                 </p>
-
-                {/* Show QR Code for Desktop Users */}
-                <div className="mb-6 flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Scan to Pay (If on PC)</p>
-                  <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&tr=MT${Date.now()}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR&tn=MoneyTrack%20Settle`)}`} 
-                    alt="UPI QR Code"
-                    className="w-32 h-32"
-                  />
-                </div>
 
                 {upiPaymentError && (
                   <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl flex items-start gap-2 text-rose-600 dark:text-rose-400 text-xs">
@@ -2599,6 +2593,15 @@ Takes less than a minute. See you there! 😊
                   </button>
                 </div>
               </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 animate-in zoom-in duration-500">
+                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 relative">
+                  <div className="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping"></div>
+                  <CheckCircle2 size={40} className="text-emerald-500 drop-shadow-md animate-in slide-in-from-bottom-2 duration-300" />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Payment Successful!</h3>
+                <p className="text-sm font-medium text-gray-500 text-center">Your transaction has been recorded.</p>
+              </div>
             )}
           </div>
         </div>
