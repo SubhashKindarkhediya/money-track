@@ -187,7 +187,7 @@ const AddTransaction: React.FC = () => {
               status: "pending",
             })
           );
-          
+
           // Also record the user's own share as a personal expense
           const expensePromise = api.post("/transactions", {
             person_id: undefined,
@@ -414,9 +414,9 @@ const AddTransaction: React.FC = () => {
                 )}
 
                 {/* Type Toggle */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Transaction Type</label>
-                  {(txForm.type === "credit" || txForm.type === "debit") ? (
+                {(txForm.type === "credit" || txForm.type === "debit") && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Transaction Type</label>
                     <div className="flex gap-3">
                       <button type="button" onClick={() => setTxForm({ ...txForm, type: "credit" })}
                         className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "credit"
@@ -445,27 +445,8 @@ const AddTransaction: React.FC = () => {
                         </span>
                       </button>
                     </div>
-                  ) : (
-                    <div className="flex gap-3">
-                      <button type="button" onClick={() => setTxForm({ ...txForm, type: "income" })}
-                        className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "income"
-                          ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20 ring-offset-2 dark:ring-offset-[#0a0a1a]"
-                          : "bg-white dark:bg-[#151624] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e1f30]"
-                          }`}>
-                        <TrendingUp size={18} />
-                        <span>Income</span>
-                      </button>
-                      <button type="button" onClick={() => setTxForm({ ...txForm, type: "expense" })}
-                        className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${txForm.type === "expense"
-                          ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30 ring-2 ring-amber-500/20 ring-offset-2 dark:ring-offset-[#0a0a1a]"
-                          : "bg-white dark:bg-[#151624] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e1f30]"
-                          }`}>
-                        <TrendingDown size={18} />
-                        <span>Expense</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
 
 

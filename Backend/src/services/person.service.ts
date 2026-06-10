@@ -72,8 +72,8 @@ export class PersonService {
     });
 
     const transactions = await Transaction.findAll({
-      where: { uid, person_id: { [Op.ne]: null }, status: "pending" },
-      attributes: ["person_id", "type", "amount"],
+      where: { uid, person_id: { [Op.ne]: null } },
+      attributes: ["person_id", "type", "amount", "status", "date", "createdAt"],
       raw: true,
     });
 
@@ -90,19 +90,27 @@ export class PersonService {
       raw: true
     });
 
-    const summaryMap: Record<string, { totalCredit: number; totalDebit: number }> = {};
+    const summaryMap: Record<string, { totalCredit: number; totalDebit: number; latestDate: number }> = {};
     
     transactions.forEach((tx: any) => {
       if (!tx.person_id) return;
       if (!summaryMap[tx.person_id]) {
-        summaryMap[tx.person_id] = { totalCredit: 0, totalDebit: 0 };
+        summaryMap[tx.person_id] = { totalCredit: 0, totalDebit: 0, latestDate: 0 };
       }
-      const amount = Number(tx.amount);
-      if (tx.type === "credit") summaryMap[tx.person_id].totalCredit += amount;
-      if (tx.type === "debit") summaryMap[tx.person_id].totalDebit += amount;
+      
+      const txDate = tx.date ? new Date(tx.date).getTime() : new Date(tx.createdAt).getTime();
+      if (txDate > summaryMap[tx.person_id].latestDate) {
+        summaryMap[tx.person_id].latestDate = txDate;
+      }
+
+      if (tx.status === "pending") {
+        const amount = Number(tx.amount);
+        if (tx.type === "credit") summaryMap[tx.person_id].totalCredit += amount;
+        if (tx.type === "debit") summaryMap[tx.person_id].totalDebit += amount;
+      }
     });
 
-    return persons.map((p: any) => {
+    const mappedPersons = persons.map((p: any) => {
       const personData = p.get({ plain: true });
       const displayPhone = personData.linkedUser?.phone_number || personData.phone;
       
@@ -147,12 +155,17 @@ export class PersonService {
         totalCredit: finalCredit,
         totalDebit: finalDebit,
         connection_status,
+        lastTransactionDate: summaryMap[personData.id]?.latestDate || new Date(personData.createdAt).getTime(),
         upi_id: personData.linkedUser?.upi_id || null,
         email: personData.linkedUser?.email || null,
         address: personData.linkedUser?.address || null,
         profile_picture: personData.linkedUser?.profile_picture || null,
       };
     });
+
+    mappedPersons.sort((a: any, b: any) => b.lastTransactionDate - a.lastTransactionDate);
+
+    return mappedPersons;
   }
 
   /**

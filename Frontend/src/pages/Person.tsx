@@ -549,13 +549,16 @@ const Person: React.FC = () => {
     }
   };
 
-  const handleSendRequest = async () => {
-    if (!selectedPerson || isSendingRequest) return;
+  const handleSendRequest = async (eOrPerson?: Person | React.MouseEvent) => {
+    const targetPerson = (eOrPerson && 'id' in eOrPerson) ? eOrPerson : selectedPerson;
+    if (!targetPerson || isSendingRequest) return;
     setIsSendingRequest(true);
     try {
-      await api.post(`/person/${selectedPerson.id}/request`);
-      setSelectedPerson(prev => prev ? { ...prev, connection_status: "requested" } : null);
-      setPersons(prev => prev.map(p => p.id === selectedPerson.id ? { ...p, connection_status: "requested" } : p));
+      await api.post(`/person/${targetPerson.id}/request`);
+      if (selectedPerson && selectedPerson.id === targetPerson.id) {
+        setSelectedPerson(prev => prev ? { ...prev, connection_status: "requested" } : null);
+      }
+      setPersons(prev => prev.map(p => p.id === targetPerson.id ? { ...p, connection_status: "requested" } : p));
       toast.success("Connection request sent!");
     } catch (error: any) {
       console.error("Failed to send request", error);
@@ -565,8 +568,9 @@ const Person: React.FC = () => {
     }
   };
 
-  const handleInviteApp = async () => {
-    if (!selectedPerson) {
+  const handleInviteApp = async (eOrPerson?: Person | React.MouseEvent) => {
+    const targetPerson = (eOrPerson && 'id' in eOrPerson) ? eOrPerson : selectedPerson;
+    if (!targetPerson) {
       alert("Person details not found.");
       return;
     }
@@ -577,7 +581,7 @@ const Person: React.FC = () => {
     // URL without protocol prefix (https://) to prevent the messaging client from showing a link preview containing the product logo
     const appUrl = "moneytrackflow.vercel.app";
 
-    const message = `Hi ${selectedPerson.name}! 👋
+    const message = `Hi ${targetPerson.name}! 👋
 
 I've been using *Money Track* to manage shared expenses with friends and contacts — and it's been really helpful!
 
@@ -608,7 +612,7 @@ Takes less than a minute. See you there! 😊
         alert("Invitation message copied to clipboard! You can now paste it in WhatsApp or any other app.");
       } else {
         // 3. Last Resort: WhatsApp Direct Link (especially useful on mobile if clipboard fails)
-        const whatsappUrl = `https://wa.me/${selectedPerson.phone ? selectedPerson.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(message)}`;
+        const whatsappUrl = `https://wa.me/${targetPerson.phone ? targetPerson.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
       }
     } catch (err: any) {
@@ -617,7 +621,7 @@ Takes less than a minute. See you there! 😊
       if (err.name === 'AbortError') return;
 
       // Final fallback to WhatsApp if anything else fails
-      const whatsappUrl = `https://wa.me/${selectedPerson.phone ? selectedPerson.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(message)}`;
+      const whatsappUrl = `https://wa.me/${targetPerson.phone ? targetPerson.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
     }
   };
@@ -1604,6 +1608,145 @@ Takes less than a minute. See you there! 😊
             </div>
           )}
 
+          {/* UPI Payment Modal */}
+          {isUpiPaymentModalOpen && selectedUpiPerson && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
+              <div className="bg-white/95 dark:bg-[#0c0d1e]/95 backdrop-blur-xl rounded-[2.5rem] p-6 max-w-sm w-full border border-indigo-100 dark:border-indigo-500/20 shadow-2xl animate-in zoom-in-95 duration-300 relative">
+                <button
+                  onClick={() => setIsUpiPaymentModalOpen(false)}
+                  className="absolute top-5 right-5 p-2 bg-gray-50 dark:bg-gray-800 text-gray-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+
+                <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 text-center tracking-tight">
+                  Pay via UPI
+                </h3>
+
+                {upiPaymentStep === "enter_amount" ? (
+                  <>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-6">
+                      Paying <span className="font-bold text-gray-700 dark:text-gray-300">{selectedUpiPerson.name}</span>
+                    </p>
+
+                    {upiPaymentError && (
+                      <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl flex items-start gap-2 text-rose-600 dark:text-rose-400 text-xs">
+                        <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                        <span className="font-medium">{upiPaymentError}</span>
+                      </div>
+                    )}
+
+                    <div className="space-y-5">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1">
+                          Amount to Pay
+                        </label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <span className="text-sm font-bold text-indigo-500">{currencySymbol}</span>
+                          </div>
+                          <input
+                            type="number"
+                            value={upiPaymentAmount}
+                            onChange={(e) => setUpiPaymentAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full pl-10 pr-4 py-4 bg-gray-50 dark:bg-[#0a0a1a] text-gray-900 dark:text-white font-bold rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all border border-gray-100 dark:border-gray-800 text-lg placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                            step="0.01"
+                            min="0"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsUpiPaymentModalOpen(false)}
+                          className="w-1/3 h-14 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest rounded-2xl text-[10px] active:scale-95 transition-all"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!upiPaymentAmount || Number(upiPaymentAmount) <= 0) {
+                              setUpiPaymentError("Please enter a valid amount.");
+                              return;
+                            }
+
+                            if (Number(upiPaymentAmount) > upiPaymentMaxAmount) {
+                              setUpiPaymentError(`Cannot pay more than your total pending debit of ${currencySymbol}${upiPaymentMaxAmount.toLocaleString("en-IN")}.`);
+                              return;
+                            }
+
+                            const upiParams = `pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR`;
+                            const fallbackUrl = encodeURIComponent(`upi://pay?${upiParams}`);
+                            const gpayIntentUrl = `intent://pay?${upiParams}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;S.browser_fallback_url=${fallbackUrl};end`;
+                            
+                            const link = document.createElement('a');
+                            link.href = gpayIntentUrl;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+
+                            // Change step
+                            setUpiPaymentError(null);
+                            setUpiPaymentStep("confirm_payment");
+                          }}
+                          className="flex-1 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black uppercase tracking-widest rounded-2xl text-[10px] sm:text-xs active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20"
+                        >
+                          Pay via UPI
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : upiPaymentStep === "confirm_payment" ? (
+                  <>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-6">
+                      Did your payment of <span className="font-bold text-gray-700 dark:text-gray-300">{currencySymbol}{Number(upiPaymentAmount).toLocaleString("en-IN")}</span> succeed?
+                    </p>
+
+                    {upiPaymentError && (
+                      <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl flex items-start gap-2 text-rose-600 dark:text-rose-400 text-xs">
+                        <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                        <span className="font-medium">{upiPaymentError}</span>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-3">
+                      <button
+                        type="button"
+                        onClick={handleUpiConfirmPayment}
+                        disabled={settleLoading}
+                        className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest rounded-2xl text-xs disabled:opacity-50 active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-emerald-500/20 border border-emerald-400/20 gap-2"
+                      >
+                        {settleLoading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={18} />}
+                        Yes, Record Payment
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsUpiPaymentModalOpen(false)}
+                        disabled={settleLoading}
+                        className="w-full h-14 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest rounded-2xl text-[10px] active:scale-95 transition-all"
+                      >
+                        No, Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-6 animate-in zoom-in duration-500">
+                    <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 relative">
+                      <div className="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping"></div>
+                      <CheckCircle2 size={40} className="text-emerald-500 drop-shadow-md animate-in slide-in-from-bottom-2 duration-300" />
+                    </div>
+                    <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Payment Successful!</h3>
+                    <p className="text-sm font-medium text-gray-500 text-center">Your transaction has been recorded.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     );
@@ -1970,17 +2113,51 @@ Takes less than a minute. See you there! 😊
                       </button>
 
                       {person.linked_user_id ? (
-                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm animate-in zoom-in duration-300 ${person.connection_status === "connected" ? "bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20" : "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20"}`}>
-                          <div className={`w-1.5 h-1.5 rounded-full ${person.connection_status === "connected" ? "bg-blue-500" : "bg-emerald-500"}`}></div>
-                          <span className={`text-[9px] font-black uppercase tracking-widest leading-none ${person.connection_status === "connected" ? "text-blue-600 dark:text-blue-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                            {person.connection_status === "connected" ? "Connected" : "On App"}
-                          </span>
-                        </div>
+                        person.connection_status === "connected" ? (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm animate-in zoom-in duration-300 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                            <span className="text-[9px] font-black uppercase tracking-widest leading-none text-blue-600 dark:text-blue-400">
+                              Connected
+                            </span>
+                          </div>
+                        ) : person.connection_status === "requested" ? (
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm animate-in zoom-in duration-300 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 cursor-default"
+                          >
+                            <Clock size={10} className="text-amber-600 dark:text-amber-400" />
+                            <span className="text-[9px] font-black uppercase tracking-widest leading-none text-amber-600 dark:text-amber-400">
+                              Requested
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendRequest(person);
+                            }}
+                            disabled={isSendingRequest}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full shadow-sm animate-in zoom-in duration-300 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white transition-all border border-indigo-400/20 active:scale-95 disabled:opacity-50"
+                          >
+                            {isSendingRequest ? <Loader2 size={10} className="animate-spin" /> : <UserPlus size={10} />}
+                            <span className="text-[9px] font-black uppercase tracking-widest leading-none">
+                              {isSendingRequest ? "Sending..." : "Send Request"}
+                            </span>
+                          </button>
+                        )
                       ) : (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-gray-800 shadow-sm border border-slate-200 dark:border-gray-700 animate-in zoom-in duration-300">
-                          <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500"></div>
-                          <span className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest leading-none">Not on App</span>
-                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInviteApp(person);
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full shadow-sm animate-in zoom-in duration-300 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white transition-all active:scale-95"
+                        >
+                          <UserPlus size={10} />
+                          <span className="text-[9px] font-black uppercase tracking-widest leading-none">
+                            Invite to App
+                          </span>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -2545,10 +2722,12 @@ Takes less than a minute. See you there! 😊
                           return;
                         }
 
-                        const upiUrl = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR`;
+                        const upiParams = `pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR`;
+                        const fallbackUrl = encodeURIComponent(`upi://pay?${upiParams}`);
+                        const gpayIntentUrl = `intent://pay?${upiParams}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;S.browser_fallback_url=${fallbackUrl};end`;
                         
                         const link = document.createElement('a');
-                        link.href = upiUrl;
+                        link.href = gpayIntentUrl;
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
