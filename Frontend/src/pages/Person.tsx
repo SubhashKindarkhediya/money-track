@@ -2545,8 +2545,7 @@ Takes less than a minute. See you there! 😊
                           return;
                         }
 
-                        const trRef = `MT${Date.now()}`;
-                        const upiUrl = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&tr=${trRef}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR&tn=MoneyTrack%20Settle`;
+                        const upiUrl = `upi://pay?pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR`;
                         window.location.href = upiUrl;
 
                         // Change step
