@@ -1679,15 +1679,9 @@ Takes less than a minute. See you there! 😊
                               return;
                             }
 
-                            const upiParams = `pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR&tn=MoneyTrack%20Settle&tr=MT${Date.now()}`;
-                            const fallbackUrl = encodeURIComponent(`upi://pay?${upiParams}`);
-                            const gpayIntentUrl = `intent://pay?${upiParams}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;S.browser_fallback_url=${fallbackUrl};end`;
-                            
-                            const link = document.createElement('a');
-                            link.href = gpayIntentUrl;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            const upiParams = `pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR&tn=MoneyTrack%20Settle`;
+                            const upiUrl = `upi://pay?${upiParams}`;
+                            window.location.href = upiUrl;
 
                             // Change step
                             setUpiPaymentError(null);
