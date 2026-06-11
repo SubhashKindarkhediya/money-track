@@ -37,6 +37,7 @@ import {
   UserCheck,
   UserX,
   BarChart3,
+  Loader2,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -916,7 +917,7 @@ function AppContent() {
 
   // Map notifications to activities (transactions only — excludes "connected" system notifications)
   const activities = notifications.filter(n =>
-    (n.type === 'transaction' || n.type === 'system') &&
+    (n.type === 'transaction' || n.type === 'system' || n.type === 'settle_request') &&
     n.recipient_id === user?.id &&
     n.data?.subType !== 'connected'   // hide "added to contacts" — toast handles this instead
   ).map(n => ({
@@ -933,6 +934,8 @@ function AppContent() {
     responseStatus: n.data?.status || null,
     personId: n.data?.personId || null,
     hasPendingOldTxs: n.data?.hasPendingOldTxs ?? true,
+    originalType: n.type,
+    status: n.status,
   }));
 
   const handleAccept = async (id: string) => {
@@ -1575,15 +1578,15 @@ function AppContent() {
                               <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black">{req.initial}</div>
                               <div>
                                 <p className={`text-sm tracking-tight ${!req.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>{req.name}</p>
-                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
-                                  {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Wants to connect'}
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest line-clamp-2">
+                                  {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : (req.message || 'Wants to connect')}
                                 </p>
                                 <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-3">
-                              {(req.subType === 'incoming' && (req.status === 'pending' || req.status === 'read')) ? (
+                              {(req.subType !== 'response' && (req.status === 'pending' || req.status === 'read')) ? (
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleAccept(req.id)}
@@ -1647,14 +1650,14 @@ function AppContent() {
                               <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 font-black">{req.initial}</div>
                               <div>
                                 <p className="font-black text-gray-900 dark:text-white text-sm">{req.name}</p>
-                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
-                                  {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : 'Sent request'}
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest line-clamp-2">
+                                  {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : (req.message || 'Sent request')}
                                 </p>
                                 <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
-                              {(req.subType === 'incoming' && (req.status === 'pending' || req.status === 'read')) ? (
+                              {(req.subType !== 'response' && (req.status === 'pending' || req.status === 'read')) ? (
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleAccept(req.id)}
@@ -1741,6 +1744,34 @@ function AppContent() {
                                 </span>
                               )}
                             </div>
+                            {act.originalType === 'settle_request' && (act.status === 'pending' || act.status === 'read') && (
+                              <div className="flex gap-2 mt-3 w-full">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleAccept(act.id); }}
+                                  disabled={actionLoadingId === act.id}
+                                  className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 min-w-[80px]"
+                                >
+                                  {actionLoadingId === act.id ? <><Loader2 size={12} className="animate-spin" /> Waiting</> : "Allow"}
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleReject(act.id); }}
+                                  disabled={actionLoadingId === act.id}
+                                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                >
+                                  Not Allow
+                                </button>
+                              </div>
+                            )}
+                            {act.originalType === 'settle_request' && act.status === 'accepted' && (
+                              <div className="mt-3 inline-block px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                                ✓ Success
+                              </div>
+                            )}
+                            {act.originalType === 'settle_request' && act.status === 'rejected' && (
+                              <div className="mt-3 inline-block px-3 py-1.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-rose-100 dark:border-rose-500/20">
+                                ✕ Not Allowed
+                              </div>
+                            )}
                           </div>
                           {!act.isRead && (
                             <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -1803,6 +1834,34 @@ function AppContent() {
                                 </span>
                               )}
                             </div>
+                            {act.originalType === 'settle_request' && (act.status === 'pending' || act.status === 'read') && (
+                              <div className="flex gap-2 mt-3 w-full">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleAccept(act.id); }}
+                                  disabled={actionLoadingId === act.id}
+                                  className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 min-w-[80px]"
+                                >
+                                  {actionLoadingId === act.id ? <><Loader2 size={12} className="animate-spin" /> Waiting</> : "Allow"}
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleReject(act.id); }}
+                                  disabled={actionLoadingId === act.id}
+                                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                >
+                                  Not Allow
+                                </button>
+                              </div>
+                            )}
+                            {act.originalType === 'settle_request' && act.status === 'accepted' && (
+                              <div className="mt-3 inline-block px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                                ✓ Success
+                              </div>
+                            )}
+                            {act.originalType === 'settle_request' && act.status === 'rejected' && (
+                              <div className="mt-3 inline-block px-3 py-1.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-rose-100 dark:border-rose-500/20">
+                                ✕ Not Allowed
+                              </div>
+                            )}
                           </div>
                           {!act.isRead && (
                             <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -1845,8 +1904,8 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <Router>
-            <Toaster 
-              position="bottom-center" 
+            <Toaster
+              position="bottom-center"
               containerStyle={{
                 bottom: '130px'
               }}

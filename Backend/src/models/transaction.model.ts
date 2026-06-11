@@ -14,7 +14,7 @@ interface TransactionAttributes {
   category?: string;
   reason?: string;
   note?: string;
-  status: "pending" | "completed";
+  status: "pending" | "completed" | "settle_requested";
   date: Date;
 }
 
@@ -35,7 +35,7 @@ class Transaction
   public category!: string;
   public reason!: string;
   public note!: string;
-  public status!: "pending" | "completed";
+  public status!: "pending" | "completed" | "settle_requested";
   public date!: Date;
 
   public readonly createdAt!: Date;
@@ -77,7 +77,7 @@ Transaction.init(
       type: DataTypes.TEXT,
     },
     status: {
-      type: DataTypes.ENUM("pending", "completed"),
+      type: DataTypes.ENUM("pending", "completed", "settle_requested"),
       allowNull: false,
       defaultValue: "pending",
     },

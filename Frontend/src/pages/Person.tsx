@@ -1115,7 +1115,7 @@ Takes less than a minute. See you there! 😊
                 ) : (
                   <div className="space-y-3">
                     {transactions
-                      .filter(tx => tx.status === statusFilter)
+                      .filter(tx => statusFilter === "pending" ? (tx.status === "pending" || tx.status === "settle_requested") : tx.status === statusFilter)
                       .filter(tx =>
                         !txSearch ||
                         (tx.reason && tx.reason.toLowerCase().includes(txSearch.toLowerCase())) ||
@@ -1174,7 +1174,7 @@ Takes less than a minute. See you there! 😊
                           </div>
                         </div>
                       ))}
-                    {transactions.filter(tx => tx.status === statusFilter).length === 0 && (
+                    {transactions.filter(tx => statusFilter === "pending" ? (tx.status === "pending" || tx.status === "settle_requested") : tx.status === statusFilter).length === 0 && (
                       <div className="text-center py-10 opacity-50">
                         <p className="text-sm font-bold text-gray-500">No {statusFilter} transactions found</p>
                       </div>
@@ -1425,20 +1425,22 @@ Takes less than a minute. See you there! 😊
                     Edit Transaction
                   </button>
 
-                  <div className="pt-2">
-                    <button
-                      onClick={() => {
-                        handleDeleteTransaction(activeTxMenuId!);
-                        setActiveTxMenuId(null);
-                      }}
-                      className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
-                        <Trash2 size={20} />
-                      </div>
-                      Delete Transaction
-                    </button>
-                  </div>
+                  {transactions.find(t => t.id === activeTxMenuId)?.status !== 'pending' && (
+                    <div className="pt-2">
+                      <button
+                        onClick={() => {
+                          handleDeleteTransaction(activeTxMenuId!);
+                          setActiveTxMenuId(null);
+                        }}
+                        className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
+                          <Trash2 size={20} />
+                        </div>
+                        Delete Transaction
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <button

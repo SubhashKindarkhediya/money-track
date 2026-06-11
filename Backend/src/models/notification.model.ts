@@ -6,7 +6,7 @@ interface NotificationAttributes {
   id: string;
   recipient_id: string;
   sender_id: string;
-  type: "request" | "transaction" | "system";
+  type: "request" | "transaction" | "system" | "settle_request";
   status: "pending" | "read" | "accepted" | "rejected";
   data: any; // Store extra info like person name, etc.
 }
@@ -20,7 +20,7 @@ class Notification
   public id!: string;
   public recipient_id!: string;
   public sender_id!: string;
-  public type!: "request" | "transaction" | "system";
+  public type!: "request" | "transaction" | "system" | "settle_request";
   public status!: "pending" | "read" | "accepted" | "rejected";
   public data!: any;
 

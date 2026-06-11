@@ -143,6 +143,39 @@ export class NotificationService {
 
     const updatedNotif = await notification.update({ status });
 
+    if (notification.type === "settle_request") {
+      const { TransactionsService } = await import("./transactions.service");
+      const { container } = await import("tsyringe");
+      const transactionsService = container.resolve(TransactionsService);
+      const recipientUser = await User.findByPk(notification.recipient_id);
+      
+      if (status === "accepted") {
+        if (notification.data?.subType === "single") {
+          await transactionsService.settleTransaction(notification.data.txId, notification.sender_id, notification.data.settleAmount, notification.data.date ? new Date(notification.data.date) : undefined, notification.data.note, true);
+        } else if (notification.data?.subType === "net_balance") {
+          await transactionsService.settlePersonNetBalance(notification.data.personId, notification.sender_id, notification.data.settleAmount, notification.data.date ? new Date(notification.data.date) : undefined, notification.data.note, true);
+        }
+      } else if (status === "rejected") {
+        const { default: Transaction } = await import("../models/transaction.model");
+        if (notification.data?.subType === "single") {
+          await Transaction.update({ status: "pending" as any }, { where: { id: notification.data.txId } });
+        } else if (notification.data?.subType === "net_balance") {
+          await Transaction.update({ status: "pending" as any }, { where: { uid: notification.sender_id, person_id: notification.data.personId, status: "settle_requested" } });
+        }
+      }
+      
+      await this.createNotification({
+        recipient_id: notification.sender_id,
+        sender_id: notification.recipient_id,
+        type: "system",
+        data: {
+          message: `${recipientUser?.name || 'User'} has ${status} your settlement request.`,
+          subType: "settle_response",
+          status: status
+        }
+      });
+    }
+
     // Send notification to the original requester (User A) about the response
     if (notification.type === "request") {
       const recipientUser = await User.findByPk(notification.recipient_id);

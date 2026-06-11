@@ -239,7 +239,8 @@ export class TransactionsService {
     uid: string,
     settleAmount: number,
     date?: Date,
-    note?: string
+    note?: string,
+    bypassApproval: boolean = false
   ) {
     const transaction = await this.getTransactionById(id, uid);
     if (!transaction) {
@@ -248,6 +249,33 @@ export class TransactionsService {
 
     if (transaction.status === "completed") {
       throw new Error("Transaction is already completed");
+    }
+
+    // Verify connection first
+    let isConnected = false;
+    let linkedUserId: string | null = null;
+    if (transaction.person_id) {
+      const { default: Person } = await import("../models/person.model");
+      const person = await Person.findByPk(transaction.person_id);
+      if (person && person.linked_user_id) {
+        const { default: Notification } = await import("../models/notification.model");
+        const connection = await Notification.findOne({
+          where: { type: 'request', status: 'accepted', [Op.or]: [ { sender_id: uid, recipient_id: person.linked_user_id }, { sender_id: person.linked_user_id, recipient_id: uid } ] }
+        });
+        if (connection) { isConnected = true; linkedUserId = person.linked_user_id; }
+      }
+    }
+
+    if (isConnected && linkedUserId && !bypassApproval) {
+      await transaction.update({ status: "settle_requested" as any });
+      const currentUser = await User.findByPk(uid);
+      await this.notificationService.createNotification({
+        recipient_id: linkedUserId,
+        sender_id: uid,
+        type: "settle_request",
+        data: { subType: "single", txId: id, settleAmount, date: date || new Date(), note, message: `${currentUser?.name} wants to settle ₹${settleAmount} for a pending transaction.` }
+      });
+      return { message: "Settlement request sent for approval.", isRequested: true, transaction };
     }
 
     const currentAmount = Number(transaction.amount);
@@ -292,13 +320,14 @@ export class TransactionsService {
     uid: string,
     settleAmount: number,
     date?: Date,
-    note?: string
+    note?: string,
+    bypassApproval: boolean = false
   ) {
     const { default: Transaction } = await import("../models/transaction.model");
 
     // 1. Get all pending transactions for this person
     const pendingTxs = await Transaction.findAll({
-      where: { uid, person_id: personId, status: "pending" }
+      where: { uid, person_id: personId, status: bypassApproval ? "settle_requested" : "pending" }
     });
 
     if (pendingTxs.length === 0) {
@@ -320,6 +349,34 @@ export class TransactionsService {
 
     if (settleAmount > Math.abs(netBalance)) {
       throw new Error(`Settle amount cannot exceed the pending balance of ${Math.abs(netBalance)}.`);
+    }
+
+    // Verify connection first
+    let isConnected = false;
+    let linkedUserId: string | null = null;
+    const { default: Person } = await import("../models/person.model");
+    const person = await Person.findByPk(personId);
+    if (person && person.linked_user_id) {
+        const { default: Notification } = await import("../models/notification.model");
+        const connection = await Notification.findOne({
+          where: { type: 'request', status: 'accepted', [Op.or]: [ { sender_id: uid, recipient_id: person.linked_user_id }, { sender_id: person.linked_user_id, recipient_id: uid } ] }
+        });
+        if (connection) { isConnected = true; linkedUserId = person.linked_user_id; }
+    }
+
+    if (isConnected && linkedUserId && !bypassApproval) {
+        // Mark all as settle_requested
+        for (const tx of pendingTxs) {
+          await (tx as any).update({ status: "settle_requested" as any });
+        }
+        const currentUser = await User.findByPk(uid);
+        await this.notificationService.createNotification({
+          recipient_id: linkedUserId,
+          sender_id: uid,
+          type: "settle_request",
+          data: { subType: "net_balance", personId, settleAmount, date: date || new Date(), note, message: `${currentUser?.name} wants to settle ₹${settleAmount} towards your net balance.` }
+        });
+        return { message: "Settlement request sent for approval.", isRequested: true };
     }
 
     // 3. Create the offsetting transaction
