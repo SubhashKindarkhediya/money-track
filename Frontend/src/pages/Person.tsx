@@ -33,7 +33,7 @@ interface Transaction {
   reason?: string;
   note?: string;
   date: string;
-  status: "pending" | "completed";
+  status: "pending" | "completed" | "settle_requested";
   createdAt: string;
 }
 
