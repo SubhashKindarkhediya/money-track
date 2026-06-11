@@ -921,7 +921,7 @@ function AppContent() {
     n.data?.subType !== 'connected'   // hide "added to contacts" — toast handles this instead
   ).map(n => ({
     id: n.id,
-    type: n.data?.type || 'received',
+    type: n.data?.type === 'credit' ? 'received' : n.data?.type === 'debit' ? 'sent' : (n.data?.type || 'received'),
     amount: n.data?.amount || 0,
     person: n.data?.personName || n.data?.senderName || 'Someone',
     date: getDayGroup(n.createdAt),

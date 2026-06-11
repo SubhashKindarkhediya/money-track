@@ -1679,7 +1679,7 @@ Takes less than a minute. See you there! 😊
                               return;
                             }
 
-                            const upiParams = `pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR`;
+                            const upiParams = `pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR&tn=MoneyTrack%20Settle&tr=MT${Date.now()}`;
                             const fallbackUrl = encodeURIComponent(`upi://pay?${upiParams}`);
                             const gpayIntentUrl = `intent://pay?${upiParams}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;S.browser_fallback_url=${fallbackUrl};end`;
                             

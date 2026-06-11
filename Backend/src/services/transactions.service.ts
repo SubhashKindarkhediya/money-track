@@ -76,7 +76,7 @@ export class TransactionsService {
               sender_id: data.uid,
               type: "transaction",
               data: {
-                message: `${currentUser?.name} added a transaction of ₹${data.amount} (${data.type === 'credit' ? 'Gave to you' : 'Got from you'}). This has been automatically added to your history.`,
+                message: `${currentUser?.name} added a transaction of ₹${data.amount} (${data.type === 'credit' ? 'Got from you' : 'Gave to you'}). This has been automatically added to your history.`,
                 amount: data.amount,
                 type: mirrorType,
                 senderName: currentUser?.name,
