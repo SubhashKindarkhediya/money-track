@@ -11,7 +11,7 @@ export class NotificationService {
   async createNotification(data: {
     recipient_id: string;
     sender_id: string;
-    type: "request" | "transaction" | "system";
+    type: "request" | "transaction" | "system" | "settle_request";
     data: any;
   }) {
     return await Notification.create({
@@ -68,6 +68,9 @@ export class NotificationService {
     });
     if (!notification) {
       throw new Error("Notification not found");
+    }
+    if (notification.status === "accepted" || notification.status === "rejected") {
+      return notification;
     }
     return await notification.update({ status: "read" });
   }
@@ -157,10 +160,22 @@ export class NotificationService {
         }
       } else if (status === "rejected") {
         const { default: Transaction } = await import("../models/transaction.model");
+        const { TransactionsService } = await import("./transactions.service");
+        const { container } = await import("tsyringe");
+        const transactionsService = container.resolve(TransactionsService);
+
         if (notification.data?.subType === "single") {
-          await Transaction.update({ status: "pending" as any }, { where: { id: notification.data.txId } });
+          const tx = await Transaction.findByPk(notification.data.txId);
+          if (tx) {
+            await tx.update({ status: "pending" as any });
+            await transactionsService.syncMirrorStatus(tx as any, notification.sender_id, "pending");
+          }
         } else if (notification.data?.subType === "net_balance") {
-          await Transaction.update({ status: "pending" as any }, { where: { uid: notification.sender_id, person_id: notification.data.personId, status: "settle_requested" } });
+          const txs = await Transaction.findAll({ where: { uid: notification.sender_id, person_id: notification.data.personId, status: "settle_requested" } });
+          for (const tx of txs) {
+            await (tx as any).update({ status: "pending" as any });
+            await transactionsService.syncMirrorStatus(tx as any, notification.sender_id, "pending");
+          }
         }
       }
       

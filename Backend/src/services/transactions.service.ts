@@ -141,7 +141,7 @@ export class TransactionsService {
    * - Marks it as completed too
    * - Sends a notification to the other user
    */
-  private async syncMirrorCompletion(transaction: Transaction, uid: string, note?: string) {
+  private async syncMirrorCompletion(transaction: Transaction, uid: string, note?: string, silent: boolean = false) {
     if (!transaction.person_id) return;
 
     const person = await Person.findByPk(transaction.person_id);
@@ -177,7 +177,9 @@ export class TransactionsService {
         uid: person.linked_user_id,
         person_id: mirrorPerson.id,
         type: mirrorType,
-        status: 'pending',
+        status: {
+          [Op.in]: ['pending', 'settle_requested']
+        },
         amount: transaction.amount,
       },
       order: [['date', 'DESC']]
@@ -188,20 +190,50 @@ export class TransactionsService {
     }
 
     // Notify the linked user about the completion
-    const completingUser = await User.findByPk(uid);
-    await this.notificationService.createNotification({
-      recipient_id: person.linked_user_id,
-      sender_id: uid,
-      type: "transaction",
-      data: {
-        message: `${completingUser?.name} has marked a transaction of ₹${transaction.amount} as completed.${note ? ` Note: ${note}` : ''}`,
-        amount: transaction.amount,
-        type: mirrorType,
-        senderName: completingUser?.name,
-        subType: 'completed',
-        autoAdded: true
-      },
+    if (!silent) {
+      const completingUser = await User.findByPk(uid);
+      await this.notificationService.createNotification({
+        recipient_id: person.linked_user_id,
+        sender_id: uid,
+        type: "transaction",
+        data: {
+          message: `${completingUser?.name} has marked a transaction of ₹${transaction.amount} as completed.${note ? ` Note: ${note}` : ''}`,
+          amount: transaction.amount,
+          type: mirrorType,
+          senderName: completingUser?.name,
+          subType: 'completed',
+          autoAdded: true
+        },
+      });
+    }
+  }
+
+  async syncMirrorStatus(transaction: Transaction, uid: string, newStatus: "pending" | "settle_requested") {
+    if (!transaction.person_id) return;
+    const person = await Person.findByPk(transaction.person_id);
+    if (!person || !person.linked_user_id) return;
+
+    const mirrorPerson = await Person.findOne({
+      where: { uid: person.linked_user_id, linked_user_id: uid }
     });
+    if (!mirrorPerson) return;
+
+    const mirrorType: TransactionType = transaction.type === 'credit' ? 'debit' : 'credit';
+    const currentStatus = newStatus === 'settle_requested' ? 'pending' : 'settle_requested';
+    const mirrorTx = await Transaction.findOne({
+      where: {
+        uid: person.linked_user_id,
+        person_id: mirrorPerson.id,
+        type: mirrorType,
+        status: currentStatus,
+        amount: transaction.amount,
+      },
+      order: [['date', 'DESC']]
+    });
+
+    if (mirrorTx) {
+      await mirrorTx.update({ status: newStatus as any });
+    }
   }
 
   /**
@@ -268,6 +300,7 @@ export class TransactionsService {
 
     if (isConnected && linkedUserId && !bypassApproval) {
       await transaction.update({ status: "settle_requested" as any });
+      await this.syncMirrorStatus(transaction, uid, "settle_requested");
       const currentUser = await User.findByPk(uid);
       await this.notificationService.createNotification({
         recipient_id: linkedUserId,
@@ -283,14 +316,29 @@ export class TransactionsService {
     if (settleAmount >= currentAmount) {
       // Full settlement — mark complete and sync mirror
       const updated = await transaction.update({ status: "completed" });
-      await this.syncMirrorCompletion(updated, uid, note);
+      await this.syncMirrorCompletion(updated, uid, note, bypassApproval);
       return updated;
     } else {
       // Partial settlement
       const remainingAmount = currentAmount - settleAmount;
 
-      // 1. Update original transaction amount to remaining pending
-      await transaction.update({ amount: remainingAmount });
+      // 1. Update original transaction amount to remaining pending, and revert status to pending
+      await transaction.update({ amount: remainingAmount, status: "pending" });
+
+      // 1.5 Update mirror original transaction
+      if (isConnected && linkedUserId) {
+          const { default: Person } = await import("../models/person.model");
+          const mirrorPerson = await Person.findOne({ where: { uid: linkedUserId, linked_user_id: uid } });
+          if (mirrorPerson) {
+              const mirrorType = transaction.type === 'credit' ? 'debit' : 'credit';
+              const mirrorTxOriginal = await Transaction.findOne({ 
+                  where: { uid: linkedUserId, person_id: mirrorPerson.id, type: mirrorType, status: "settle_requested", amount: currentAmount }
+              });
+              if (mirrorTxOriginal) {
+                  await mirrorTxOriginal.update({ amount: remainingAmount, status: "pending" });
+              }
+          }
+      }
 
       // 2. Create a new completed transaction for the settled portion
       const settledTx = await this.createTransaction({
@@ -302,10 +350,25 @@ export class TransactionsService {
         note: `Settled ${settleAmount} from original pending of ${currentAmount}. ${note || ""}`,
         status: "completed",
         date: date || new Date()
-      });
+      }, bypassApproval);
 
-      // 3. Sync partial completion to mirror and notify linked user
-      await this.syncMirrorCompletion(settledTx, uid, note);
+      // 3. Sync partial completion to mirror manually if connected
+      if (isConnected && linkedUserId) {
+          const { default: Person } = await import("../models/person.model");
+          const mirrorPerson = await Person.findOne({ where: { uid: linkedUserId, linked_user_id: uid } });
+          if (mirrorPerson) {
+              await Transaction.create({
+                  uid: linkedUserId,
+                  person_id: mirrorPerson.id,
+                  type: settledTx.type === 'credit' ? 'debit' : 'credit',
+                  amount: settleAmount,
+                  reason: settledTx.reason,
+                  note: settledTx.note,
+                  status: "completed",
+                  date: settledTx.date || new Date()
+              });
+          }
+      }
 
       return settledTx;
     }
@@ -368,6 +431,7 @@ export class TransactionsService {
         // Mark all as settle_requested
         for (const tx of pendingTxs) {
           await (tx as any).update({ status: "settle_requested" as any });
+          await this.syncMirrorStatus(tx as any, uid, "settle_requested");
         }
         const currentUser = await User.findByPk(uid);
         await this.notificationService.createNotification({
@@ -393,7 +457,7 @@ export class TransactionsService {
       note: note || `Settled ${settleAmount} towards balance`,
       status: "pending", // Initially pending
       date: date || new Date()
-    });
+    }, bypassApproval);
 
     // 4. Recalculate net balance with the new transaction included
     if (typeToCreate === 'credit') credit += settleAmount;
@@ -407,12 +471,38 @@ export class TransactionsService {
       for (const tx of allTxs) {
         const updated = await (tx as any).update({ status: "completed" });
         // Attempt to sync mirror for each (in background to avoid slow response)
-        this.syncMirrorCompletion(updated, uid, "Settled via Net Balance").catch(e => console.error(e));
+        this.syncMirrorCompletion(updated, uid, "Settled via Net Balance", bypassApproval).catch(e => console.error(e));
       }
       return { message: "Full settlement successful. All transactions marked as completed.", newTx, isFullySettled: true };
-    }
+    } else {
+      // Partial Net Balance Settlement
+      // Manually create the offsetting transaction for the mirror user
+      if (isConnected && linkedUserId) {
+        const mirrorPerson = await Person.findOne({ where: { uid: linkedUserId, linked_user_id: uid } });
+        if (mirrorPerson) {
+          await Transaction.create({
+            uid: linkedUserId,
+            person_id: mirrorPerson.id,
+            type: newTx.type === 'credit' ? 'debit' : 'credit',
+            amount: settleAmount,
+            reason: newTx.reason,
+            note: newTx.note,
+            status: "pending",
+            date: newTx.date || new Date()
+          });
+        }
+      }
 
-    return { message: "Partial settlement successful. Balance updated.", newTx, isFullySettled: false };
+      // Important: Revert the original pending transactions back to "pending" from "settle_requested"
+      for (const tx of pendingTxs) {
+        await (tx as any).update({ status: "pending" as any });
+        if (isConnected && linkedUserId) {
+          await this.syncMirrorStatus(tx as any, uid, "pending");
+        }
+      }
+
+      return { message: "Partial settlement successful. Balance updated.", newTx, isFullySettled: false };
+    }
   }
 
   /**

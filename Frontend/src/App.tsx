@@ -876,7 +876,13 @@ function AppContent() {
   // Mark single notification as read (optimistic — UI updates instantly)
   const markAsRead = async (id: string) => {
     // 1. Update UI immediately so count clears right away
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
+    setNotifications(prev => prev.map(n => {
+      if (n.id === id) {
+        if (n.status === 'accepted' || n.status === 'rejected') return n;
+        return { ...n, status: 'read' };
+      }
+      return n;
+    }));
     try {
       // 2. Persist to backend in background
       const { default: api } = await import("./services/api");
@@ -884,7 +890,10 @@ function AppContent() {
     } catch (err) {
       // 3. If API fails, revert the local change
       console.error("Failed to mark as read", err);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'pending' } : n));
+      setNotifications(prev => prev.map(n => {
+        if (n.id === id && n.status === 'read') return { ...n, status: 'pending' };
+        return n;
+      }));
     }
   };
 
@@ -927,7 +936,7 @@ function AppContent() {
     person: n.data?.personName || n.data?.senderName || 'Someone',
     date: getDayGroup(n.createdAt),
     time: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    isRead: n.status === 'read',
+    isRead: n.status === 'read' || n.status === 'accepted' || n.status === 'rejected',
     message: n.data?.message,
     autoAdded: n.data?.autoAdded || false,
     subType: n.data?.subType || null,

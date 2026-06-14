@@ -24,11 +24,11 @@ export class DashboardService {
 
     // 1. Calculate Udhar Statistics
     const rawCredit = await Transaction.sum("amount", {
-      where: { ...whereCondition, type: "credit", status: "pending" },
+      where: { ...whereCondition, type: "credit", status: { [Op.in]: ["pending", "settle_requested"] } },
     }) || 0;
 
     const rawDebit = await Transaction.sum("amount", {
-      where: { ...whereCondition, type: "debit", status: "pending" },
+      where: { ...whereCondition, type: "debit", status: { [Op.in]: ["pending", "settle_requested"] } },
     }) || 0;
 
     const totalCredit = rawCredit;
@@ -86,9 +86,9 @@ export class DashboardService {
       const amount = Number(t.amount);
       if (t.type === "income") monthlyIncome += amount;
       if (t.type === "expense") monthlyExpense += amount;
-      // Only count credit/debit in summary if they are pending
-      if (t.type === "credit" && t.status === "pending") rawMonthlyCredit += amount;
-      if (t.type === "debit" && t.status === "pending") rawMonthlyDebit += amount;
+      // Only count credit/debit in summary if they are pending or settle_requested
+      if (t.type === "credit" && (t.status === "pending" || t.status === "settle_requested")) rawMonthlyCredit += amount;
+      if (t.type === "debit" && (t.status === "pending" || t.status === "settle_requested")) rawMonthlyDebit += amount;
     });
 
     const monthlyCredit = rawMonthlyCredit;

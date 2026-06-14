@@ -103,7 +103,7 @@ export class PersonService {
         summaryMap[tx.person_id].latestDate = txDate;
       }
 
-      if (tx.status === "pending") {
+      if (tx.status === "pending" || tx.status === "settle_requested") {
         const amount = Number(tx.amount);
         if (tx.type === "credit") summaryMap[tx.person_id].totalCredit += amount;
         if (tx.type === "debit") summaryMap[tx.person_id].totalDebit += amount;

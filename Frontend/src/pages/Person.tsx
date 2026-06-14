@@ -702,7 +702,7 @@ Takes less than a minute. See you there! 😊
 
     try {
       setSettleLoading(true);
-      await api.post(`/transactions/${settleTx.id}/settle`, {
+      const res = await api.post(`/transactions/${settleTx.id}/settle`, {
         settleAmount: amt,
         note: settleNote
       });
@@ -712,6 +712,12 @@ Takes less than a minute. See you there! 😊
         fetchTransactions(selectedPerson.id);
       }
       fetchPersons();
+      
+      if (res.data?.isRequested) {
+        toast.success("Settlement request sent to the connected person.");
+      } else {
+        toast.success("Settlement successful!");
+      }
     } catch (err: any) {
       console.error("Failed to settle transaction", err);
       alert(err.response?.data?.error || "Failed to settle transaction.");
@@ -740,7 +746,7 @@ Takes less than a minute. See you there! 😊
 
     try {
       setSettleLoading(true);
-      await api.post(`/transactions/person/${selectedPerson.id}/settle`, {
+      const res = await api.post(`/transactions/person/${selectedPerson.id}/settle`, {
         settleAmount: Number(settleAmount),
         note: settleNote
       });
@@ -750,6 +756,12 @@ Takes less than a minute. See you there! 😊
       setSettleNote("");
       fetchTransactions(selectedPerson.id);
       fetchPersons();
+      
+      if (res.data?.isRequested) {
+        toast.success("Settlement request sent to the connected person.");
+      } else {
+        toast.success("Settlement successful!");
+      }
     } catch (error: any) {
       setSettlePersonError(error.response?.data?.error || "Failed to settle balance");
     } finally {
@@ -1045,7 +1057,8 @@ Takes less than a minute. See you there! 😊
                 {(() => {
                   if (statusFilter !== "pending") return null;
 
-                  const txs = transactions.filter(t => t.status === "pending");
+                  const txs = transactions.filter(t => t.status === "pending" || t.status === "settle_requested");
+                  const hasPendingSettle = txs.some(t => t.status === "settle_requested");
                   const credit = txs.filter(t => t.type === 'credit').reduce((sum, t) => sum + Number(t.amount), 0);
                   const debit = txs.filter(t => t.type === 'debit').reduce((sum, t) => sum + Number(t.amount), 0);
                   const netBalance = credit - debit;
@@ -1078,17 +1091,23 @@ Takes less than a minute. See you there! 😊
                             Pay Now <ChevronRight size={14} className="-mr-1" />
                           </button>
                         )}
-                        <button
-                          onClick={() => {
-                            setSettlePersonError(null);
-                            setSettleAmount(Math.abs(netBalance).toString());
-                            setSettleNote("");
-                            setIsSettlePersonModalOpen(true);
-                          }}
-                          className="px-4 sm:px-6 py-2.5 rounded-full bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20 text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-100/80 dark:hover:bg-indigo-500/20 transition-all active:scale-[0.98] flex justify-center items-center gap-2 shadow-sm"
-                        >
-                          Settle
-                        </button>
+                        {hasPendingSettle ? (
+                          <div className="px-4 sm:px-6 py-2.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20 text-[10px] sm:text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 shadow-sm">
+                            <Clock size={14} /> Pending Settle
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSettlePersonError(null);
+                              setSettleAmount(Math.abs(netBalance).toString());
+                              setSettleNote("");
+                              setIsSettlePersonModalOpen(true);
+                            }}
+                            className="px-4 sm:px-6 py-2.5 rounded-full bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20 text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-100/80 dark:hover:bg-indigo-500/20 transition-all active:scale-[0.98] flex justify-center items-center gap-2 shadow-sm"
+                          >
+                            Settle
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -1142,6 +1161,11 @@ Takes less than a minute. See you there! 😊
                                 />
                                 {tx.note?.includes("Old Transaction Auto-Added") && (
                                   <span className="px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/20 whitespace-nowrap">Old</span>
+                                )}
+                                {tx.status === "settle_requested" && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/20 whitespace-nowrap flex items-center gap-1">
+                                    <Clock size={8} /> Pending Settle
+                                  </span>
                                 )}
                               </div>
                               <div className="flex flex-col gap-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-1.5">
@@ -1411,35 +1435,39 @@ Takes less than a minute. See you there! 😊
                     Transaction Details
                   </button>
 
-                  <button
-                    onClick={() => {
-                      const tx = transactions.find(t => t.id === activeTxMenuId);
-                      if (tx) handleEditTransaction(tx);
-                      setActiveTxMenuId(null);
-                    }}
-                    className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
-                      <SquarePen size={20} />
-                    </div>
-                    Edit Transaction
-                  </button>
-
-                  {transactions.find(t => t.id === activeTxMenuId)?.status !== 'pending' && (
-                    <div className="pt-2">
+                  {transactions.find(t => t.id === activeTxMenuId)?.status !== 'settle_requested' && (
+                    <>
                       <button
                         onClick={() => {
-                          handleDeleteTransaction(activeTxMenuId!);
+                          const tx = transactions.find(t => t.id === activeTxMenuId);
+                          if (tx) handleEditTransaction(tx);
                           setActiveTxMenuId(null);
                         }}
-                        className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
+                        className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
                       >
-                        <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
-                          <Trash2 size={20} />
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
+                          <SquarePen size={20} />
                         </div>
-                        Delete Transaction
+                        Edit Transaction
                       </button>
-                    </div>
+
+                      {transactions.find(t => t.id === activeTxMenuId)?.status !== 'pending' && (
+                        <div className="pt-2">
+                          <button
+                            onClick={() => {
+                              handleDeleteTransaction(activeTxMenuId!);
+                              setActiveTxMenuId(null);
+                            }}
+                            className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
+                              <Trash2 size={20} />
+                            </div>
+                            Delete Transaction
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -2396,6 +2424,12 @@ Takes less than a minute. See you there! 😊
                   Settle / Complete
                 </button>
               )}
+              {selectedTx.status === "settle_requested" && (
+                <div className="flex-[2] py-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 font-black text-sm border border-amber-200 dark:border-amber-500/20 flex items-center justify-center gap-2">
+                  <Clock size={18} strokeWidth={3} />
+                  Pending Settle
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2428,34 +2462,38 @@ Takes less than a minute. See you there! 😊
                 Transaction Details
               </button>
 
-              <button
-                onClick={() => {
-                  const tx = transactions.find(t => t.id === activeTxMenuId);
-                  if (tx) handleEditTransaction(tx);
-                  setActiveTxMenuId(null);
-                }}
-                className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
-              >
-                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
-                  <SquarePen size={20} />
-                </div>
-                Edit Transaction
-              </button>
+              {transactions.find(t => t.id === activeTxMenuId)?.status !== 'settle_requested' && (
+                <>
+                  <button
+                    onClick={() => {
+                      const tx = transactions.find(t => t.id === activeTxMenuId);
+                      if (tx) handleEditTransaction(tx);
+                      setActiveTxMenuId(null);
+                    }}
+                    className="w-full px-5 py-3.5 text-left text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex items-center gap-4 rounded-2xl"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
+                      <SquarePen size={20} />
+                    </div>
+                    Edit Transaction
+                  </button>
 
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    setTxToDelete(activeTxMenuId);
-                    setActiveTxMenuId(null);
-                  }}
-                  className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
-                    <Trash2 size={20} />
+                  <div className="pt-2">
+                    <button
+                      onClick={() => {
+                        setTxToDelete(activeTxMenuId);
+                        setActiveTxMenuId(null);
+                      }}
+                      className="w-full px-5 py-3.5 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center gap-4 rounded-2xl"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600">
+                        <Trash2 size={20} />
+                      </div>
+                      Delete Transaction
+                    </button>
                   </div>
-                  Delete Transaction
-                </button>
-              </div>
+                </>
+              )}
             </div>
 
             <button
