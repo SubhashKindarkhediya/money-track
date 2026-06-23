@@ -4,6 +4,7 @@ import personRoutes from "./person.route";
 import transactionRoutes from "./transactions.route";
 import dashboardRoutes from "./dashboard.route";
 import notificationRoutes from "./notification.route";
+import groupRoutes from "./group.route";
 
 import { container } from "tsyringe";
 import { PersonController } from "../controllers/person.controller";
@@ -21,5 +22,6 @@ router.use("/person", personRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/groups", groupRoutes);
 
 export default router;

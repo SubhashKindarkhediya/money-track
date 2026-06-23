@@ -120,7 +120,7 @@ const InfoRow = ({
   onClick?: React.MouseEventHandler<HTMLDivElement>;
 }) => (
   // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-  <div 
+  <div
     onClick={onClick}
     className={`flex items-center justify-between p-5 ${!last ? "border-b border-gray-50 dark:border-gray-800/50" : ""} ${onClick ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1b2a] transition-colors" : ""}`}
   >
@@ -176,7 +176,7 @@ const Person: React.FC = () => {
             const nameParts = fullName.trim().split(/\s+/);
             const firstName = nameParts[0] || "";
             const lastName = nameParts.slice(1).join(" ") || "";
-            
+
             return {
               id: Date.now().toString() + index,
               first_name: firstName,
@@ -712,7 +712,7 @@ Takes less than a minute. See you there! 😊
         fetchTransactions(selectedPerson.id);
       }
       fetchPersons();
-      
+
       if (res.data?.isRequested) {
         toast.success("Settlement request sent to the connected person.");
       } else {
@@ -756,7 +756,7 @@ Takes less than a minute. See you there! 😊
       setSettleNote("");
       fetchTransactions(selectedPerson.id);
       fetchPersons();
-      
+
       if (res.data?.isRequested) {
         toast.success("Settlement request sent to the connected person.");
       } else {
@@ -999,10 +999,10 @@ Takes less than a minute. See you there! 😊
                   <div className="rounded-[1.5rem] bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800/80 shadow-sm overflow-hidden">
                     <InfoRow icon={Phone} label="Mobile Number" value={selectedPerson.phone} />
                     {selectedPerson.connection_status === "connected" && (
-                      <InfoRow 
-                        icon={Mail} 
-                        label="Email" 
-                        value={selectedPerson.email || "Not provided"} 
+                      <InfoRow
+                        icon={Mail}
+                        label="Email"
+                        value={selectedPerson.email || "Not provided"}
                         onClick={() => {
                           if (selectedPerson.email) {
                             navigator.clipboard.writeText(selectedPerson.email);
@@ -1814,7 +1814,7 @@ Takes less than a minute. See you there! 😊
                   <h3 className="text-lg font-black text-gray-900 dark:text-white">Selected Contacts ({bulkContacts.length})</h3>
                   <button onClick={() => setBulkContacts([])} className="text-xs font-bold text-rose-500 hover:text-rose-600 transition-colors px-2 py-1 bg-rose-50 dark:bg-rose-500/10 rounded-lg">Clear All</button>
                 </div>
-                
+
                 {bulkContacts.map((contact, index) => (
                   <div key={contact.id} className="p-4 rounded-2xl bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 shadow-sm relative group transition-all hover:border-indigo-100 dark:hover:border-indigo-500/30">
                     <button
@@ -1875,7 +1875,7 @@ Takes less than a minute. See you there! 😊
                     )}
                   </div>
                 ))}
-                
+
                 <button
                   onClick={handleImportContact}
                   className="w-full py-4 rounded-2xl border-2 border-dashed border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors flex items-center justify-center gap-2"
@@ -2759,7 +2759,7 @@ Takes less than a minute. See you there! 😊
                         const upiParams = `pa=${selectedUpiPerson.upi_id}&pn=${encodeURIComponent(selectedUpiPerson.name)}&am=${Number(upiPaymentAmount).toFixed(2)}&cu=INR`;
                         const fallbackUrl = encodeURIComponent(`upi://pay?${upiParams}`);
                         const gpayIntentUrl = `intent://pay?${upiParams}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;S.browser_fallback_url=${fallbackUrl};end`;
-                        
+
                         const link = document.createElement('a');
                         link.href = gpayIntentUrl;
                         document.body.appendChild(link);

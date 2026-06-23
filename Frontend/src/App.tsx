@@ -53,6 +53,8 @@ import Analytics from "./pages/Analytics";
 import ForgotPassword from "./pages/ForgotPassword";
 import SettingsPage from "./pages/Settings";
 import RegisterPhone from "./pages/RegisterPhone";
+import CreateGroup from "./pages/CreateGroup";
+import GroupList from "./pages/GroupList";
 // import { Sun, Moon } from "lucide-react";
 import { useTheme } from "./context/ThemeContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -351,18 +353,18 @@ const Dashboard = () => {
 
   const fabOptions = [
     {
-      label: "Add Give Money",
-      icon: <TrendingDown size={20} strokeWidth={2.5} />,
-      color: "bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-500/10 dark:to-red-500/5 border border-red-200/60 dark:border-red-500/20 text-red-700 dark:text-red-400 shadow-md shadow-red-500/5 dark:shadow-none",
-      path: "/add-transaction",
-      state: { type: "debit" }
+      label: "Single Transaction",
+      icon: <User size={20} strokeWidth={2.5} />,
+      color: "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-500/10 dark:to-emerald-500/5 border border-emerald-200/60 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 shadow-md shadow-emerald-500/5 dark:shadow-none",
+      path: "/add-transaction?mode=single",
+      state: { mode: "single", type: "credit" }
     },
     {
-      label: "Add Receive Money",
-      icon: <TrendingUp size={20} strokeWidth={2.5} />,
-      color: "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-500/10 dark:to-emerald-500/5 border border-emerald-200/60 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 shadow-md shadow-emerald-500/5 dark:shadow-none",
-      path: "/add-transaction",
-      state: { type: "credit" }
+      label: "Group Transaction",
+      icon: <Users size={20} strokeWidth={2.5} />,
+      color: "bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-500/10 dark:to-indigo-500/5 border border-indigo-200/60 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 shadow-md shadow-indigo-500/5 dark:shadow-none",
+      path: "/add-transaction?mode=group",
+      state: { mode: "group", type: "credit" }
     },
     {
       label: "Add Expense / Income",
@@ -1052,7 +1054,9 @@ function AppContent() {
   const isLogPage = location.pathname === "/transactions";
   const isAnalyticsPage = location.pathname === "/analytics";
   const isSettingsPage = location.pathname === "/settings";
-  const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage || isSettingsPage;
+  const isGroupListPage = location.pathname === "/groups";
+  const isCreateGroupPage = location.pathname === "/create-group";
+  const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage || isSettingsPage || isGroupListPage || isCreateGroupPage;
 
   // Show bottom nav on "/" or if we are on one of the main pages and came from bottom nav
   const showBottomNav =
@@ -1062,7 +1066,8 @@ function AppContent() {
 
   const sidebarNavigation = [
     { name: "Home", icon: Home, path: "/", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
-    { name: "Person List", icon: Users, path: "/person", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "Person List", icon: User, path: "/person", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "Group List", icon: Users, path: "/groups", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
     { name: "Transaction History", icon: History, path: "/transactions", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
     { name: "Personal History", icon: Wallet, path: "/personal-history", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
     { name: "Analytics", icon: BarChart3, path: "/analytics", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
@@ -1152,6 +1157,47 @@ function AppContent() {
         <nav className="flex-1 space-y-2">
           {sidebarNavigation.filter(item => item.name !== "Profile").map((item) => (
             <React.Fragment key={item.name}>
+              {/* Add Transaction Dropdown (Only BEFORE Person List) */}
+              {item.name === "Person List" && isSidebarOpen && (
+                <div className="space-y-1 mb-2">
+                  <button
+                    onClick={() => setAddTxOpen(!isAddTxOpen)}
+                    className={`flex items-center gap-4 p-4 rounded-2xl w-full transition-all duration-300 group
+                      ${isAddTxOpen ? "bg-indigo-50/80 dark:bg-gray-700/50 text-indigo-600 dark:text-indigo-400" : "text-gray-500 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600"}
+                    `}
+                  >
+                    <PlusCircle size={22} className={`shrink-0 transition-transform ${isAddTxOpen ? "rotate-45" : ""}`} />
+                    <span className="font-bold tracking-wide text-[13px]">Add Transaction</span>
+                    <ChevronDown size={14} className={`ml-auto transition-transform duration-300 ${isAddTxOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {isAddTxOpen && (
+                    <div className="pl-4 pr-2 space-y-1 animate-in slide-in-from-top-2 duration-300">
+                      <button
+                        onClick={() => {
+                          setSidebarOpen(false);
+                          navigate("/add-transaction?mode=single");
+                        }}
+                        className="flex items-center gap-4 p-4 w-full text-left rounded-2xl text-[12px] font-bold text-gray-500 dark:text-gray-400 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+                      >
+                        <User size={18} className="shrink-0 ml-1" />
+                        <span>Person Transaction</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSidebarOpen(false);
+                          navigate("/add-transaction?mode=group");
+                        }}
+                        className="flex items-center gap-4 p-4 w-full text-left rounded-2xl text-[12px] font-bold text-gray-500 dark:text-gray-400 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+                      >
+                        <Users size={18} className="shrink-0 ml-1" />
+                        <span>Group Transaction</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <NavLink
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
@@ -1177,47 +1223,6 @@ function AppContent() {
                   <div className="ml-auto w-1 h-1 bg-current rounded-full opacity-50 group-hover:opacity-100"></div>
                 )}
               </NavLink>
-
-              {/* Add Transaction Dropdown (Only after Person List) */}
-              {item.name === "Person List" && isSidebarOpen && (
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setAddTxOpen(!isAddTxOpen)}
-                    className={`flex items-center gap-4 p-4 rounded-2xl w-full transition-all duration-300 group
-                      ${isAddTxOpen ? "bg-indigo-50/80 dark:bg-gray-700/50 text-indigo-600 dark:text-indigo-400" : "text-gray-500 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600"}
-                    `}
-                  >
-                    <PlusCircle size={22} className={`shrink-0 transition-transform ${isAddTxOpen ? "rotate-45" : ""}`} />
-                    <span className="font-bold tracking-wide text-[13px]">Add Transaction</span>
-                    <ChevronDown size={14} className={`ml-auto transition-transform duration-300 ${isAddTxOpen ? "rotate-180" : ""}`} />
-                  </button>
-
-                  {isAddTxOpen && (
-                    <div className="pl-4 pr-2 space-y-1 animate-in slide-in-from-top-2 duration-300">
-                      <button
-                        onClick={() => {
-                          setSidebarOpen(false);
-                          navigate("/add-transaction", { state: { mode: "single" } });
-                        }}
-                        className="flex items-center gap-4 p-4 w-full text-left rounded-2xl text-[12px] font-bold text-gray-500 dark:text-gray-400 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
-                      >
-                        <User size={18} className="shrink-0 ml-1" />
-                        <span>Person Transaction</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSidebarOpen(false);
-                          navigate("/add-transaction", { state: { mode: "group" } });
-                        }}
-                        className="flex items-center gap-4 p-4 w-full text-left rounded-2xl text-[12px] font-bold text-gray-500 dark:text-gray-400 hover:bg-indigo-50/80 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
-                      >
-                        <Users size={18} className="shrink-0 ml-1" />
-                        <span>Group Transaction</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
             </React.Fragment>
           ))}
         </nav>
@@ -1417,6 +1422,22 @@ function AppContent() {
               element={
                 <ProtectedRoute>
                   <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create-group"
+              element={
+                <ProtectedRoute>
+                  <CreateGroup />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/groups"
+              element={
+                <ProtectedRoute>
+                  <GroupList />
                 </ProtectedRoute>
               }
             />

@@ -33,7 +33,10 @@ const AddTransaction: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const [mode, setMode] = useState<"single" | "group">(location.state?.mode || "single");
+  const searchParams = new URLSearchParams(location.search);
+  const queryMode = searchParams.get("mode") as "single" | "group" | null;
+
+  const [mode, setMode] = useState<"single" | "group">(queryMode || location.state?.mode || "single");
   const [selectedPersons, setSelectedPersons] = useState<{ id: string; name: string }[]>([]);
   const [paidBy, setPaidBy] = useState<string>("me");
 
@@ -260,41 +263,23 @@ const AddTransaction: React.FC = () => {
           >
             <ArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
           </button>
-          <h2 className="text-base font-black text-gray-900 dark:text-white tracking-wide">
+          <h2 className="text-base font-black text-gray-900 dark:text-white tracking-wide flex-1">
             {isEditing
               ? `Update ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}`
               : `New ${txForm.type === "expense" ? "Expense" : txForm.type === "income" ? "Income" : "Transaction"}`}
           </h2>
+          {mode === "group" && (
+            <button
+              type="button"
+              onClick={() => navigate("/create-group")}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] sm:text-xs uppercase tracking-wider rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all border border-indigo-100/50 dark:border-indigo-500/20 active:scale-95 shadow-sm"
+            >
+              <Users size={14} strokeWidth={2.5} />
+              Add Group
+            </button>
+          )}
         </div>
 
-        {/* Transaction Mode Tabs - Only show if not coming from a specific person's profile, not editing, and not personal tx */}
-        {!preSelectedPersonId && !isEditing && txForm.type !== "expense" && txForm.type !== "income" && (
-          <div className="flex border-b border-indigo-100/30 dark:border-gray-800/50 bg-white/50 dark:bg-[#151624]/30">
-            <button
-              type="button"
-              onClick={() => setMode("single")}
-              className={`flex-1 py-4 text-sm font-black transition-all relative ${mode === "single" ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400 dark:text-gray-500"
-                }`}
-            >
-              Single
-              {mode === "single" && (
-                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-indigo-500 rounded-t-full shadow-[0_-2px_10px_rgba(99,102,241,0.3)]" />
-              )}
-            </button>
-            <div className="w-px bg-indigo-100/20 dark:bg-gray-800/50 my-4" />
-            <button
-              type="button"
-              onClick={() => setMode("group")}
-              className={`flex-1 py-4 text-sm font-black transition-all relative ${mode === "group" ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400 dark:text-gray-500"
-                }`}
-            >
-              Group
-              {mode === "group" && (
-                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-indigo-500 rounded-t-full shadow-[0_-2px_10px_rgba(99,102,241,0.3)]" />
-              )}
-            </button>
-          </div>
-        )}
 
         {/* Personal Transaction Tabs - Expense vs Income */}
         {!isEditing && (txForm.type === "expense" || txForm.type === "income") && (
