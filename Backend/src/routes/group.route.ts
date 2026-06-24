@@ -9,5 +9,6 @@ router.use(authMiddleware);
 
 router.post("/", groupController.createGroup);
 router.get("/", groupController.getGroups);
+router.get("/:id", groupController.getGroupById);
 
 export default router;

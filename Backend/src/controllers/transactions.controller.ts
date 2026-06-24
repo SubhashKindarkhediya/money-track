@@ -4,19 +4,19 @@ import { TransactionsService } from "../services/transactions.service";
 
 @injectable()
 export class TransactionsController {
-  constructor(private transactionsService: TransactionsService) {}
+  constructor(private transactionsService: TransactionsService) { }
 
   /**
    * Add a new transaction
    */
   create = async (req: Request, res: Response) => {
     try {
-      const { person_id, type, amount, category, reason, note, date, status } = req.body;
+      const { person_id, group_id, type, amount, category, reason, note, date, status } = req.body;
       const uid = (req as any).user.uid;
 
-      // Validation: person_id is only required for credit/debit (Udhar)
-      if ((type === "credit" || type === "debit") && !person_id) {
-        res.status(400).json({ error: "person_id is required for credit/debit transactions" });
+      // Validation: person_id is only required for credit/debit (Udhar) if group_id is not present
+      if ((type === "credit" || type === "debit") && !person_id && !group_id) {
+        res.status(400).json({ error: "person_id or group_id is required for credit/debit transactions" });
         return;
       }
 
@@ -28,6 +28,7 @@ export class TransactionsController {
       const transaction = await this.transactionsService.createTransaction({
         uid,
         person_id,
+        group_id,
         type,
         amount,
         category,
@@ -64,6 +65,20 @@ export class TransactionsController {
       const { person_id } = req.params;
       const uid = (req as any).user.uid;
       const transactions = await this.transactionsService.getTransactionsByPerson(person_id, uid);
+      res.json(transactions);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Get transactions for a specific group
+   */
+  getByGroup = async (req: Request, res: Response) => {
+    try {
+      const { group_id } = req.params;
+      const uid = (req as any).user.uid;
+      const transactions = await this.transactionsService.getTransactionsByGroup(group_id, uid);
       res.json(transactions);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -132,11 +147,11 @@ export class TransactionsController {
   exportPdf = async (req: Request, res: Response) => {
     try {
       const uid = (req as any).user.uid;
-      
+
       // We need to dynamically import pdfkit to avoid top-level require issues
       const PDFDocument = (await import('pdfkit')).default;
       const { default: User } = await import('../models/user.model');
-      
+
       const user = await User.findByPk(uid);
       if (!user) {
         res.status(404).json({ error: "User not found" });
@@ -157,7 +172,7 @@ export class TransactionsController {
       doc.pipe(res);
 
       // --- PDF Content Generation ---
-      
+
       // Header
       doc.fontSize(20).text('Money Track - Transaction History', { align: 'center' });
       doc.moveDown();
@@ -229,7 +244,7 @@ export class TransactionsController {
         doc.text('Type', colPositions.type, tableTop);
         doc.text('Amount', colPositions.amount, tableTop);
         doc.text('Remarks', colPositions.remarks, tableTop);
-        
+
         doc.moveDown();
         doc.fillColor('black').font('Helvetica').fontSize(9);
 
@@ -263,7 +278,7 @@ export class TransactionsController {
           const remarkHeight = doc.heightOfString(remarkStr, { width: colWidths.remarks });
           const nameHeight = doc.heightOfString(nameStr, { width: colWidths.name });
           const rowHeight = Math.max(remarkHeight, nameHeight, 15) + 10;
-          
+
           currentY += rowHeight;
         });
 

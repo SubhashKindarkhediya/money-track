@@ -17,6 +17,7 @@ export class TransactionsService {
   async createTransaction(data: {
     uid: string;
     person_id?: string | null;
+    group_id?: string | null;
     type: TransactionType;
     amount: number;
     category?: string;
@@ -113,7 +114,7 @@ export class TransactionsService {
    */
   async getTransactionsByPerson(person_id: string, uid: string) {
     return await Transaction.findAll({
-      where: { person_id, uid },
+      where: { person_id, uid, group_id: null },
       order: [["date", "DESC"]],
       include: [
         {
@@ -121,6 +122,16 @@ export class TransactionsService {
           attributes: ["id", "name", "phone"],
         },
       ],
+    });
+  }
+
+  /**
+   * Get transactions for a specific group
+   */
+  async getTransactionsByGroup(group_id: string, uid: string) {
+    return await Transaction.findAll({
+      where: { group_id, uid },
+      order: [["date", "DESC"]],
     });
   }
 
@@ -292,7 +303,7 @@ export class TransactionsService {
       if (person && person.linked_user_id) {
         const { default: Notification } = await import("../models/notification.model");
         const connection = await Notification.findOne({
-          where: { type: 'request', status: 'accepted', [Op.or]: [ { sender_id: uid, recipient_id: person.linked_user_id }, { sender_id: person.linked_user_id, recipient_id: uid } ] }
+          where: { type: 'request', status: 'accepted', [Op.or]: [{ sender_id: uid, recipient_id: person.linked_user_id }, { sender_id: person.linked_user_id, recipient_id: uid }] }
         });
         if (connection) { isConnected = true; linkedUserId = person.linked_user_id; }
       }
@@ -327,17 +338,17 @@ export class TransactionsService {
 
       // 1.5 Update mirror original transaction
       if (isConnected && linkedUserId) {
-          const { default: Person } = await import("../models/person.model");
-          const mirrorPerson = await Person.findOne({ where: { uid: linkedUserId, linked_user_id: uid } });
-          if (mirrorPerson) {
-              const mirrorType = transaction.type === 'credit' ? 'debit' : 'credit';
-              const mirrorTxOriginal = await Transaction.findOne({ 
-                  where: { uid: linkedUserId, person_id: mirrorPerson.id, type: mirrorType, status: "settle_requested", amount: currentAmount }
-              });
-              if (mirrorTxOriginal) {
-                  await mirrorTxOriginal.update({ amount: remainingAmount, status: "pending" });
-              }
+        const { default: Person } = await import("../models/person.model");
+        const mirrorPerson = await Person.findOne({ where: { uid: linkedUserId, linked_user_id: uid } });
+        if (mirrorPerson) {
+          const mirrorType = transaction.type === 'credit' ? 'debit' : 'credit';
+          const mirrorTxOriginal = await Transaction.findOne({
+            where: { uid: linkedUserId, person_id: mirrorPerson.id, type: mirrorType, status: "settle_requested", amount: currentAmount }
+          });
+          if (mirrorTxOriginal) {
+            await mirrorTxOriginal.update({ amount: remainingAmount, status: "pending" });
           }
+        }
       }
 
       // 2. Create a new completed transaction for the settled portion
@@ -354,20 +365,20 @@ export class TransactionsService {
 
       // 3. Sync partial completion to mirror manually if connected
       if (isConnected && linkedUserId) {
-          const { default: Person } = await import("../models/person.model");
-          const mirrorPerson = await Person.findOne({ where: { uid: linkedUserId, linked_user_id: uid } });
-          if (mirrorPerson) {
-              await Transaction.create({
-                  uid: linkedUserId,
-                  person_id: mirrorPerson.id,
-                  type: settledTx.type === 'credit' ? 'debit' : 'credit',
-                  amount: settleAmount,
-                  reason: settledTx.reason,
-                  note: settledTx.note,
-                  status: "completed",
-                  date: settledTx.date || new Date()
-              });
-          }
+        const { default: Person } = await import("../models/person.model");
+        const mirrorPerson = await Person.findOne({ where: { uid: linkedUserId, linked_user_id: uid } });
+        if (mirrorPerson) {
+          await Transaction.create({
+            uid: linkedUserId,
+            person_id: mirrorPerson.id,
+            type: settledTx.type === 'credit' ? 'debit' : 'credit',
+            amount: settleAmount,
+            reason: settledTx.reason,
+            note: settledTx.note,
+            status: "completed",
+            date: settledTx.date || new Date()
+          });
+        }
       }
 
       return settledTx;
@@ -420,27 +431,27 @@ export class TransactionsService {
     const { default: Person } = await import("../models/person.model");
     const person = await Person.findByPk(personId);
     if (person && person.linked_user_id) {
-        const { default: Notification } = await import("../models/notification.model");
-        const connection = await Notification.findOne({
-          where: { type: 'request', status: 'accepted', [Op.or]: [ { sender_id: uid, recipient_id: person.linked_user_id }, { sender_id: person.linked_user_id, recipient_id: uid } ] }
-        });
-        if (connection) { isConnected = true; linkedUserId = person.linked_user_id; }
+      const { default: Notification } = await import("../models/notification.model");
+      const connection = await Notification.findOne({
+        where: { type: 'request', status: 'accepted', [Op.or]: [{ sender_id: uid, recipient_id: person.linked_user_id }, { sender_id: person.linked_user_id, recipient_id: uid }] }
+      });
+      if (connection) { isConnected = true; linkedUserId = person.linked_user_id; }
     }
 
     if (isConnected && linkedUserId && !bypassApproval) {
-        // Mark all as settle_requested
-        for (const tx of pendingTxs) {
-          await (tx as any).update({ status: "settle_requested" as any });
-          await this.syncMirrorStatus(tx as any, uid, "settle_requested");
-        }
-        const currentUser = await User.findByPk(uid);
-        await this.notificationService.createNotification({
-          recipient_id: linkedUserId,
-          sender_id: uid,
-          type: "settle_request",
-          data: { subType: "net_balance", personId, settleAmount, date: date || new Date(), note, message: `${currentUser?.name} wants to settle ₹${settleAmount} towards your net balance.` }
-        });
-        return { message: "Settlement request sent for approval.", isRequested: true };
+      // Mark all as settle_requested
+      for (const tx of pendingTxs) {
+        await (tx as any).update({ status: "settle_requested" as any });
+        await this.syncMirrorStatus(tx as any, uid, "settle_requested");
+      }
+      const currentUser = await User.findByPk(uid);
+      await this.notificationService.createNotification({
+        recipient_id: linkedUserId,
+        sender_id: uid,
+        type: "settle_request",
+        data: { subType: "net_balance", personId, settleAmount, date: date || new Date(), note, message: `${currentUser?.name} wants to settle ₹${settleAmount} towards your net balance.` }
+      });
+      return { message: "Settlement request sent for approval.", isRequested: true };
     }
 
     // 3. Create the offsetting transaction

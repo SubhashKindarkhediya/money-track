@@ -25,6 +25,10 @@ Transaction.belongsTo(User, { foreignKey: "uid" });
 Person.hasMany(Transaction, { foreignKey: "person_id" });
 Transaction.belongsTo(Person, { foreignKey: "person_id" });
 
+// Group → Transaction
+Group.hasMany(Transaction, { foreignKey: "group_id", as: "transactions" });
+Transaction.belongsTo(Group, { foreignKey: "group_id", as: "group" });
+
 // User → Notification (Recipient)
 User.hasMany(Notification, { foreignKey: "recipient_id", as: "notifications" });
 Notification.belongsTo(User, { foreignKey: "recipient_id", as: "recipient" });

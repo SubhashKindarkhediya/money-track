@@ -38,7 +38,7 @@ const GroupList = () => {
       <div className="sticky top-0 z-30 flex flex-none items-center justify-between px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/")}
             className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#151624] hover:bg-gray-100 dark:hover:bg-[#1e1f30] transition-all border border-gray-100 dark:border-gray-800 active:scale-95"
           >
             <ArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
@@ -90,8 +90,8 @@ const GroupList = () => {
             {filteredGroups.map((group) => (
               <div
                 key={group.id}
-                onClick={() => toast.success("Group detail page coming soon!")}
-                className="group relative p-4 bg-white dark:bg-[#151624] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 transition-all cursor-pointer flex flex-col"
+                onClick={() => navigate(`/groups/${group.id}`)}
+                className="group relative bg-white dark:bg-[#151624] rounded-[1.5rem] p-4 sm:p-5 border border-gray-100 dark:border-gray-800 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:border-indigo-500/30 transition-all cursor-pointer overflow-hidden flex flex-col h-full"
               >
                 {/* Top Section */}
                 <div className="flex items-start justify-between gap-4 mb-3">
@@ -113,8 +113,8 @@ const GroupList = () => {
                       )}
                     </div>
                   </div>
-                  
-                  <button 
+
+                  <button
                     className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-[#1b1c2e] transition-colors shrink-0"
                     onClick={(e) => {
                       e.stopPropagation(); // Stop clicking card
@@ -126,15 +126,21 @@ const GroupList = () => {
                 </div>
 
                 {/* Middle Section: Group Expense */}
-                <div className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl px-3.5 py-3 mb-3 flex items-center justify-between border border-gray-100 dark:border-gray-800/50">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Total Expense</span>
-                    <span className="text-base font-black text-gray-900 dark:text-white">₹0.00</span>
-                  </div>
-                  <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 bg-white dark:bg-[#151624] px-2 py-1 rounded-md border border-gray-100 dark:border-gray-800 shadow-sm">
-                    No Expenses
-                  </div>
-                </div>
+                {(() => {
+                  const txs = group.transactions || [];
+                  const totalExpense = txs.reduce((sum: number, tx: any) => sum + Number(tx.amount || 0), 0);
+                  return (
+                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl px-3.5 py-3 mb-3 flex items-center justify-between border border-gray-100 dark:border-gray-800/50">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Total Expense</span>
+                        <span className="text-base font-black text-gray-900 dark:text-white">₹{totalExpense.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 bg-white dark:bg-[#151624] px-2 py-1 rounded-md border border-gray-100 dark:border-gray-800 shadow-sm">
+                        {txs.length === 0 ? "No Expenses" : `${txs.length} ${txs.length === 1 ? 'Transaction' : 'Transactions'}`}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Bottom Section */}
                 <div className="pt-3 mt-auto border-t border-gray-50 dark:border-gray-800/50 flex items-end justify-between">

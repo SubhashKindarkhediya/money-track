@@ -9,6 +9,7 @@ interface TransactionAttributes {
   id: string;
   uid: string;
   person_id?: string | null;
+  group_id?: string | null;
   type: TransactionType;
   amount: number;
   category?: string;
@@ -21,15 +22,15 @@ interface TransactionAttributes {
 interface TransactionCreationAttributes extends Optional<
   TransactionAttributes,
   "id" | "date" | "category" | "reason" | "note" | "status"
-> {}
+> { }
 
 class Transaction
   extends Model<TransactionAttributes, TransactionCreationAttributes>
-  implements TransactionAttributes
-{
+  implements TransactionAttributes {
   public id!: string;
   public uid!: string;
   public person_id!: string | null;
+  public group_id!: string | null;
   public type!: TransactionType;
   public amount!: number;
   public category!: string;
@@ -54,6 +55,10 @@ Transaction.init(
       allowNull: false,
     },
     person_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    group_id: {
       type: DataTypes.UUID,
       allowNull: true,
     },

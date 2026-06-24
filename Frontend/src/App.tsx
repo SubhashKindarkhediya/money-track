@@ -55,6 +55,7 @@ import SettingsPage from "./pages/Settings";
 import RegisterPhone from "./pages/RegisterPhone";
 import CreateGroup from "./pages/CreateGroup";
 import GroupList from "./pages/GroupList";
+import GroupTransactions from "./pages/GroupTransactions";
 // import { Sun, Moon } from "lucide-react";
 import { useTheme } from "./context/ThemeContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -1055,8 +1056,9 @@ function AppContent() {
   const isAnalyticsPage = location.pathname === "/analytics";
   const isSettingsPage = location.pathname === "/settings";
   const isGroupListPage = location.pathname === "/groups";
+  const isGroupTransactionsPage = location.pathname.startsWith("/groups/");
   const isCreateGroupPage = location.pathname === "/create-group";
-  const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage || isSettingsPage || isGroupListPage || isCreateGroupPage;
+  const isFullScreenPage = isProfilePage || isPersonPage || isAddTransactionPage || isLogPage || isAnalyticsPage || isSettingsPage || isGroupListPage || isGroupTransactionsPage || isCreateGroupPage;
 
   // Show bottom nav on "/" or if we are on one of the main pages and came from bottom nav
   const showBottomNav =
@@ -1438,6 +1440,14 @@ function AppContent() {
               element={
                 <ProtectedRoute>
                   <GroupList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/groups/:id"
+              element={
+                <ProtectedRoute>
+                  <GroupTransactions />
                 </ProtectedRoute>
               }
             />

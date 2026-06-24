@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Group, GroupMember, Person } from "../models";
+import { Group, GroupMember, Person, Transaction } from "../models";
 import sequelize from "../config/db";
 
 export class GroupController {
@@ -36,7 +36,7 @@ export class GroupController {
       }
 
       await t.commit();
-      
+
       const createdGroup = await Group.findByPk(group.id, {
         include: [{ model: Person, as: 'members' }]
       });
@@ -56,10 +56,36 @@ export class GroupController {
       const uid = (req as any).user.uid;
       const groups = await Group.findAll({
         where: { uid },
-        include: [{ model: Person, as: 'members' }],
+        include: [
+          { model: Person, as: 'members' },
+          { model: Transaction, as: 'transactions' }
+        ],
         order: [["createdAt", "DESC"]],
       });
       res.json(groups);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Get single group by ID
+   */
+  getGroupById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const uid = (req as any).user.uid;
+      const group = await Group.findOne({
+        where: { id, uid },
+        include: [{ model: Person, as: 'members' }]
+      });
+      
+      if (!group) {
+        res.status(404).json({ error: "Group not found" });
+        return;
+      }
+      
+      res.json(group);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
