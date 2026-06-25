@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, Search, PlusCircle, ArrowLeft, Loader2, Calendar, MoreVertical } from "lucide-react";
+import { Users, Search, PlusCircle, ArrowLeft, Loader2, Calendar, MoreVertical, Eye, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
@@ -10,6 +10,7 @@ const GroupList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGroups();
@@ -31,6 +32,27 @@ const GroupList = () => {
   const filteredGroups = groups.filter((g) =>
     g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleDeleteGroup = async (group: any) => {
+    const txs = group.transactions || [];
+    const totalExpense = txs.reduce((sum: number, tx: any) => sum + Number(tx.amount || 0), 0);
+
+    if (totalExpense > 0) {
+      toast.error("Cannot delete group. Total expense is not 0.");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete the group "${group.name}"?`)) return;
+
+    try {
+      await api.delete(`/groups/${group.id}`);
+      toast.success("Group deleted successfully");
+      fetchGroups();
+    } catch (error) {
+      console.error("Failed to delete group:", error);
+      toast.error("Failed to delete group");
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto w-full font-sans transition-colors duration-300 pb-8 h-screen flex flex-col">
@@ -94,7 +116,7 @@ const GroupList = () => {
                 className="group relative bg-white dark:bg-[#151624] rounded-[1.5rem] p-4 sm:p-5 border border-gray-100 dark:border-gray-800 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:border-indigo-500/30 transition-all cursor-pointer overflow-hidden flex flex-col h-full"
               >
                 {/* Top Section */}
-                <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="flex items-start justify-between gap-4 mb-5">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-[14px] bg-indigo-50 dark:bg-[#1b1c2e] flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform shrink-0">
                       <Users size={20} strokeWidth={2.5} />
@@ -103,44 +125,32 @@ const GroupList = () => {
                       <h3 className="text-[15px] font-black text-black dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
                         {group.name}
                       </h3>
-                      {group.type && (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <div className="w-1 h-1 rounded-full bg-indigo-500"></div>
-                          <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                            {group.type}
-                          </span>
-                        </div>
-                      )}
+
                     </div>
                   </div>
 
-                  <button
-                    className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-[#1b1c2e] transition-colors shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Stop clicking card
-                      toast.success("Options coming soon!");
-                    }}
-                  >
-                    <MoreVertical size={18} strokeWidth={2.5} />
-                  </button>
+                  <div className="relative shrink-0 -mt-1 -mr-1">
+                    <button
+                      className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-[#1b1c2e] transition-colors active:scale-95"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === group.id ? null : group.id);
+                      }}
+                    >
+                      <MoreVertical size={20} strokeWidth={2.5} />
+                    </button>
+                    {group.type && (
+                      <div className="absolute right-3 top-11 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full shadow-sm bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 whitespace-nowrap">
+                        <div className="w-1 h-1 rounded-full bg-indigo-500"></div>
+                        <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest leading-none pt-[1px]">
+                          {group.type}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Middle Section: Group Expense */}
-                {(() => {
-                  const txs = group.transactions || [];
-                  const totalExpense = txs.reduce((sum: number, tx: any) => sum + Number(tx.amount || 0), 0);
-                  return (
-                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl px-3.5 py-3 mb-3 flex items-center justify-between border border-gray-100 dark:border-gray-800/50">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Total Expense</span>
-                        <span className="text-base font-black text-gray-900 dark:text-white">₹{totalExpense.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      </div>
-                      <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 bg-white dark:bg-[#151624] px-2 py-1 rounded-md border border-gray-100 dark:border-gray-800 shadow-sm">
-                        {txs.length === 0 ? "No Expenses" : `${txs.length} ${txs.length === 1 ? 'Transaction' : 'Transactions'}`}
-                      </div>
-                    </div>
-                  );
-                })()}
+
 
                 {/* Bottom Section */}
                 <div className="pt-3 mt-auto border-t border-gray-50 dark:border-gray-800/50 flex items-end justify-between">
@@ -149,7 +159,7 @@ const GroupList = () => {
                       {group.members?.slice(0, 5).map((m: any, i: number) => (
                         <div
                           key={m.id}
-                          className="w-7 h-7 rounded-full border-2 border-white dark:border-[#151624] bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-[10px] font-black text-indigo-600 dark:text-indigo-400 relative z-[3] hover:z-[5] hover:scale-110 transition-transform cursor-pointer"
+                          className="w-7 h-7 rounded-full border-2 border-white dark:border-[#151624] bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-[10px] font-black text-gray-600 dark:text-gray-300 relative z-[3] hover:z-[5] hover:scale-110 transition-transform cursor-pointer"
                           title={m.name}
                         >
                           {m.name.charAt(0).toUpperCase()}
@@ -193,6 +203,65 @@ const GroupList = () => {
           </div>
         )}
       </div>
+
+      {/* Bottom Drawer Options */}
+      {activeDropdown && (() => {
+        const group = groups.find(g => g.id === activeDropdown);
+        if (!group) return null;
+        return (
+          <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+              onClick={() => setActiveDropdown(null)}
+            ></div>
+
+            {/* Drawer Content */}
+            <div className="relative w-full max-w-md bg-white dark:bg-[#151624] rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
+              <div className="flex justify-center pt-3 pb-2 sm:hidden">
+                <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+              </div>
+
+              <div className="p-4 sm:p-6 space-y-2 pb-8 sm:pb-6">
+                <div className="mb-4 px-2 text-center sm:text-left">
+                  <h3 className="text-xl font-black text-gray-900 dark:text-white truncate">{group.name}</h3>
+                  <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">Group Options</p>
+                </div>
+
+                <div
+                  className="flex items-center gap-4 p-4 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-500/10 cursor-pointer transition-all active:scale-[0.98] group/opt"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/groups/${group.id}`); setActiveDropdown(null); }}
+                >
+                  <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover/opt:bg-indigo-100 dark:group-hover/opt:bg-indigo-500/20 transition-colors">
+                    <Eye size={22} strokeWidth={2.5} />
+                  </div>
+                  <span className="text-base font-bold text-gray-900 dark:text-white group-hover/opt:text-indigo-600 dark:group-hover/opt:text-indigo-400 transition-colors">View Details</span>
+                </div>
+
+                <div
+                  className="flex items-center gap-4 p-4 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-500/10 cursor-pointer transition-all active:scale-[0.98] group/opt"
+                  onClick={(e) => { e.stopPropagation(); navigate("/create-group", { state: { editGroup: group } }); setActiveDropdown(null); }}
+                >
+                  <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover/opt:bg-indigo-100 dark:group-hover/opt:bg-indigo-500/20 transition-colors">
+                    <Edit size={22} strokeWidth={2.5} />
+                  </div>
+                  <span className="text-base font-bold text-gray-900 dark:text-white group-hover/opt:text-indigo-600 dark:group-hover/opt:text-indigo-400 transition-colors">Edit Group</span>
+                </div>
+
+                <div
+                  className="flex items-center gap-4 p-4 rounded-2xl hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer transition-all active:scale-[0.98] group/opt"
+                  onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group); setActiveDropdown(null); }}
+                >
+                  <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-500 dark:text-rose-400 group-hover/opt:bg-rose-100 dark:group-hover/opt:bg-rose-500/20 transition-colors">
+                    <Trash2 size={22} strokeWidth={2.5} />
+                  </div>
+                  <span className="text-base font-bold text-rose-600 dark:text-rose-400">Delete Group</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

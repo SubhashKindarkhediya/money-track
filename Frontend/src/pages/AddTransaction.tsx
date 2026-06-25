@@ -8,8 +8,15 @@ import toast from "react-hot-toast";
 const AddTransaction: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  
   const preSelectedPersonId = location.state?.personId;
   const preSelectedPersonName = location.state?.personName;
+  const preSelectedGroupId = location.state?.groupId;
+  const preSelectedGroupName = location.state?.groupName;
+  const preSelectedGroupMembers = location.state?.preSelectedPersons || [];
+  const queryMode = searchParams.get("mode") as "single" | "group" | null;
+  const initialMode = queryMode || location.state?.mode || "single";
 
   const editingTx = location.state?.editingTx;
   const isEditing = !!editingTx;
@@ -33,11 +40,9 @@ const AddTransaction: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const searchParams = new URLSearchParams(location.search);
-  const queryMode = searchParams.get("mode") as "single" | "group" | null;
 
-  const [mode, setMode] = useState<"single" | "group">(queryMode || location.state?.mode || "single");
-  const [selectedPersons, setSelectedPersons] = useState<{ id: string; name: string }[]>([]);
+  const [mode, setMode] = useState<"single" | "group">(initialMode);
+  const [selectedPersons, setSelectedPersons] = useState<{ id: string; name: string }[]>(preSelectedGroupMembers);
   const [paidBy, setPaidBy] = useState<string>("me");
 
   const totalAmountValue = parseFloat(txForm.amount) || 0;
@@ -173,13 +178,14 @@ const AddTransaction: React.FC = () => {
           });
         }
       } else {
-        // Group transaction logic
+        // Group transaction logic (bill split)
         const amountPerPerson = parseFloat(perPersonAmount);
+        
+        let promises: Promise<any>[] = [];
 
         if (paidBy === "me") {
           // I paid for everyone else -> Create a CREDIT for each selected person
-          // (User's logic: I will receive this money back)
-          const promises = selectedPersons.map(p =>
+          promises = selectedPersons.map(p =>
             api.post("/transactions", {
               person_id: p.id,
               type: "credit",
@@ -201,12 +207,10 @@ const AddTransaction: React.FC = () => {
             date: finalDate,
             status: "completed",
           });
-
-          await Promise.all([...promises, expensePromise]);
+          promises.push(expensePromise);
         } else {
           // Someone else paid for me -> Create a SINGLE DEBIT for that person
-          // (User's logic: I owe this person)
-          await api.post("/transactions", {
+          promises.push(api.post("/transactions", {
             person_id: paidBy,
             type: "debit",
             amount: amountPerPerson,
@@ -214,8 +218,22 @@ const AddTransaction: React.FC = () => {
             reason: txForm.reason ? `${txForm.reason} (Group Split)` : "Group Expense Split",
             date: finalDate,
             status: "pending",
-          });
+          }));
         }
+
+        if (preSelectedGroupId) {
+          promises.push(api.post("/transactions", {
+            group_id: preSelectedGroupId,
+            person_id: paidBy === "me" ? undefined : paidBy,
+            type: "expense", // Master Group transaction
+            amount: parseFloat(txForm.amount),
+            reason: txForm.reason,
+            date: finalDate,
+            status: "completed"
+          }));
+        }
+
+        await Promise.all(promises);
       }
 
       if (isEditing) {
@@ -224,7 +242,9 @@ const AddTransaction: React.FC = () => {
         toast.success("Transaction added successfully!");
       }
 
-      if (isPersonalTx) {
+      if (preSelectedGroupId) {
+        navigate(`/groups/${preSelectedGroupId}`);
+      } else if (isPersonalTx) {
         navigate("/personal-history");
       } else if (mode === "single" && txForm.person_id) {
         navigate(`/person/${txForm.person_id}`, { state: { tab: "transactions", status: txForm.status } });
@@ -650,83 +670,102 @@ const AddTransaction: React.FC = () => {
             ) : (
               <>
                 {/* Title for Group Transaction */}
-                <div className="flex justify-center mb-2">
-                  <h3 className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.2em] bg-amber-50 dark:bg-amber-500/10 px-4 py-2 rounded-full border border-amber-100 dark:border-amber-500/20 shadow-sm shadow-amber-500/5">
-                    Group Transaction
-                  </h3>
-                </div>
+                {preSelectedGroupId ? (
+                  <div className="p-4 mb-2 rounded-2xl bg-indigo-50/50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-xl">
+                      {preSelectedGroupName?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+                        Adding transaction for
+                      </p>
+                      <MarqueeText
+                        text={preSelectedGroupName || ""}
+                        className="text-lg font-black text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-center mb-2">
+                    <h3 className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em] bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2 rounded-full border border-indigo-100 dark:border-indigo-500/20 shadow-sm shadow-indigo-500/5">
+                      Group Transaction
+                    </h3>
+                  </div>
+                )}
 
                 <div className="space-y-6">
                   {/* Multi-Person Selector */}
                   <div className="relative z-20">
                     <label className="block text-xs font-bold text-gray-500 tracking-widest mb-2 px-1">Select People</label>
-                    <div className="relative">
-                      <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input
-                        type="text"
-                        placeholder="Search and add multiple people..."
-                        value={searchQuery}
-                        onChange={(e) => {
-                          setSearchQuery(e.target.value);
-                          setIsDropdownOpen(true);
-                        }}
-                        onFocus={() => setIsDropdownOpen(true)}
-                        className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`}
-                      />
-                      <ChevronDown size={18} className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''} pointer-events-none`} />
-                    </div>
-                    {errors.person && <p className="text-amber-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.person}</p>}
-
-                    {/* Selected Persons Chips */}
-                    {selectedPersons.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3 px-1">
-                        {selectedPersons.map(p => (
-                          <div key={p.id} className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl animate-in zoom-in-95 duration-200 max-w-[150px]">
-                            <MarqueeText
-                              text={p.name}
-                              className="text-xs font-bold text-amber-700 dark:text-amber-400"
+                        {!preSelectedGroupId && (
+                          <div className="relative">
+                            <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <input
+                              type="text"
+                              placeholder="Search and add multiple people..."
+                              value={searchQuery}
+                              onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setIsDropdownOpen(true);
+                              }}
+                              onFocus={() => setIsDropdownOpen(true)}
+                              className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.person ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`}
                             />
-                            <button
-                              type="button"
-                              onClick={() => setSelectedPersons(selectedPersons.filter(sp => sp.id !== p.id))}
-                              className="p-0.5 hover:bg-amber-200 dark:hover:bg-amber-500/20 rounded-full transition-colors"
-                            >
-                              <X size={12} className="text-amber-600 dark:text-amber-400" />
-                            </button>
+                            <ChevronDown size={18} className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''} pointer-events-none`} />
                           </div>
-                        ))}
-                      </div>
-                    )}
-                    {isDropdownOpen && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                        <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl shadow-amber-900/10 overflow-hidden max-h-60 overflow-y-auto">
-                          {filteredPersons.length > 0 ? (
-                            filteredPersons
-                              .filter(p => !selectedPersons.some(sp => sp.id === p.id)) // Hide already selected
-                              .map(p => (
-                                <div
-                                  key={p.id}
-                                  onClick={() => {
-                                    setSelectedPersons([...selectedPersons, { id: p.id, name: p.name }]);
-                                    setSearchQuery("");
-                                    setIsDropdownOpen(false);
-                                  }}
-                                  className="px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1b1c2e] text-gray-700 dark:text-gray-300 font-medium transition-colors flex items-center justify-between"
+                        )}
+                        {!preSelectedGroupId && errors.person && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.person}</p>}
+
+                        {/* Selected Persons Chips */}
+                        {selectedPersons.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-3 px-1">
+                            {selectedPersons.map(p => (
+                              <div key={p.id} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl animate-in zoom-in-95 duration-200 max-w-[150px]">
+                                <MarqueeText
+                                  text={p.name}
+                                  className="text-xs font-bold text-indigo-700 dark:text-indigo-400"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedPersons(selectedPersons.filter(sp => sp.id !== p.id))}
+                                  className="p-0.5 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 rounded-full transition-colors"
                                 >
-                                  <span>{p.name}</span>
-                                  {p.phone && <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">{p.phone}</span>}
+                                  <X size={12} className="text-indigo-600 dark:text-indigo-400" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {!preSelectedGroupId && isDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                            <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl shadow-amber-900/10 overflow-hidden max-h-60 overflow-y-auto">
+                              {filteredPersons.length > 0 ? (
+                                filteredPersons
+                                  .filter(p => !selectedPersons.some(sp => sp.id === p.id)) // Hide already selected
+                                  .map(p => (
+                                    <div
+                                      key={p.id}
+                                      onClick={() => {
+                                        setSelectedPersons([...selectedPersons, { id: p.id, name: p.name }]);
+                                        setSearchQuery("");
+                                        setIsDropdownOpen(false);
+                                      }}
+                                      className="px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1b1c2e] text-gray-700 dark:text-gray-300 font-medium transition-colors flex items-center justify-between"
+                                    >
+                                      <span>{p.name}</span>
+                                      {p.phone && <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">{p.phone}</span>}
+                                    </div>
+                                  ))
+                              ) : (
+                                <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
+                                  No more contacts found
                                 </div>
-                              ))
-                          ) : (
-                            <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
-                              No more contacts found
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                          </>
+                        )}
+                      </div>
 
                   {/* Total Amount Input (Group Mode) */}
                   <div>
@@ -739,10 +778,10 @@ const AddTransaction: React.FC = () => {
                         required
                         value={txForm.amount}
                         onChange={e => { setTxForm({ ...txForm, amount: e.target.value }); if (errors.amount) setErrors({ ...errors, amount: undefined }); }}
-                        className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-amber-500 focus:ring-amber-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-amber-500 focus:ring-amber-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`}
+                        className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${errors.amount ? 'border-rose-500 focus:ring-rose-500/10' : 'border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10'} rounded-2xl outline-none focus:ring-2 text-lg font-black text-gray-900 dark:text-white transition-all shadow-sm placeholder:transition-opacity focus:placeholder:opacity-0`}
                       />
                     </div>
-                    {errors.amount && <p className="text-amber-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.amount}</p>}
+                    {errors.amount && <p className="text-rose-500 text-[11px] font-bold mt-1.5 px-1 animate-in fade-in">{errors.amount}</p>}
                   </div>
 
                   {/* Who Paid Selection */}
@@ -754,8 +793,8 @@ const AddTransaction: React.FC = () => {
                         type="button"
                         onClick={() => setPaidBy("me")}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-bold text-xs transition-all ${paidBy === "me"
-                          ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
-                          : "bg-white dark:bg-[#151624] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-amber-500/50"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20"
+                          : "bg-white dark:bg-[#151624] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-indigo-500/50"
                           }`}
                       >
                         <User size={14} />
@@ -769,8 +808,8 @@ const AddTransaction: React.FC = () => {
                           type="button"
                           onClick={() => setPaidBy(p.id)}
                           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-bold text-xs transition-all ${paidBy === p.id
-                            ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
-                            : "bg-white dark:bg-[#151624] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-amber-500/50"
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20"
+                            : "bg-white dark:bg-[#151624] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-indigo-500/50"
                             }`}
                         >
                           <div className="w-4 h-4 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-[8px]">

@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { ArrowLeft, PlusCircle, Loader2, Clock, History as HistoryIcon, Users, IndianRupee } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { ArrowLeft, PlusCircle, Loader2, Clock, History as HistoryIcon, Users, IndianRupee, ChevronDown, User, Check, Search, Download, Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
-
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 const GroupTransactions = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [group, setGroup] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
+
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // Add Transaction Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -75,13 +82,106 @@ const GroupTransactions = () => {
     }
   };
 
+  // Derived state for filtering
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx => {
+      // Month Filter
+      const txDate = new Date(tx.date || tx.createdAt);
+      if (txDate.getMonth() !== currentDate.getMonth() || txDate.getFullYear() !== currentDate.getFullYear()) {
+        return false;
+      }
+
+      // Search Filter
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matchesReason = (tx.reason || tx.category || '').toLowerCase().includes(q);
+        const matchesAmount = tx.amount.toString().includes(q);
+        return matchesReason || matchesAmount;
+      }
+      return true;
+    });
+  }, [transactions, currentDate, searchQuery]);
+
   const calculateTotalExpense = () => {
-    return transactions.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+    return filteredTransactions.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  };
+
+  const handlePrevMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const generatePDF = () => {
+    if (filteredTransactions.length === 0) {
+      toast.error("No transactions to generate report.");
+      return;
+    }
+    const doc = new jsPDF();
+
+    doc.setFontSize(20);
+    doc.setTextColor(40);
+    doc.text(`Group Report: ${group?.name || 'Group'}`, 14, 22);
+
+    doc.setFontSize(12);
+    doc.setTextColor(79, 70, 229);
+    doc.text(`Month: ${currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`, 14, 30);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 36);
+
+    const totalExpense = calculateTotalExpense();
+    doc.setFontSize(11);
+    doc.setTextColor(17, 24, 39);
+    doc.text(`Total Group Expense: Rs. ${totalExpense.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`, 196, 30, { align: "right" });
+
+    const tableColumn = ["Sr. No.", "Date", "Reason / Note", "Amount (Rs.)"];
+    const tableRows: any[] = [];
+
+    filteredTransactions.forEach((tx, index) => {
+      const dateStr = new Date(tx.date || tx.createdAt).toLocaleDateString("en-IN");
+      const txData = [
+        index + 1,
+        dateStr,
+        tx.reason || tx.category || "-",
+        Number(tx.amount).toLocaleString("en-IN") + "/-"
+      ];
+      tableRows.push(txData);
+    });
+
+    const totalRow = ["", "", "Total Expense", totalExpense.toLocaleString("en-IN", { minimumFractionDigits: 2 }) + "/-"];
+    tableRows.push(totalRow);
+    const totalRowIndex = tableRows.length - 1;
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 42,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 4, halign: 'center' },
+      columnStyles: { 3: { halign: 'right' } },
+      headStyles: { fillColor: [79, 70, 229], halign: 'center' },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+      didParseCell: function (data) {
+        if (data.row.index === totalRowIndex) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fillColor = [240, 245, 255];
+          if (data.column.index === 2) {
+            data.cell.styles.halign = 'right';
+          }
+        }
+      }
+    });
+
+    const fileName = `Group_Report_${group?.name?.replace(/\s+/g, "_")}_${currentDate.toLocaleString('default', { month: 'short', year: 'numeric' })}.pdf`;
+    doc.save(fileName);
   };
 
   const handleTxClick = (tx: any) => {
-    // Navigate to transaction details or edit (optional feature for future)
-    toast.success("Transaction detail coming soon!");
+    setExpandedTxId(expandedTxId === tx.id ? null : tx.id);
   };
 
   if (loading) {
@@ -103,7 +203,7 @@ const GroupTransactions = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto w-full font-sans transition-colors duration-300 pb-24 h-screen flex flex-col bg-gray-50/50 dark:bg-[#0a0a1a]">
+    <div className="max-w-4xl mx-auto w-full font-sans transition-colors duration-300 pb-4 min-h-[100dvh] flex flex-col bg-gray-50/50 dark:bg-[#0a0a1a]">
       {/* Header */}
       <div className="sticky top-0 z-30 flex flex-none items-center justify-between px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm shadow-indigo-900/5">
         <div className="flex items-center gap-4">
@@ -126,15 +226,66 @@ const GroupTransactions = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="p-2.5 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white transition-colors shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 active:scale-95"
-        >
-          <PlusCircle size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Search Toggle */}
+          <button
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+            className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors border border-indigo-100 dark:border-indigo-500/20 active:scale-95"
+          >
+            <Search size={20} />
+          </button>
+
+          {/* Download Report */}
+          <button
+            onClick={generatePDF}
+            className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors border border-indigo-100 dark:border-indigo-500/20 active:scale-95"
+            title="Download Report"
+          >
+            <Download size={20} />
+          </button>
+
+          <button
+            onClick={() => navigate('/add-transaction', {
+              state: {
+                groupId: group.id,
+                groupName: group.name,
+                mode: "group",
+                preSelectedPersons: group.members
+              }
+            })}
+            className="p-2.5 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white transition-colors shadow-lg shadow-[0_0_20px_rgba(99,102,241,0.4)] border border-indigo-400/20 active:scale-95"
+          >
+            <PlusCircle size={20} />
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+      {/* Search Bar Dropdown */}
+      {isSearchOpen && (
+        <div className="px-4 py-3 bg-white dark:bg-[#0a0a1a] border-b border-indigo-100/50 dark:border-gray-800 animate-in slide-in-from-top-2 duration-200 shadow-sm">
+          <div className="relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search transactions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-11 pr-10 py-3 bg-gray-50 dark:bg-[#151624] border border-gray-200 dark:border-gray-800 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-sm font-medium text-gray-900 dark:text-white transition-all placeholder:transition-opacity focus:placeholder:opacity-0"
+              autoFocus
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 px-4 sm:px-6 py-6">
         {/* Total Expense Card */}
         <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 dark:from-indigo-900 dark:via-[#1e1b4b] dark:to-black rounded-3xl p-6 shadow-2xl shadow-indigo-500/20 dark:shadow-indigo-900/40 relative overflow-hidden mb-8 border border-indigo-400/20">
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/10 blur-3xl rounded-full pointer-events-none"></div>
@@ -151,6 +302,32 @@ const GroupTransactions = () => {
           </div>
         </div>
 
+        {/* Month Selector */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="inline-flex items-center bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-[1.5rem] p-1.5 shadow-sm">
+            <button
+              onClick={handlePrevMonth}
+              className="p-2 sm:p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1e1f30] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <ChevronLeft size={18} strokeWidth={2.5} />
+            </button>
+            <div className="flex items-center gap-2 px-4 sm:px-6">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <Calendar size={16} strokeWidth={2.5} />
+              </div>
+              <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest min-w-[100px] text-center">
+                {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+            <button
+              onClick={handleNextMonth}
+              className="p-2 sm:p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1e1f30] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <ChevronRight size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+
         {/* Transactions List */}
         <div className="space-y-4">
           <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-4 px-1 flex items-center gap-2">
@@ -158,40 +335,113 @@ const GroupTransactions = () => {
             Group Transactions
           </h3>
 
-          {transactions.length > 0 ? (
+          {filteredTransactions.length > 0 ? (
             <div className="space-y-3">
-              {transactions.map((tx) => {
+              {filteredTransactions.map((tx) => {
                 const initial = (tx.reason || tx.category || 'G').charAt(0).toUpperCase();
                 const iconBg = 'bg-indigo-50 dark:bg-indigo-500/10';
                 const iconColor = 'text-indigo-600 dark:text-indigo-400';
+                const isExpanded = expandedTxId === tx.id;
+                const membersCount = (group.members?.length || 0) + 1; // +1 for "You"
+                const shareAmount = Number(tx.amount) / membersCount;
 
                 return (
                   <div
                     key={tx.id}
-                    onClick={() => handleTxClick(tx)}
-                    className="flex items-center justify-between p-4 bg-white dark:bg-[#151624] rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-lg hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all cursor-pointer active:scale-[0.98]"
+                    className="bg-white dark:bg-[#151624] rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-lg hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all overflow-hidden"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 ${iconBg} ${iconColor} font-black text-xl`}>
-                        {initial}
+                    <div
+                      onClick={() => handleTxClick(tx)}
+                      className="flex items-center justify-between p-4 cursor-pointer active:scale-[0.98]"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 ${iconBg} ${iconColor} font-black text-xl`}>
+                          {initial}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">
+                            {tx.reason || tx.category || 'Group Expense'}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50 px-2 py-0.5 rounded-md">
+                              <Clock size={10} />
+                              {new Date(tx.date || tx.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">
-                          {tx.reason || tx.category || 'Group Expense'}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50 px-2 py-0.5 rounded-md">
-                            <Clock size={10} />
-                            {new Date(tx.date || tx.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </span>
+
+                      <div className="flex items-center gap-3 pl-4">
+                        <p className="text-base font-black text-gray-900 dark:text-white">
+                          ₹{Number(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <div className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                          <ChevronDown size={18} />
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right pl-4">
-                      <p className="text-base font-black text-gray-900 dark:text-white">
-                        ₹{Number(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
+                    {/* Dropdown Content */}
+                    <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                      <div className="overflow-hidden">
+                        <div className="px-3 pb-3 pt-1">
+                          <div className="bg-slate-50/80 dark:bg-slate-800/30 rounded-2xl p-4">
+                            <div className="flex justify-between items-center mb-3 px-1">
+                              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Split Details</span>
+                              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">{membersCount} Members</span>
+                            </div>
+
+                            <div className="space-y-2">
+                              {/* You */}
+                              <div className="flex items-center justify-between bg-white dark:bg-[#151624] p-3.5 rounded-[1rem] shadow-sm shadow-indigo-900/5 dark:shadow-none border border-transparent dark:border-gray-800/80">
+                                <div className="flex items-center gap-3">
+                                  <div className="relative">
+                                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                                      <User size={14} strokeWidth={2.5} />
+                                    </div>
+                                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[7px] font-black uppercase tracking-wider px-1 rounded border border-white dark:border-[#151624]">
+                                      YOU
+                                    </div>
+                                  </div>
+                                  <span className="text-sm font-bold text-gray-900 dark:text-white">You</span>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <span className="text-sm font-black text-gray-900 dark:text-white">
+                                    ₹{shareAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                  {!tx.person_id && (
+                                    <span className="inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 text-[9px] font-bold text-emerald-700 dark:text-emerald-400">
+                                      Paid <Check size={10} strokeWidth={3} />
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Members */}
+                              {group.members?.map((member: any) => (
+                                <div key={member.id} className="flex items-center justify-between bg-white dark:bg-[#151624] p-3.5 rounded-[1rem] shadow-sm shadow-indigo-900/5 dark:shadow-none border border-transparent dark:border-gray-800/80">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
+                                      <User size={14} strokeWidth={2.5} />
+                                    </div>
+                                    <span className="text-sm font-bold text-gray-900 dark:text-white">{member.name || 'Unknown'}</span>
+                                  </div>
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-sm font-black text-gray-900 dark:text-white">
+                                      ₹{shareAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    {tx.person_id === member.id && (
+                                      <span className="inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 text-[9px] font-bold text-emerald-700 dark:text-emerald-400">
+                                        Paid <Check size={10} strokeWidth={3} />
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );

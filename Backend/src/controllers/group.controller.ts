@@ -90,4 +90,62 @@ export class GroupController {
       res.status(500).json({ error: error.message });
     }
   };
+
+  /**
+   * Update a group
+   */
+  updateGroup = async (req: Request, res: Response) => {
+    const t = await sequelize.transaction();
+    try {
+      const { id } = req.params;
+      const uid = (req as any).user.uid;
+      const { name, type, member_ids } = req.body;
+
+      const group = await Group.findOne({ where: { id, uid } });
+      if (!group) {
+        res.status(404).json({ error: "Group not found" });
+        return;
+      }
+
+      await group.update({ name: name || group.name, type: type || group.type }, { transaction: t });
+
+      if (member_ids && Array.isArray(member_ids)) {
+        await GroupMember.destroy({ where: { group_id: id }, transaction: t });
+        if (member_ids.length > 0) {
+          const groupMembers = member_ids.map((person_id: string) => ({
+            group_id: id,
+            person_id,
+          }));
+          await GroupMember.bulkCreate(groupMembers, { transaction: t });
+        }
+      }
+
+      await t.commit();
+      res.json({ message: "Group updated successfully" });
+    } catch (error: any) {
+      await t.rollback();
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Delete a group
+   */
+  deleteGroup = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const uid = (req as any).user.uid;
+
+      const group = await Group.findOne({ where: { id, uid } });
+      if (!group) {
+        res.status(404).json({ error: "Group not found" });
+        return;
+      }
+
+      await group.destroy();
+      res.json({ message: "Group deleted successfully" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
 }

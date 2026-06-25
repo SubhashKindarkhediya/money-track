@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, Users, Search, Loader2, X, PlusCircle, Tag, ChevronDown, Check } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
 
 const CreateGroup = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editGroup = location.state?.editGroup;
+  
   const [groupName, setGroupName] = useState("");
   const [groupType, setGroupType] = useState("Friends");
   const [customType, setCustomType] = useState("");
@@ -35,6 +38,14 @@ const CreateGroup = () => {
 
   useEffect(() => {
     fetchPersons();
+    
+    if (editGroup) {
+      setGroupName(editGroup.name);
+      setGroupType(editGroup.type || "Other");
+      if (editGroup.members) {
+        setSelectedPersons(editGroup.members);
+      }
+    }
   }, []);
 
   const fetchPersons = async () => {
@@ -74,7 +85,8 @@ const CreateGroup = () => {
   };
 
   const handleCreateGroup = async () => {
-    if (!groupName.trim()) {
+    const trimmedName = groupName.trim();
+    if (!trimmedName) {
       toast.error("Please enter a group name");
       return;
     }
@@ -86,16 +98,26 @@ const CreateGroup = () => {
     try {
       setIsSubmitting(true);
       const finalType = groupType === "Other" ? customType.trim() : groupType;
+      const formattedName = trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1);
       
-      await api.post("/groups", {
-        name: groupName,
-        type: finalType || "Other",
-        member_ids: selectedPersons.map(p => p.id)
-      });
-      toast.success("Group created successfully!");
-      navigate("/groups"); // Go to Group List
+      if (editGroup) {
+        await api.put(`/groups/${editGroup.id}`, {
+          name: formattedName,
+          member_ids: selectedPersons.map(p => p.id)
+        });
+        toast.success("Group updated successfully!");
+        navigate("/groups"); 
+      } else {
+        await api.post("/groups", {
+          name: formattedName,
+          type: finalType || "Other",
+          member_ids: selectedPersons.map(p => p.id)
+        });
+        toast.success("Group created successfully!");
+        navigate("/groups"); // Go to Group List
+      }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Failed to create group");
+      toast.error(err?.response?.data?.error || (editGroup ? "Failed to update group" : "Failed to create group"));
     } finally {
       setIsSubmitting(false);
     }
@@ -114,7 +136,7 @@ const CreateGroup = () => {
             <ArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
           </button>
           <h2 className="text-base font-black text-gray-900 dark:text-white tracking-wide flex-1">
-            Create New Group
+            {editGroup ? "Update Group" : "Create New Group"}
           </h2>
         </div>
 
@@ -130,13 +152,14 @@ const CreateGroup = () => {
                   placeholder="e.g. Goa Trip, Roommates"
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
-                  className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10 rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm"
+                  className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10 rounded-2xl outline-none focus:ring-2 text-base font-bold text-gray-900 dark:text-white transition-all shadow-sm capitalize"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Group Type</label>
+            {!editGroup && (
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Group Type</label>
               <div className={`relative custom-dropdown-container ${activeDropdown === "groupType" ? "z-30" : "z-10"}`}>
                 <Tag size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none transition-colors ${activeDropdown === "groupType" ? "text-indigo-500" : "text-gray-400"}`} />
                 <div
@@ -190,6 +213,7 @@ const CreateGroup = () => {
                 </div>
               )}
             </div>
+            )}
           </div>
 
           <div className="h-px bg-gray-100 dark:bg-gray-800 my-2"></div>
@@ -276,7 +300,7 @@ const CreateGroup = () => {
               <>
                 <Users size={18} strokeWidth={2.5} />
                 <span className="uppercase tracking-[0.1em] text-sm font-bold">
-                  Create Group
+                  {editGroup ? "Update Group" : "Create Group"}
                 </span>
               </>
             )}
