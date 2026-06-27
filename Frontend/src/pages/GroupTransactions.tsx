@@ -338,7 +338,33 @@ const GroupTransactions = () => {
         </div>
       )}
 
-      <div className="flex-1 px-4 sm:px-6 py-6">
+      <div className="flex-1 px-4 sm:px-6 py-3">
+        {/* Month Selector */}
+        <div className="flex items-center justify-center mb-5 mt-0">
+          <div className="flex items-center justify-between w-[100%] max-w-[320px] sm:max-w-xs bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-[1.5rem] p-1.5 shadow-sm">
+            <button
+              onClick={handlePrevMonth}
+              className="p-2 sm:p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1e1f30] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
+            >
+              <ChevronLeft size={18} strokeWidth={2.5} />
+            </button>
+            <div className="flex items-center gap-2 justify-center min-w-0 px-2">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 hidden sm:flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                <Calendar size={16} strokeWidth={2.5} />
+              </div>
+              <span className="text-[11px] sm:text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest truncate">
+                {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+            <button
+              onClick={handleNextMonth}
+              className="p-2 sm:p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1e1f30] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
+            >
+              <ChevronRight size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+
         {/* Total Expense Card */}
         <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 dark:from-indigo-900 dark:via-[#1e1b4b] dark:to-black rounded-3xl p-6 shadow-2xl shadow-indigo-500/20 dark:shadow-indigo-900/40 relative overflow-hidden mb-8 border border-indigo-400/20">
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/10 blur-3xl rounded-full pointer-events-none"></div>
@@ -352,32 +378,6 @@ const GroupTransactions = () => {
               <span className="text-2xl text-indigo-200">₹</span>
               {calculateTotalExpense().toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-          </div>
-        </div>
-
-        {/* Month Selector */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="inline-flex items-center bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-[1.5rem] p-1.5 shadow-sm">
-            <button
-              onClick={handlePrevMonth}
-              className="p-2 sm:p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1e1f30] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <ChevronLeft size={18} strokeWidth={2.5} />
-            </button>
-            <div className="flex items-center gap-2 px-4 sm:px-6">
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                <Calendar size={16} strokeWidth={2.5} />
-              </div>
-              <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest min-w-[100px] text-center">
-                {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-              </span>
-            </div>
-            <button
-              onClick={handleNextMonth}
-              className="p-2 sm:p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1e1f30] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <ChevronRight size={18} strokeWidth={2.5} />
-            </button>
           </div>
         </div>
 

@@ -172,6 +172,10 @@ const Dashboard = () => {
   const [summary, setSummary] = useState({ totalCredit: 0, totalDebit: 0, netBalance: 0, totalIncome: 0, totalExpense: 0, todayExpense: 0 });
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [dashboardPersons, setDashboardPersons] = useState<any[]>([]);
+  const [dashboardGroups, setDashboardGroups] = useState<any[]>([]);
+  const [isPeopleExpanded, setIsPeopleExpanded] = useState(false);
+  const [isGroupsExpanded, setIsGroupsExpanded] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const { user, currencySymbol, updateUser } = useAuth();
   const [showTooltip, setShowTooltip] = useState(false);
@@ -256,10 +260,11 @@ const Dashboard = () => {
       try {
         setSummaryLoading(true);
         const { default: api } = await import("./services/api");
-        const [sumRes, txRes, personRes] = await Promise.all([
+        const [sumRes, txRes, personRes, groupRes] = await Promise.all([
           api.get("/dashboard/summary"),
           api.get("/transactions"),
-          api.get("/person")
+          api.get("/person"),
+          api.get("/groups")
         ]);
 
         const { udhar, personal } = sumRes.data.data;
@@ -295,14 +300,21 @@ const Dashboard = () => {
         }
 
         if (Array.isArray(personRes.data)) {
-          setPersonsCount(personRes.data.length);
+          const sortedPersons = [...personRes.data].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+          setDashboardPersons(sortedPersons);
+          setPersonsCount(sortedPersons.length);
           const userData = user || JSON.parse(localStorage.getItem("user") || "{}");
           const userKey = userData?.id || userData?.email || "guest";
           const dismissed = localStorage.getItem(`dismissedPersonOnboarding_${userKey}`);
 
-          if (personRes.data.length === 0 && dismissed !== "true") {
+          if (sortedPersons.length === 0 && dismissed !== "true") {
             setShowPersonOnboarding(true);
           }
+        }
+        
+        if (Array.isArray(groupRes.data)) {
+          const sortedGroups = [...groupRes.data].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+          setDashboardGroups(sortedGroups);
         }
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
@@ -562,6 +574,104 @@ const Dashboard = () => {
             <ChevronRight size={14} className="absolute bottom-5 right-4 text-amber-600 dark:text-amber-400 opacity-40" />
           </div>
         </div>
+
+        {/* People Section (GPay style) */}
+        {(!summaryLoading && dashboardPersons.length > 0) && (
+          <div className="animate-in slide-in-from-bottom-8 duration-500 mt-2">
+            <div className="flex items-center justify-between mb-4 px-1">
+              <div 
+                className="flex items-center gap-1.5 cursor-pointer" 
+                onClick={() => setIsPeopleExpanded(!isPeopleExpanded)}
+              >
+                <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                  People
+                </h3>
+                {dashboardPersons.length > 3 && (
+                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-0.5">
+                    <ChevronDown size={16} className={`transition-transform duration-300 ${isPeopleExpanded ? "rotate-180" : ""}`} />
+                  </button>
+                )}
+              </div>
+              <button onClick={() => navigate('/person')} className="text-xs font-bold text-indigo-600 hover:underline">View All</button>
+            </div>
+            <div className={`transition-all duration-300 ${isPeopleExpanded ? "grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-y-6 gap-x-2 px-1 justify-items-center" : "flex gap-4 overflow-x-auto hide-scrollbar pb-2 px-1"}`}>
+              {/* Add New Person Button */}
+              <div 
+                className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/add w-16"
+                onClick={() => navigate('/person/add')}
+              >
+                <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 group-hover/add:text-indigo-500 group-hover/add:border-indigo-500 transition-colors">
+                  <Plus size={24} />
+                </div>
+                <span className="text-[10px] font-black uppercase text-gray-500 w-full text-center truncate">Add</span>
+              </div>
+              
+              {dashboardPersons.map(person => (
+                <div 
+                  key={`person-${person.id}`}
+                  className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/avatar w-16"
+                  onClick={() => navigate(`/person/${person.id}`)}
+                >
+                  <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm group-hover/avatar:scale-110 group-hover/avatar:shadow-md transition-all font-black text-lg">
+                    {person.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 w-full text-center truncate px-1">
+                    {person.name?.split(' ')[0]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Groups Section (GPay style) */}
+        {(!summaryLoading && dashboardGroups.length > 0) && (
+          <div className="animate-in slide-in-from-bottom-8 duration-500 mt-6">
+            <div className="flex items-center justify-between mb-4 px-1">
+              <div 
+                className="flex items-center gap-1.5 cursor-pointer" 
+                onClick={() => setIsGroupsExpanded(!isGroupsExpanded)}
+              >
+                <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                  Groups
+                </h3>
+                {dashboardGroups.length > 3 && (
+                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-0.5">
+                    <ChevronDown size={16} className={`transition-transform duration-300 ${isGroupsExpanded ? "rotate-180" : ""}`} />
+                  </button>
+                )}
+              </div>
+              <button onClick={() => navigate('/group')} className="text-xs font-bold text-indigo-600 hover:underline">View All</button>
+            </div>
+            <div className={`transition-all duration-300 ${isGroupsExpanded ? "grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-y-6 gap-x-2 px-1 justify-items-center" : "flex gap-4 overflow-x-auto hide-scrollbar pb-2 px-1"}`}>
+              {/* Add New Group Button */}
+              <div 
+                className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/add w-16"
+                onClick={() => navigate('/create-group')}
+              >
+                <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 group-hover/add:text-indigo-500 group-hover/add:border-indigo-500 transition-colors">
+                  <Plus size={24} />
+                </div>
+                <span className="text-[10px] font-black uppercase text-gray-500 w-full text-center truncate">New</span>
+              </div>
+              
+              {dashboardGroups.map(group => (
+                <div 
+                  key={`group-${group.id}`}
+                  className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/avatar w-16"
+                  onClick={() => navigate(`/groups/${group.id}`)}
+                >
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-500/20 dark:to-indigo-500/20 border border-purple-200 dark:border-purple-500/30 flex items-center justify-center text-purple-700 dark:text-purple-300 shadow-sm group-hover/avatar:scale-110 group-hover/avatar:shadow-md transition-all relative">
+                    <Users size={20} />
+                  </div>
+                  <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 w-full text-center truncate px-1">
+                    {group.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Recent Activity */}
         <div className="bg-white/80 backdrop-blur-md dark:bg-gray-800/40 rounded-[2.5rem] p-5 md:p-8 border border-indigo-50 dark:border-gray-700/50 shadow-xl shadow-indigo-900/5">
