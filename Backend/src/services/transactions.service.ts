@@ -95,6 +95,54 @@ export class TransactionsService {
         }
       }
     }
+    // If it's a group transaction, notify other joined members (and creator)
+    if (data.group_id) {
+      const { default: Group } = await import("../models/group.model");
+      const { default: GroupMember } = await import("../models/group_member.model");
+      
+      const group = await Group.findByPk(data.group_id);
+      if (group) {
+        const currentUser = await User.findByPk(data.uid);
+        
+        // Find all members who have joined
+        const members = await GroupMember.findAll({
+          where: { group_id: data.group_id, status: 'joined' }
+        });
+
+        // Collect all target UIDs to notify (excluding the one who created it)
+        const targetUids = new Set<string>();
+        
+        // Add creator if they didn't create the transaction
+        if (group.uid !== data.uid) {
+          targetUids.add(group.uid);
+        }
+
+        // Add all joined members
+        for (const member of members) {
+          const person = await Person.findByPk(member.person_id);
+          if (person && person.linked_user_id && person.linked_user_id !== data.uid) {
+            targetUids.add(person.linked_user_id);
+          }
+        }
+
+        // Send notifications
+        for (const targetUid of targetUids) {
+          await this.notificationService.createNotification({
+            recipient_id: targetUid,
+            sender_id: data.uid,
+            type: "system",
+            data: {
+              message: `${currentUser?.name || 'Someone'} added a new transaction of ₹${data.amount} in group: ${group.name}`,
+              subType: "group_transaction",
+              amount: data.amount,
+              type: data.type,
+              personName: currentUser?.name || 'A user',
+              group_id: data.group_id,
+            },
+          });
+        }
+      }
+    }
 
     return transaction;
   }
@@ -135,8 +183,27 @@ export class TransactionsService {
    * Get transactions for a specific group
    */
   async getTransactionsByGroup(group_id: string, uid: string) {
+    const { default: Group } = await import("../models/group.model");
+    const { default: GroupMember } = await import("../models/group_member.model");
+    const { default: Person } = await import("../models/person.model");
+    
+    let hasAccess = false;
+    const group = await Group.findByPk(group_id);
+    if (group && group.uid === uid) {
+      hasAccess = true;
+    } else {
+      const userPersons = await Person.findAll({ where: { linked_user_id: uid } });
+      const userPersonIds = userPersons.map(p => p.id);
+      const member = await GroupMember.findOne({ where: { group_id, person_id: userPersonIds, status: 'joined' } });
+      if (member) hasAccess = true;
+    }
+
+    if (!hasAccess) {
+      throw new Error("Access denied");
+    }
+
     return await Transaction.findAll({
-      where: { group_id, uid },
+      where: { group_id },
       order: [["date", "DESC"]],
     });
   }
@@ -573,6 +640,48 @@ export class TransactionsService {
               },
             });
           }
+        }
+      }
+    }
+
+    // If it's a group transaction, notify other joined members (and creator)
+    if (transaction.group_id) {
+      const { default: Group } = await import("../models/group.model");
+      const { default: GroupMember } = await import("../models/group_member.model");
+      
+      const group = await Group.findByPk(transaction.group_id);
+      if (group) {
+        const currentUser = await User.findByPk(uid);
+        
+        const members = await GroupMember.findAll({
+          where: { group_id: transaction.group_id, status: 'joined' }
+        });
+
+        const targetUids = new Set<string>();
+        
+        if (group.uid !== uid) {
+          targetUids.add(group.uid);
+        }
+
+        for (const member of members) {
+          const person = await Person.findByPk(member.person_id);
+          if (person && person.linked_user_id && person.linked_user_id !== uid) {
+            targetUids.add(person.linked_user_id);
+          }
+        }
+
+        for (const targetUid of targetUids) {
+          await this.notificationService.createNotification({
+            recipient_id: targetUid,
+            sender_id: uid,
+            type: "system",
+            data: {
+              message: `${currentUser?.name || 'Someone'} deleted a transaction of ₹${transaction.amount} in group: ${group.name}`,
+              subType: "group_transaction_deleted",
+              amount: transaction.amount,
+              group_id: transaction.group_id,
+            },
+          });
         }
       }
     }

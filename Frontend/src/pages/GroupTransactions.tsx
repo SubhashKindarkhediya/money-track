@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ArrowLeft, PlusCircle, Loader2, Clock, History as HistoryIcon, Users, IndianRupee, ChevronDown, User, Check, Search, Download, Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, PlusCircle, Loader2, Clock, History as HistoryIcon, Users, IndianRupee, ChevronDown, User, Check, Search, Download, Calendar, ChevronLeft, ChevronRight, X, Trash2 } from "lucide-react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useAuth } from "../context/AuthContext";
+
 const GroupTransactions = () => {
+  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,6 +21,9 @@ const GroupTransactions = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Settlement Screen State
+  const [showSettlement, setShowSettlement] = useState(false);
 
   // Add Transaction Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -136,8 +142,67 @@ const GroupTransactions = () => {
   };
 
   // Derived state for filtering
+  // Universal participants list
+  const participants = useMemo(() => {
+    if (!group) return [];
+
+    const list: any[] = [];
+    const groupTime = new Date(group.createdAt || Date.now()).getTime();
+
+    // Creator of the group
+    list.push({
+      id: 'creator',
+      name: group.uid === user?.id ? "You" : (group.User?.name || group.user?.name || "Group Admin"),
+      isMe: group.uid === user?.id,
+      userId: group.uid,
+      personId: 'creator',
+      isAdmin: true,
+      joinedAt: groupTime
+    });
+
+    // Members of the group
+    (group.members || []).forEach((m: any) => {
+      const getJoinedAt = (member: any, defaultTime: number) => {
+        const gm = member.GroupMember;
+        if (!gm) return defaultTime;
+        const dateStr = gm.joinedAt || gm.joined_at || gm.createdAt || gm.created_at;
+        if (!dateStr) return defaultTime;
+        const time = new Date(dateStr).getTime();
+        return isNaN(time) ? defaultTime : time;
+      };
+      
+      list.push({
+        id: m.id,
+        name: m.linked_user_id === user?.id ? "You" : m.name,
+        isMe: m.linked_user_id === user?.id,
+        userId: m.linked_user_id,
+        personId: m.id,
+        joinedAt: getJoinedAt(m, groupTime)
+      });
+    });
+
+    // Sort: "You" first, then others
+    return list.sort((a, b) => (a.isMe === b.isMe ? 0 : a.isMe ? -1 : 1));
+  }, [group, user?.id]);
+
+  const getTxParticipants = (tx: any) => {
+    // We add a 1 minute buffer to account for minor time discrepancies
+    const txTime = new Date(tx.createdAt || tx.date).getTime() + 60000;
+    return participants.filter(p => p.isAdmin || p.joinedAt <= txTime);
+  };
+
   const filteredTransactions = useMemo(() => {
+    const myParticipant = participants.find(p => p.isMe);
+
     return transactions.filter(tx => {
+      // Time-based visibility filter for non-admin members
+      if (myParticipant && !myParticipant.isAdmin && myParticipant.joinedAt) {
+        const txTime = new Date(tx.createdAt || tx.date).getTime();
+        if (txTime < myParticipant.joinedAt - 60000) {
+          return false; // Hide transactions created before they joined
+        }
+      }
+
       // Month Filter
       const txDate = new Date(tx.date || tx.createdAt);
       if (txDate.getMonth() !== currentDate.getMonth() || txDate.getFullYear() !== currentDate.getFullYear()) {
@@ -153,7 +218,56 @@ const GroupTransactions = () => {
       }
       return true;
     });
-  }, [transactions, currentDate, searchQuery]);
+  }, [transactions, currentDate, searchQuery, participants]);
+
+
+
+  // Calculate Member Balances for the current month
+  const memberBalances = useMemo(() => {
+    if (!participants || participants.length === 0) return [];
+
+    const others = participants.filter(p => !p.isMe);
+
+    return others.map((other: any) => {
+      let balance = 0; // Positive = You will get, Negative = You will give
+
+      filteredTransactions.forEach(tx => {
+        const txParticipants = getTxParticipants(tx);
+        
+        // If the other person wasn't in the group for this transaction, they have no share
+        const otherInTx = txParticipants.some(p => p.id === other.id);
+        if (!otherInTx) return;
+
+        const membersCount = txParticipants.length;
+        const share = Number(tx.amount) / membersCount;
+
+        // In group transactions, the payer is always tx.uid
+        const payerUserId = tx.uid;
+        const iPaid = (payerUserId === user?.id);
+        const theyPaid = (payerUserId === other.userId);
+
+        if (iPaid) {
+          // I paid. They owe me `share`
+          const isSettled = tx.note && tx.note.includes(`"${other.personId}"`);
+          if (!isSettled) {
+            balance += share;
+          }
+        } else if (theyPaid) {
+          // They paid. I owe them `share`
+          const myParticipant = participants.find(p => p.isMe);
+          const isSettled = tx.note && myParticipant && tx.note.includes(`"${myParticipant.personId}"`);
+          if (!isSettled) {
+            balance -= share;
+          }
+        }
+      });
+
+      return {
+        ...other,
+        balance
+      };
+    });
+  }, [filteredTransactions, participants, user?.id]);
 
   const calculateTotalExpense = () => {
     return filteredTransactions.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
@@ -233,6 +347,17 @@ const GroupTransactions = () => {
     doc.save(fileName);
   };
 
+  const handleDeleteTx = async (txId: string) => {
+    if (!window.confirm("Are you sure you want to delete this transaction?")) return;
+    try {
+      await api.delete(`/transactions/${txId}`);
+      toast.success("Transaction deleted successfully");
+      fetchGroupData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Failed to delete transaction");
+    }
+  };
+
   const handleTxClick = (tx: any) => {
     setExpandedTxId(expandedTxId === tx.id ? null : tx.id);
   };
@@ -251,6 +376,67 @@ const GroupTransactions = () => {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50/50 dark:bg-[#0a0a1a]">
         <p className="text-gray-500 font-bold">Group not found</p>
         <button onClick={() => navigate("/groups")} className="mt-4 px-4 py-2 bg-indigo-100 text-indigo-600 rounded-lg">Go Back</button>
+      </div>
+    );
+  }
+
+  if (showSettlement) {
+    return (
+      <div className="max-w-4xl mx-auto w-full font-sans transition-colors duration-300 pb-24 min-h-[100dvh] bg-slate-50 dark:bg-[#0a0a1a]">
+        {/* Header */}
+        <div className="sticky top-0 z-50 flex items-center gap-4 px-4 py-4 bg-white/70 dark:bg-[#0a0a1a]/80 backdrop-blur-2xl border-b border-indigo-100/50 dark:border-gray-800 shadow-sm">
+          <button
+            onClick={() => setShowSettlement(false)}
+            className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#151624] hover:bg-gray-100 dark:hover:bg-[#1e1f30] transition-all border border-gray-100 dark:border-gray-800 active:scale-95 text-gray-600 dark:text-gray-300"
+          >
+            <ArrowLeft size={22} />
+          </button>
+          <div>
+            <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">Monthly Settlement</h1>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-4 py-6 space-y-4">
+          <div className="bg-indigo-50/50 dark:bg-indigo-500/5 rounded-2xl p-4 border border-indigo-100/50 dark:border-indigo-500/10 mb-6 flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-500/20 rounded-full flex items-center justify-center shrink-0">
+              <Users className="text-indigo-600 dark:text-indigo-400" size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">Monthly Balances</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Based on transactions from {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+            </div>
+          </div>
+
+          {memberBalances.map((member: any) => {
+            const getAmount = Math.abs(member.balance);
+            const isGet = member.balance > 0;
+            const isGive = member.balance < 0;
+            const isSettled = member.balance === 0;
+
+            return (
+              <div key={member.id} className="bg-white dark:bg-[#151624] rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between hover:border-indigo-500/30 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-slate-500 dark:text-slate-400 text-lg">
+                    {member.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">{member.name}</h4>
+                    {isGet && <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">You will get</span>}
+                    {isGive && <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">You will give</span>}
+                    {isSettled && <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Settled</span>}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-lg font-black ${isGet ? 'text-emerald-600 dark:text-emerald-400' : isGive ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400 dark:text-gray-600'}`}>
+                    ₹{getAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     );
   }
@@ -366,17 +552,26 @@ const GroupTransactions = () => {
         </div>
 
         {/* Total Expense Card */}
-        <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 dark:from-indigo-900 dark:via-[#1e1b4b] dark:to-black rounded-3xl p-6 shadow-2xl shadow-indigo-500/20 dark:shadow-indigo-900/40 relative overflow-hidden mb-8 border border-indigo-400/20">
+        <div
+          onClick={() => setShowSettlement(true)}
+          className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 dark:from-indigo-900 dark:via-[#1e1b4b] dark:to-black rounded-3xl p-6 shadow-2xl shadow-indigo-500/20 dark:shadow-indigo-900/40 relative overflow-hidden mb-8 border border-indigo-400/20 cursor-pointer group hover:scale-[1.01] active:scale-[0.99] transition-all duration-300"
+        >
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/10 blur-3xl rounded-full pointer-events-none"></div>
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-500/20 blur-3xl rounded-full pointer-events-none"></div>
 
-          <div className="relative z-10">
-            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-100/70 mb-1 block">
-              Total Group Expense
-            </span>
-            <div className="text-4xl font-black text-white tracking-tight flex items-center gap-2">
-              <span className="text-2xl text-indigo-200">₹</span>
-              {calculateTotalExpense().toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className="relative z-10 flex items-center justify-between gap-4">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-100/70 mb-1 block">
+                Total Group Expense
+              </span>
+              <div className="text-4xl font-black text-white tracking-tight flex items-center gap-2">
+                <span className="text-2xl text-indigo-200">₹</span>
+                {calculateTotalExpense().toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </div>
+
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white/20 transition-all shadow-inner backdrop-blur-sm shrink-0">
+              <ChevronRight size={20} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
         </div>
@@ -395,7 +590,8 @@ const GroupTransactions = () => {
                 const iconBg = 'bg-indigo-50 dark:bg-indigo-500/10';
                 const iconColor = 'text-indigo-600 dark:text-indigo-400';
                 const isExpanded = expandedTxId === tx.id;
-                const membersCount = (group.members?.length || 0) + 1; // +1 for "You"
+                const txParticipants = getTxParticipants(tx);
+                const membersCount = txParticipants.length;
                 const shareAmount = Number(tx.amount) / membersCount;
 
                 return (
@@ -441,62 +637,54 @@ const GroupTransactions = () => {
                           <div className="bg-slate-50/80 dark:bg-slate-800/30 rounded-2xl p-4">
                             <div className="flex justify-between items-center mb-3 px-1">
                               <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Split Details</span>
-                              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">{membersCount} Members</span>
+                              <div className="flex items-center gap-3">
+                                {tx.uid === user?.id && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteTx(tx.id); }}
+                                    className="text-[10px] flex items-center gap-1 font-bold text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded-md transition-colors"
+                                  >
+                                    <Trash2 size={12} />
+                                    Delete
+                                  </button>
+                                )}
+                                <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">{membersCount} Members</span>
+                              </div>
                             </div>
 
                             <div className="space-y-1.5">
-                              {/* You */}
-                              <div className="flex items-center justify-between bg-white dark:bg-[#151624] p-2.5 rounded-xl shadow-sm shadow-indigo-900/5 dark:shadow-none border border-transparent dark:border-gray-800/80">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="relative">
-                                    <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center">
-                                      <User size={12} strokeWidth={2.5} />
-                                    </div>
-                                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[6px] font-black uppercase tracking-wider px-1 rounded-sm border border-white dark:border-[#151624]">
-                                      YOU
-                                    </div>
-                                  </div>
-                                  <span className="text-xs font-bold text-gray-900 dark:text-white">You</span>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                  <span className="text-xs font-black text-gray-900 dark:text-white">
-                                    ₹{shareAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </span>
-                                  {!tx.person_id && (
-                                    <span className="inline-flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 text-[8px] font-bold text-emerald-700 dark:text-emerald-400">
-                                      Paid <Check size={8} strokeWidth={3} />
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                              {txParticipants.map((p: any) => {
+                                const isPayer = tx.uid === p.userId;
 
-                              {/* Members */}
-                              {group.members?.map((member: any) => {
-                                const isSettled = tx.person_id === member.id || (tx.note && tx.note.includes(`"${member.id}"`));
                                 return (
-                                  <div key={member.id} className="flex items-center justify-between bg-white dark:bg-[#151624] p-2.5 rounded-xl shadow-sm shadow-indigo-900/5 dark:shadow-none border border-transparent dark:border-gray-800/80">
+                                  <div key={p.id} className="flex items-center justify-between bg-white dark:bg-[#151624] p-2.5 rounded-xl shadow-sm shadow-indigo-900/5 dark:shadow-none border border-transparent dark:border-gray-800/80">
                                     <div className="flex items-center gap-2.5">
-                                      <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
-                                        <User size={12} strokeWidth={2.5} />
+                                      <div className="relative">
+                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center ${p.isMe ? 'bg-indigo-600 text-white' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 dark:text-indigo-400'}`}>
+                                          <User size={12} strokeWidth={2.5} />
+                                        </div>
+                                        {p.isMe && (
+                                          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[6px] font-black uppercase tracking-wider px-1 rounded-sm border border-white dark:border-[#151624]">
+                                            YOU
+                                          </div>
+                                        )}
                                       </div>
-                                      <span className="text-xs font-bold text-gray-900 dark:text-white">{member.name || 'Unknown'}</span>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs font-bold text-gray-900 dark:text-white leading-tight">{p.name || 'Unknown'}</span>
+                                        {p.isAdmin && (
+                                          <span className="text-[7px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-0.5">
+                                            Group Admin
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                     <div className="flex flex-col items-end">
                                       <span className="text-xs font-black text-gray-900 dark:text-white">
                                         ₹{shareAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </span>
-                                      {tx.person_id === member.id ? (
+                                      {isPayer && (
                                         <span className="inline-flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 text-[8px] font-bold text-emerald-700 dark:text-emerald-400">
                                           Paid <Check size={8} strokeWidth={3} />
                                         </span>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); toggleSettle(tx, member.id); }}
-                                          className={`inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold transition-all active:scale-95 ${isSettled ? 'bg-emerald-100/80 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200' : 'bg-amber-100/80 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200 cursor-pointer shadow-sm'}`}
-                                        >
-                                          {isSettled ? 'Settled ✅' : 'Pending ⏳'}
-                                        </button>
                                       )}
                                     </div>
                                   </div>

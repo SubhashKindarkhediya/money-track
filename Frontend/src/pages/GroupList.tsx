@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Users, Search, PlusCircle, ArrowLeft, Loader2, Calendar, MoreVertical, Eye, Edit, Trash2 } from "lucide-react";
+import { Users, Search, PlusCircle, ArrowLeft, Loader2, Calendar, MoreVertical, Eye, Edit, Trash2, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
 
+import { useAuth } from "../context/AuthContext";
+
 const GroupList = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [groups, setGroups] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -12,6 +15,7 @@ const GroupList = () => {
   const [loading, setLoading] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<any | null>(null);
+  const [leaveGroupConfirm, setLeaveGroupConfirm] = useState<any | null>(null);
 
   useEffect(() => {
     fetchGroups();
@@ -30,7 +34,17 @@ const GroupList = () => {
     }
   };
 
-  const filteredGroups = groups.filter((g) =>
+  const sortedGroups = [...groups].sort((a, b) => {
+    const aLatestTx = a.transactions?.length > 0
+      ? new Date(Math.max(...a.transactions.map((t: any) => new Date(t.date || t.createdAt).getTime())))
+      : new Date(a.createdAt);
+    const bLatestTx = b.transactions?.length > 0
+      ? new Date(Math.max(...b.transactions.map((t: any) => new Date(t.date || t.createdAt).getTime())))
+      : new Date(b.createdAt);
+    return bLatestTx.getTime() - aLatestTx.getTime();
+  });
+
+  const filteredGroups = sortedGroups.filter((g) =>
     g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -57,6 +71,67 @@ const GroupList = () => {
       toast.error("Failed to delete group");
     } finally {
       setDeleteGroupConfirm(null);
+    }
+  };
+
+  const handleLeaveGroupClick = (group: any) => {
+    let balance = 0;
+    if (group.transactions && group.transactions.length > 0) {
+      const myMember = group.members?.find((m: any) => m.linked_user_id === user?.id);
+      if (myMember) {
+        const personId = myMember.id;
+        const groupTime = new Date(group.createdAt || Date.now()).getTime();
+
+        const getJoinedAt = (member: any, defaultTime: number) => {
+          const gm = member?.GroupMember;
+          if (!gm) return defaultTime;
+          const dateStr = gm.joinedAt || gm.joined_at || gm.createdAt || gm.created_at;
+          if (!dateStr) return defaultTime;
+          const time = new Date(dateStr).getTime();
+          return isNaN(time) ? defaultTime : time;
+        };
+        const myJoinedAt = getJoinedAt(myMember, groupTime);
+
+        group.transactions.forEach((tx: any) => {
+          const txTime = new Date(tx.createdAt || tx.date).getTime() + 60000;
+          if (myJoinedAt > txTime) return;
+
+          const membersCount = (group.members?.length || 0) + 1;
+          const share = Number(tx.amount) / membersCount;
+
+          const iPaid = (tx.uid === user?.id);
+          const creatorPaid = (tx.uid === group.uid && !tx.person_id);
+
+          if (creatorPaid) {
+            const isSettled = tx.note && tx.note.includes(`"${personId}"`);
+            if (!isSettled) balance -= share;
+          } else if (iPaid) {
+            const isSettled = tx.note && tx.note.includes(`"creator"`);
+            if (!isSettled) balance += share;
+          }
+        });
+      }
+    }
+
+    if (Math.abs(balance) > 0.01) {
+      toast.error("Cannot leave group. You have unsettled balances.");
+      return;
+    }
+
+    setLeaveGroupConfirm(group);
+  };
+
+  const confirmLeaveGroup = async () => {
+    if (!leaveGroupConfirm) return;
+    try {
+      await api.post(`/groups/${leaveGroupConfirm.id}/leave`);
+      toast.success("Left group successfully");
+      fetchGroups();
+    } catch (error) {
+      console.error("Failed to leave group:", error);
+      toast.error("Failed to leave group");
+    } finally {
+      setLeaveGroupConfirm(null);
     }
   };
 
@@ -254,15 +329,27 @@ const GroupList = () => {
                   <span className="text-base font-bold text-gray-900 dark:text-white group-hover/opt:text-indigo-600 dark:group-hover/opt:text-indigo-400 transition-colors">Edit Group</span>
                 </div>
 
-                <div
-                  className="flex items-center gap-4 p-4 rounded-2xl hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer transition-all active:scale-[0.98] group/opt"
-                  onClick={(e) => { e.stopPropagation(); handleDeleteGroupClick(group); setActiveDropdown(null); }}
-                >
-                  <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-500 dark:text-rose-400 group-hover/opt:bg-rose-100 dark:group-hover/opt:bg-rose-500/20 transition-colors">
-                    <Trash2 size={22} strokeWidth={2.5} />
+                {group.uid === user?.id ? (
+                  <div
+                    className="flex items-center gap-4 p-4 rounded-2xl hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer transition-all active:scale-[0.98] group/opt"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteGroupClick(group); setActiveDropdown(null); }}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-500 dark:text-rose-400 group-hover/opt:bg-rose-100 dark:group-hover/opt:bg-rose-500/20 transition-colors">
+                      <Trash2 size={22} strokeWidth={2.5} />
+                    </div>
+                    <span className="text-base font-bold text-rose-600 dark:text-rose-400">Delete Group</span>
                   </div>
-                  <span className="text-base font-bold text-rose-600 dark:text-rose-400">Delete Group</span>
-                </div>
+                ) : (
+                  <div
+                    className="flex items-center gap-4 p-4 rounded-2xl hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer transition-all active:scale-[0.98] group/opt"
+                    onClick={(e) => { e.stopPropagation(); handleLeaveGroupClick(group); setActiveDropdown(null); }}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-500 dark:text-rose-400 group-hover/opt:bg-rose-100 dark:group-hover/opt:bg-rose-500/20 transition-colors">
+                      <LogOut size={22} strokeWidth={2.5} />
+                    </div>
+                    <span className="text-base font-bold text-rose-600 dark:text-rose-400">Leave Group</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -288,7 +375,7 @@ const GroupList = () => {
               <div className="w-16 h-16 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto">
                 <Trash2 size={32} strokeWidth={2} />
               </div>
-              
+
               <div>
                 <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Delete Group?</h3>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -308,6 +395,52 @@ const GroupList = () => {
                   className="flex-1 px-4 py-3.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl transition-colors active:scale-95 shadow-lg shadow-rose-500/25"
                 >
                   Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Confirmation Drawer */}
+      {leaveGroupConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-end justify-center sm:items-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setLeaveGroupConfirm(null)}
+          ></div>
+
+          {/* Drawer Content */}
+          <div className="relative w-full max-w-md bg-white dark:bg-[#151624] rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
+            <div className="flex justify-center pt-3 pb-2 sm:hidden">
+              <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+            </div>
+
+            <div className="p-6 space-y-6 pb-8 sm:pb-6 text-center">
+              <div className="w-16 h-16 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto">
+                <LogOut size={32} strokeWidth={2} />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Leave Group?</h3>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Are you sure you want to leave <span className="text-gray-900 dark:text-white font-bold">"{leaveGroupConfirm.name}"</span>? Please make sure all your dues are settled before leaving.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setLeaveGroupConfirm(null)}
+                  className="flex-1 px-4 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmLeaveGroup}
+                  className="flex-1 px-4 py-3.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl transition-colors active:scale-95 shadow-lg shadow-rose-500/25"
+                >
+                  Leave
                 </button>
               </div>
             </div>

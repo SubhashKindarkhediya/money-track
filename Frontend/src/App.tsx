@@ -60,7 +60,7 @@ import GroupTransactions from "./pages/GroupTransactions";
 import { useTheme } from "./context/ThemeContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import MarqueeText from "./components/MarqueeText";
-import { Toaster } from "react-hot-toast";
+import { Toaster, toast as hotToast } from "react-hot-toast";
 
 // inside component
 // Protected Route Component
@@ -580,47 +580,82 @@ const Dashboard = () => {
           <div className="animate-in slide-in-from-bottom-8 duration-500 mt-2">
             <div className="flex items-center justify-between mb-4 px-1">
               <div 
-                className="flex items-center gap-1.5 cursor-pointer" 
+                className="flex items-center gap-2 cursor-pointer group/toggle" 
                 onClick={() => setIsPeopleExpanded(!isPeopleExpanded)}
               >
-                <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                <h3 className="text-sm font-black uppercase tracking-widest text-gray-700 dark:text-gray-400 group-hover/toggle:text-gray-900 dark:group-hover/toggle:text-gray-200 transition-colors">
                   People
                 </h3>
                 {dashboardPersons.length > 3 && (
-                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-0.5">
-                    <ChevronDown size={16} className={`transition-transform duration-300 ${isPeopleExpanded ? "rotate-180" : ""}`} />
-                  </button>
+                  <div className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover/toggle:bg-gray-200 dark:group-hover/toggle:bg-gray-700 group-hover/toggle:text-gray-600 dark:group-hover/toggle:text-gray-300 transition-all">
+                    <ChevronDown size={14} strokeWidth={3} className={`transition-transform duration-300 ${isPeopleExpanded ? "rotate-180" : ""}`} />
+                  </div>
                 )}
               </div>
               <button onClick={() => navigate('/person')} className="text-xs font-bold text-indigo-600 hover:underline">View All</button>
             </div>
-            <div className={`transition-all duration-300 ${isPeopleExpanded ? "grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-y-6 gap-x-2 px-1 justify-items-center" : "flex gap-4 overflow-x-auto hide-scrollbar pb-2 px-1"}`}>
-              {/* Add New Person Button */}
-              <div 
-                className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/add w-16"
-                onClick={() => navigate('/person/add')}
-              >
-                <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 group-hover/add:text-indigo-500 group-hover/add:border-indigo-500 transition-colors">
-                  <Plus size={24} />
-                </div>
-                <span className="text-[10px] font-black uppercase text-gray-500 w-full text-center truncate">Add</span>
-              </div>
-              
-              {dashboardPersons.map(person => (
+            
+            {isPeopleExpanded ? (
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-y-6 gap-x-2 px-1 justify-items-center transition-all duration-300">
+                {/* Add New Person Button */}
                 <div 
-                  key={`person-${person.id}`}
-                  className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/avatar w-16"
-                  onClick={() => navigate(`/person/${person.id}`)}
+                  className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/add w-16"
+                  onClick={() => navigate('/person/add')}
                 >
-                  <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm group-hover/avatar:scale-110 group-hover/avatar:shadow-md transition-all font-black text-lg">
-                    {person.name?.charAt(0).toUpperCase()}
+                  <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 group-hover/add:text-indigo-500 group-hover/add:border-indigo-500 transition-colors bg-slate-50 dark:bg-[#0a0a1a]">
+                    <Plus size={24} />
                   </div>
-                  <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 w-full text-center truncate px-1">
-                    {person.name?.split(' ')[0]}
-                  </span>
+                  <span className="text-[10px] font-black uppercase text-gray-500 w-full text-center truncate mt-0.5">Add</span>
                 </div>
-              ))}
-            </div>
+                
+                {dashboardPersons.map(person => (
+                  <div 
+                    key={`person-${person.id}`}
+                    className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/avatar w-16"
+                    onClick={() => navigate(`/person/${person.id}`)}
+                  >
+                    <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm group-hover/avatar:scale-110 group-hover/avatar:shadow-md transition-all font-black text-lg">
+                      {person.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 w-full text-center truncate px-1 mt-0.5">
+                      {person.name?.split(' ')[0]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 transition-all duration-300 relative">
+                {/* Sticky Add Button with Fade effect */}
+                <div 
+                  className="sticky left-0 z-10 bg-slate-50 dark:bg-[#0a0a1a] flex flex-col items-center gap-2 cursor-pointer shrink-0 group/add px-1"
+                  onClick={() => navigate('/person/add')}
+                >
+                  {/* Right gradient fade */}
+                  <div className="absolute top-0 bottom-0 -right-6 w-6 bg-gradient-to-r from-slate-50 to-transparent dark:from-[#0a0a1a] dark:to-transparent pointer-events-none"></div>
+                  
+                  <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 group-hover/add:text-indigo-500 group-hover/add:border-indigo-500 transition-colors bg-white dark:bg-[#151624]">
+                    <Plus size={24} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-gray-500 w-16 text-center truncate mt-0.5">Add</span>
+                </div>
+                
+                {/* Scrollable Avatars */}
+                {dashboardPersons.map(person => (
+                  <div 
+                    key={`person-${person.id}`}
+                    className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/avatar w-16"
+                    onClick={() => navigate(`/person/${person.id}`)}
+                  >
+                    <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm group-hover/avatar:scale-110 group-hover/avatar:shadow-md transition-all font-black text-lg">
+                      {person.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 w-full text-center truncate px-1 mt-0.5">
+                      {person.name?.split(' ')[0]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -629,47 +664,82 @@ const Dashboard = () => {
           <div className="animate-in slide-in-from-bottom-8 duration-500 mt-6">
             <div className="flex items-center justify-between mb-4 px-1">
               <div 
-                className="flex items-center gap-1.5 cursor-pointer" 
+                className="flex items-center gap-2 cursor-pointer group/toggle" 
                 onClick={() => setIsGroupsExpanded(!isGroupsExpanded)}
               >
-                <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                <h3 className="text-sm font-black uppercase tracking-widest text-gray-700 dark:text-gray-400 group-hover/toggle:text-gray-900 dark:group-hover/toggle:text-gray-200 transition-colors">
                   Groups
                 </h3>
                 {dashboardGroups.length > 3 && (
-                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-0.5">
-                    <ChevronDown size={16} className={`transition-transform duration-300 ${isGroupsExpanded ? "rotate-180" : ""}`} />
-                  </button>
+                  <div className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover/toggle:bg-gray-200 dark:group-hover/toggle:bg-gray-700 group-hover/toggle:text-gray-600 dark:group-hover/toggle:text-gray-300 transition-all">
+                    <ChevronDown size={14} strokeWidth={3} className={`transition-transform duration-300 ${isGroupsExpanded ? "rotate-180" : ""}`} />
+                  </div>
                 )}
               </div>
-              <button onClick={() => navigate('/group')} className="text-xs font-bold text-indigo-600 hover:underline">View All</button>
+              <button onClick={() => navigate('/groups')} className="text-xs font-bold text-indigo-600 hover:underline">View All</button>
             </div>
-            <div className={`transition-all duration-300 ${isGroupsExpanded ? "grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-y-6 gap-x-2 px-1 justify-items-center" : "flex gap-4 overflow-x-auto hide-scrollbar pb-2 px-1"}`}>
-              {/* Add New Group Button */}
-              <div 
-                className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/add w-16"
-                onClick={() => navigate('/create-group')}
-              >
-                <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 group-hover/add:text-indigo-500 group-hover/add:border-indigo-500 transition-colors">
-                  <Plus size={24} />
-                </div>
-                <span className="text-[10px] font-black uppercase text-gray-500 w-full text-center truncate">New</span>
-              </div>
-              
-              {dashboardGroups.map(group => (
+            
+            {isGroupsExpanded ? (
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-y-6 gap-x-2 px-1 justify-items-center transition-all duration-300">
+                {/* Add New Group Button */}
                 <div 
-                  key={`group-${group.id}`}
-                  className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/avatar w-16"
-                  onClick={() => navigate(`/groups/${group.id}`)}
+                  className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/add w-16"
+                  onClick={() => navigate('/create-group')}
                 >
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-500/20 dark:to-indigo-500/20 border border-purple-200 dark:border-purple-500/30 flex items-center justify-center text-purple-700 dark:text-purple-300 shadow-sm group-hover/avatar:scale-110 group-hover/avatar:shadow-md transition-all relative">
-                    <Users size={20} />
+                  <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 group-hover/add:text-indigo-500 group-hover/add:border-indigo-500 transition-colors bg-slate-50 dark:bg-[#0a0a1a]">
+                    <Plus size={24} />
                   </div>
-                  <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 w-full text-center truncate px-1">
-                    {group.name}
-                  </span>
+                  <span className="text-[10px] font-black uppercase text-gray-500 w-full text-center truncate mt-0.5">New</span>
                 </div>
-              ))}
-            </div>
+                
+                {dashboardGroups.map(group => (
+                  <div 
+                    key={`group-${group.id}`}
+                    className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/avatar w-16"
+                    onClick={() => navigate(`/groups/${group.id}`)}
+                  >
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-500/20 dark:to-indigo-500/20 border border-purple-200 dark:border-purple-500/30 flex items-center justify-center text-purple-700 dark:text-purple-300 shadow-sm group-hover/avatar:scale-110 group-hover/avatar:shadow-md transition-all relative">
+                      <Users size={20} />
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 w-full text-center truncate px-1 mt-0.5">
+                      {group.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 transition-all duration-300 relative">
+                {/* Sticky Add Group Button with Fade effect */}
+                <div 
+                  className="sticky left-0 z-10 bg-slate-50 dark:bg-[#0a0a1a] flex flex-col items-center gap-2 cursor-pointer shrink-0 group/add px-1"
+                  onClick={() => navigate('/create-group')}
+                >
+                  {/* Right gradient fade */}
+                  <div className="absolute top-0 bottom-0 -right-6 w-6 bg-gradient-to-r from-slate-50 to-transparent dark:from-[#0a0a1a] dark:to-transparent pointer-events-none"></div>
+
+                  <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 group-hover/add:text-indigo-500 group-hover/add:border-indigo-500 transition-colors bg-white dark:bg-[#151624]">
+                    <Plus size={24} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-gray-500 w-16 text-center truncate mt-0.5">New</span>
+                </div>
+                
+                {/* Scrollable Groups */}
+                {dashboardGroups.map(group => (
+                  <div 
+                    key={`group-${group.id}`}
+                    className="flex flex-col items-center gap-2 cursor-pointer shrink-0 group/avatar w-16"
+                    onClick={() => navigate(`/groups/${group.id}`)}
+                  >
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-500/20 dark:to-indigo-500/20 border border-purple-200 dark:border-purple-500/30 flex items-center justify-center text-purple-700 dark:text-purple-300 shadow-sm group-hover/avatar:scale-110 group-hover/avatar:shadow-md transition-all relative">
+                      <Users size={20} />
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 w-full text-center truncate px-1 mt-0.5">
+                      {group.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -977,7 +1047,7 @@ function AppContent() {
   // Set default tab based on pending counts when opening screen
   useEffect(() => {
     if (notifScreenOpen) {
-      const pendingRequests = notifications.filter(n => n.type === 'request' && n.status === 'pending').length;
+      const pendingRequests = notifications.filter(n => (n.type === 'request' || n.type === 'group_invite') && n.status === 'pending').length;
       if (pendingRequests > 0) {
         setActiveTab('requests');
       } else {
@@ -1010,6 +1080,41 @@ function AppContent() {
     }
   };
 
+  const handleReadAll = async () => {
+    setNotifications(prev => prev.map(n => {
+      const isRequestsTab = activeTab === 'requests' && (n.type === 'request' || n.type === 'group_invite' || n.type === 'group_joined');
+      const isActivityTab = activeTab === 'activity' && (n.type === 'transaction' || n.type === 'system' || n.type === 'settle_request') && n.type !== 'group_joined';
+      
+      if (isRequestsTab || isActivityTab) {
+        const isInteractive = (n.type === 'request' && n.data?.subType !== 'response') || n.type === 'group_invite' || n.type === 'settle_request';
+        if (n.status === 'pending' && !isInteractive) {
+          return { ...n, status: 'read' };
+        }
+      }
+      return n;
+    }));
+    try {
+      const { default: api } = await import("./services/api");
+      await api.patch(`/notifications/read-all?tab=${activeTab}`);
+      fetchNotifications(); // Sync with backend just in case
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
+      hotToast.error("Failed to mark all as read");
+      fetchNotifications(); // Revert
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      const { default: api } = await import("./services/api");
+      await api.delete(`/notifications/clear-all?tab=${activeTab}`);
+      fetchNotifications(); // Re-fetch, which should now have fewer items
+    } catch (err) {
+      console.error("Failed to clear notifications", err);
+      hotToast.error("Failed to clear notifications");
+    }
+  };
+
   const getDayGroup = (date: string) => {
     const d = new Date(date);
     const today = new Date();
@@ -1023,23 +1128,25 @@ function AppContent() {
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
-  // Map notifications to requests (only those received by the user)
-  const requests = notifications.filter(n => n.type === 'request' && n.recipient_id === user?.id).map(n => ({
+  const requests = notifications.filter(n => (n.type === 'request' || n.type === 'group_invite' || n.type === 'group_joined') && n.recipient_id === user?.id).map(n => ({
     id: n.id,
-    name: n.data?.senderName || n.sender?.name || 'Unknown',
+    type: n.type,
+    name: n.type === 'group_invite' ? (n.data?.group_name || 'Group Invite') : (n.data?.personName || n.data?.senderName || n.sender?.name || 'Unknown'),
+    groupId: n.data?.group_id,
     status: n.status,
-    subType: n.data?.subType || 'incoming',
-    responseStatus: n.data?.status,
-    message: n.data?.message,
+    subType: n.type === 'group_joined' ? 'response' : (n.data?.subType || 'incoming'),
+    responseStatus: n.type === 'group_joined' ? 'accepted' : n.data?.status,
+    message: n.type === 'group_invite' ? `Invited you to join this group` : (n.type === 'group_joined' ? n.data?.message : n.data?.message),
     date: getDayGroup(n.createdAt),
     time: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    initial: (n.data?.senderName || n.sender?.name || 'U')[0].toUpperCase(),
+    initial: n.type === 'group_invite' ? 'G' : (n.data?.senderName || n.sender?.name || 'U')[0].toUpperCase(),
     isRead: n.status !== 'pending'
   }));
 
   // Map notifications to activities (transactions only — excludes "connected" system notifications)
   const activities = notifications.filter(n =>
     (n.type === 'transaction' || n.type === 'system' || n.type === 'settle_request') &&
+    n.type !== 'group_joined' &&
     n.recipient_id === user?.id &&
     n.data?.subType !== 'connected'   // hide "added to contacts" — toast handles this instead
   ).map(n => ({
@@ -1059,6 +1166,21 @@ function AppContent() {
     originalType: n.type,
     status: n.status,
   }));
+
+  const handleJoinGroup = async (id: string, groupId: string) => {
+    if (actionLoadingId) return;
+    setActionLoadingId(id);
+    try {
+      const { default: api } = await import("./services/api");
+      await api.post(`/groups/${groupId}/join`);
+      await fetchNotifications();
+    } catch (err) {
+      console.error(err);
+      hotToast.error("Failed to join group");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   const handleAccept = async (id: string) => {
     if (actionLoadingId) return;
@@ -1666,15 +1788,32 @@ function AppContent() {
           <div className="fixed inset-0 z-[110] bg-gray-50 dark:bg-gray-900 animate-in slide-in-from-bottom duration-500 flex flex-col overflow-hidden">
             {/* Header */}
             <header className="h-20 lg:h-24 flex items-center px-4 lg:px-12 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-indigo-100/50 dark:border-gray-800/50 sticky top-0 z-[120]">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setNotifScreenOpen(false)}
-                  className="p-2.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all active:scale-95"
-                >
-                  <ArrowLeft size={22} />
-                </button>
-                <div>
-                  <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Notifications</h2>
+              <div className="flex items-center gap-4 w-full justify-between">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setNotifScreenOpen(false)}
+                    className="p-2.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all active:scale-95"
+                  >
+                    <ArrowLeft size={22} />
+                  </button>
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Notifications</h2>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleReadAll}
+                    className="px-3 py-1.5 text-[10px] sm:text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg transition-colors active:scale-95"
+                  >
+                    Read All
+                  </button>
+                  <button
+                    onClick={handleClearAll}
+                    className="px-3 py-1.5 text-[10px] sm:text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-lg transition-colors active:scale-95"
+                  >
+                    Clear
+                  </button>
                 </div>
               </div>
             </header>
@@ -1729,7 +1868,7 @@ function AppContent() {
                               <div>
                                 <p className={`text-sm tracking-tight ${!req.isRead ? 'font-black text-gray-900 dark:text-white' : 'font-bold text-gray-600 dark:text-gray-400'}`}>{req.name}</p>
                                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest line-clamp-2">
-                                  {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : (req.message || 'Wants to connect')}
+                                  {req.subType === 'response' ? (req.type === 'group_joined' ? req.message : (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request')) : (req.message || 'Wants to connect')}
                                 </p>
                                 <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
                               </div>
@@ -1738,24 +1877,36 @@ function AppContent() {
                             <div className="flex items-center gap-3">
                               {(req.subType !== 'response' && (req.status === 'pending' || req.status === 'read')) ? (
                                 <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleAccept(req.id)}
-                                    disabled={actionLoadingId === req.id}
-                                    className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {actionLoadingId === req.id ? "Wait..." : "Accept"}
-                                  </button>
-                                  <button
-                                    onClick={() => handleReject(req.id)}
-                                    disabled={actionLoadingId === req.id}
-                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    Reject
-                                  </button>
+                                  {req.type === 'group_invite' ? (
+                                    <button
+                                      onClick={() => handleJoinGroup(req.id, req.groupId)}
+                                      disabled={actionLoadingId === req.id}
+                                      className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {actionLoadingId === req.id ? "Wait..." : "Join"}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleAccept(req.id)}
+                                      disabled={actionLoadingId === req.id}
+                                      className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-indigo-600 hover:to-indigo-800 transition-colors shadow-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {actionLoadingId === req.id ? "Wait..." : "Accept"}
+                                    </button>
+                                  )}
+                                  {req.type !== 'group_invite' && (
+                                    <button
+                                      onClick={() => handleReject(req.id)}
+                                      disabled={actionLoadingId === req.id}
+                                      className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      Reject
+                                    </button>
+                                  )}
                                 </div>
                               ) : req.status === 'accepted' ? (
                                 <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100 dark:border-emerald-500/20 animate-in zoom-in duration-300 whitespace-nowrap shrink-0">
-                                  ✓ Accepted
+                                  ✓ {req.type === 'group_invite' ? 'Joined' : 'Accepted'}
                                 </div>
                               ) : req.status === 'rejected' ? (
                                 <div className="px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-rose-100 dark:border-rose-500/20 animate-in zoom-in duration-300 whitespace-nowrap shrink-0">
@@ -1801,7 +1952,7 @@ function AppContent() {
                               <div>
                                 <p className="font-black text-gray-900 dark:text-white text-sm">{req.name}</p>
                                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest line-clamp-2">
-                                  {req.subType === 'response' ? (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request') : (req.message || 'Sent request')}
+                                  {req.subType === 'response' ? (req.type === 'group_joined' ? req.message : (req.responseStatus === 'accepted' ? 'Accepted your request' : 'Rejected your request')) : (req.message || 'Sent request')}
                                 </p>
                                 <p className="text-[10px] text-gray-400 font-bold mt-0.5">{req.time}</p>
                               </div>

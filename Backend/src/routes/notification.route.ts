@@ -9,6 +9,8 @@ const notificationController = container.resolve(NotificationController);
 router.use(authMiddleware);
 
 router.get("/", notificationController.getAll);
+router.patch("/read-all", notificationController.markAllAsRead);
+router.delete("/clear-all", notificationController.clearAll);
 router.patch("/:id/read", notificationController.markAsRead);
 router.patch("/:id/response", notificationController.handleResponse);
 

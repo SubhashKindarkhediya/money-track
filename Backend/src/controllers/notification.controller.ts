@@ -34,6 +34,34 @@ export class NotificationController {
   };
 
   /**
+   * Mark all notifications as read
+   */
+  markAllAsRead = async (req: Request, res: Response) => {
+    try {
+      const recipient_id = (req as any).user.uid;
+      const tab = (req.query.tab as string) || "activity";
+      const result = await this.notificationService.markAllAsRead(recipient_id, tab);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  /**
+   * Clear all notifications
+   */
+  clearAll = async (req: Request, res: Response) => {
+    try {
+      const recipient_id = (req as any).user.uid;
+      const tab = (req.query.tab as string) || "activity";
+      const result = await this.notificationService.clearAll(recipient_id, tab);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  /**
    * Handle request response (accept/reject)
    */
   handleResponse = async (req: Request, res: Response) => {

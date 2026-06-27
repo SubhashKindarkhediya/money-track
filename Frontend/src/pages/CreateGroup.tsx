@@ -3,21 +3,24 @@ import { ArrowLeft, Users, Search, Loader2, X, PlusCircle, Tag, ChevronDown, Che
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 const CreateGroup = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const editGroup = location.state?.editGroup;
-  
+  const { user } = useAuth();
+  const isAdmin = !editGroup || editGroup.uid === user?.id;
+
   const [groupName, setGroupName] = useState("");
   const [groupType, setGroupType] = useState("Friends");
   const [customType, setCustomType] = useState("");
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [persons, setPersons] = useState<any[]>([]);
   const [filteredPersons, setFilteredPersons] = useState<any[]>([]);
   const [selectedPersons, setSelectedPersons] = useState<any[]>([]);
-  
+
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -38,7 +41,7 @@ const CreateGroup = () => {
 
   useEffect(() => {
     fetchPersons();
-    
+
     if (editGroup) {
       setGroupName(editGroup.name);
       setGroupType(editGroup.type || "Other");
@@ -62,18 +65,28 @@ const CreateGroup = () => {
   };
 
   useEffect(() => {
+    const isAlreadyAdded = (p: any) => {
+      if (editGroup && p.linked_user_id && p.linked_user_id === editGroup.uid) return true;
+      return selectedPersons.some((sp: any) => {
+        if (p.id === sp.id) return true;
+        if (p.linked_user_id && sp.linked_user_id && p.linked_user_id === sp.linked_user_id) return true;
+        if (p.phone && sp.phone && p.phone === sp.phone) return true;
+        return false;
+      });
+    };
+
     if (searchQuery.trim() === "") {
-      setFilteredPersons(persons.filter(p => !selectedPersons.find(sp => sp.id === p.id)));
+      setFilteredPersons(persons.filter(p => !isAlreadyAdded(p)));
     } else {
       const lowerQuery = searchQuery.toLowerCase();
       setFilteredPersons(
-        persons.filter(p => 
-          !selectedPersons.find(sp => sp.id === p.id) &&
+        persons.filter(p =>
+          !isAlreadyAdded(p) &&
           (p.name.toLowerCase().includes(lowerQuery) || (p.phone && p.phone.includes(lowerQuery)))
         )
       );
     }
-  }, [searchQuery, persons, selectedPersons]);
+  }, [searchQuery, persons, selectedPersons, editGroup]);
 
   const handleAddPerson = (person: any) => {
     setSelectedPersons([...selectedPersons, person]);
@@ -81,6 +94,47 @@ const CreateGroup = () => {
   };
 
   const handleRemovePerson = (personId: string) => {
+    const isExisting = editGroup?.members?.some((m: any) => m.id === personId);
+
+    if (isExisting && editGroup && editGroup.transactions?.length > 0) {
+      let balance = 0;
+      editGroup.transactions.forEach((tx: any) => {
+        const m = editGroup.members?.find((x: any) => x.id === personId);
+        
+        const getJoinedAt = (member: any, defaultTime: number) => {
+          const gm = member?.GroupMember;
+          if (!gm) return defaultTime;
+          const dateStr = gm.joinedAt || gm.joined_at || gm.createdAt || gm.created_at;
+          if (!dateStr) return defaultTime;
+          const time = new Date(dateStr).getTime();
+          return isNaN(time) ? defaultTime : time;
+        };
+
+        const joinedAt = getJoinedAt(m, new Date(editGroup.createdAt || Date.now()).getTime());
+        const txTime = new Date(tx.createdAt || tx.date).getTime() + 60000;
+        
+        if (joinedAt > txTime) return;
+
+        const membersCount = (editGroup.members?.length || 0) + 1;
+        const share = Number(tx.amount) / membersCount;
+
+        const theyPaid = (tx.person_id === personId);
+        const iPaid = (tx.uid === editGroup.uid && !tx.person_id);
+
+        if (iPaid) {
+          const isSettled = tx.note && tx.note.includes(`"${personId}"`);
+          if (!isSettled) balance += share;
+        } else if (theyPaid) {
+          const isSettled = tx.note && tx.note.includes(`"creator"`);
+          if (!isSettled) balance -= share;
+        }
+      });
+
+      if (Math.abs(balance) > 0.01) {
+        toast.error("Cannot remove member. They have unsettled balances.");
+        return;
+      }
+    }
     setSelectedPersons(selectedPersons.filter(p => p.id !== personId));
   };
 
@@ -99,14 +153,14 @@ const CreateGroup = () => {
       setIsSubmitting(true);
       const finalType = groupType === "Other" ? customType.trim() : groupType;
       const formattedName = trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1);
-      
+
       if (editGroup) {
         await api.put(`/groups/${editGroup.id}`, {
           name: formattedName,
           member_ids: selectedPersons.map(p => p.id)
         });
         toast.success("Group updated successfully!");
-        navigate("/groups"); 
+        navigate("/groups");
       } else {
         await api.post("/groups", {
           name: formattedName,
@@ -157,62 +211,60 @@ const CreateGroup = () => {
               </div>
             </div>
 
-            {!editGroup && (
+            {isAdmin && !editGroup && (
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Group Type</label>
-              <div className={`relative custom-dropdown-container ${activeDropdown === "groupType" ? "z-30" : "z-10"}`}>
-                <Tag size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none transition-colors ${activeDropdown === "groupType" ? "text-indigo-500" : "text-gray-400"}`} />
-                <div
-                  onClick={() => setActiveDropdown(activeDropdown === "groupType" ? null : "groupType")}
-                  className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${
-                    activeDropdown === "groupType" 
-                      ? "border-indigo-500 ring-2 ring-indigo-500/10" 
-                      : "border-gray-200 dark:border-gray-800"
-                  } rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-500/50 transition-all shadow-sm group`}
-                >
-                  <span className="text-base font-bold text-gray-900 dark:text-white">
-                    {groupType}
-                  </span>
-                  <ChevronDown size={18} className={`text-gray-400 transition-transform duration-300 ${activeDropdown === "groupType" ? "rotate-180 text-indigo-500" : ""}`} />
-                </div>
+                <div className={`relative custom-dropdown-container ${activeDropdown === "groupType" ? "z-30" : "z-10"}`}>
+                  <Tag size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none transition-colors ${activeDropdown === "groupType" ? "text-indigo-500" : "text-gray-400"}`} />
+                  <div
+                    onClick={() => setActiveDropdown(activeDropdown === "groupType" ? null : "groupType")}
+                    className={`w-full pl-11 pr-4 py-4 bg-white dark:bg-[#151624] border ${activeDropdown === "groupType"
+                        ? "border-indigo-500 ring-2 ring-indigo-500/10"
+                        : "border-gray-200 dark:border-gray-800"
+                      } rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-500/50 transition-all shadow-sm group`}
+                  >
+                    <span className="text-base font-bold text-gray-900 dark:text-white">
+                      {groupType}
+                    </span>
+                    <ChevronDown size={18} className={`text-gray-400 transition-transform duration-300 ${activeDropdown === "groupType" ? "rotate-180 text-indigo-500" : ""}`} />
+                  </div>
 
-                {activeDropdown === "groupType" && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setActiveDropdown(null)} />
-                    <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl shadow-indigo-900/10 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                      {groupTypeOptions.map((opt) => (
-                        <div
-                          key={opt}
-                          onClick={() => {
-                            setGroupType(opt);
-                            setActiveDropdown(null);
-                          }}
-                          className={`px-4 py-3 cursor-pointer transition-colors flex items-center justify-between ${
-                            groupType === opt
-                              ? 'bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-700 dark:text-indigo-400 font-bold'
-                              : 'hover:bg-gray-50 dark:hover:bg-[#1b1c2e] text-gray-700 dark:text-gray-300 font-medium'
-                          }`}
-                        >
-                          {opt}
-                          {groupType === opt && <Check size={16} className="text-indigo-600 dark:text-indigo-400" />}
-                        </div>
-                      ))}
-                    </div>
-                  </>
+                  {activeDropdown === "groupType" && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setActiveDropdown(null)} />
+                      <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-[#151624] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl shadow-indigo-900/10 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        {groupTypeOptions.map((opt) => (
+                          <div
+                            key={opt}
+                            onClick={() => {
+                              setGroupType(opt);
+                              setActiveDropdown(null);
+                            }}
+                            className={`px-4 py-3 cursor-pointer transition-colors flex items-center justify-between ${groupType === opt
+                                ? 'bg-indigo-50 dark:bg-[#1b1c2e] text-indigo-700 dark:text-indigo-400 font-bold'
+                                : 'hover:bg-gray-50 dark:hover:bg-[#1b1c2e] text-gray-700 dark:text-gray-300 font-medium'
+                              }`}
+                          >
+                            {opt}
+                            {groupType === opt && <Check size={16} className="text-indigo-600 dark:text-indigo-400" />}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+                {groupType === "Other" && (
+                  <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <input
+                      type="text"
+                      placeholder="Enter custom type (e.g. Project, Party)"
+                      value={customType}
+                      onChange={(e) => setCustomType(e.target.value)}
+                      className="w-full px-4 py-3 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10 rounded-xl outline-none focus:ring-2 text-sm font-bold text-gray-900 dark:text-white transition-all shadow-sm"
+                    />
+                  </div>
                 )}
               </div>
-              {groupType === "Other" && (
-                <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                  <input
-                    type="text"
-                    placeholder="Enter custom type (e.g. Project, Party)"
-                    value={customType}
-                    onChange={(e) => setCustomType(e.target.value)}
-                    className="w-full px-4 py-3 bg-white dark:bg-[#151624] border border-gray-200 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500/10 rounded-xl outline-none focus:ring-2 text-sm font-bold text-gray-900 dark:text-white transition-all shadow-sm"
-                  />
-                </div>
-              )}
-            </div>
             )}
           </div>
 
@@ -221,21 +273,27 @@ const CreateGroup = () => {
           {/* Person Selection */}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">Add Members</label>
-            
+
             {/* Selected Persons Pills */}
             {selectedPersons.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
-                {selectedPersons.map(p => (
-                  <div key={p.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl">
-                    <div className="w-5 h-5 rounded-full bg-indigo-200 dark:bg-indigo-500/30 flex items-center justify-center text-[10px] font-black text-indigo-700 dark:text-indigo-400">
-                      {p.name.charAt(0).toUpperCase()}
+                {selectedPersons.map(p => {
+                  const isExisting = editGroup?.members?.some((m: any) => m.id === p.id);
+                  const canRemove = isAdmin || !isExisting;
+                  return (
+                    <div key={p.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl">
+                      <div className="w-5 h-5 rounded-full bg-indigo-200 dark:bg-indigo-500/30 flex items-center justify-center text-[10px] font-black text-indigo-700 dark:text-indigo-400">
+                        {p.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-xs font-bold text-indigo-700 dark:text-indigo-400">{p.name}</span>
+                      {canRemove && (
+                        <button onClick={() => handleRemovePerson(p.id)} className="p-0.5 hover:bg-indigo-200 dark:hover:bg-indigo-500/30 rounded-full transition-colors text-indigo-500 dark:text-indigo-400 ml-1">
+                          <X size={12} strokeWidth={3} />
+                        </button>
+                      )}
                     </div>
-                    <span className="text-xs font-bold text-indigo-700 dark:text-indigo-400">{p.name}</span>
-                    <button onClick={() => handleRemovePerson(p.id)} className="p-0.5 hover:bg-indigo-200 dark:hover:bg-indigo-500/30 rounded-full transition-colors text-indigo-500 dark:text-indigo-400 ml-1">
-                      <X size={12} strokeWidth={3} />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

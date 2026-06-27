@@ -76,6 +76,48 @@ export class NotificationService {
   }
 
   /**
+   * Mark all notifications as read
+   */
+  async markAllAsRead(recipient_id: string, tab: string) {
+    const notifications = await Notification.findAll({
+      where: { recipient_id, status: "pending" }
+    });
+
+    for (const n of notifications) {
+      const isRequestsTab = (n.type === 'request' || n.type === 'group_invite' || n.type === 'group_joined');
+      const isActivityTab = (n.type === 'transaction' || n.type === 'system' || n.type === 'settle_request');
+
+      if ((tab === 'requests' && isRequestsTab) || (tab === 'activity' && isActivityTab)) {
+        const isInteractive = (n.type === 'request' && n.data?.subType !== 'response') || n.type === 'group_invite' || n.type === 'settle_request';
+        
+        if (!isInteractive) {
+          await n.update({ status: 'read' });
+        }
+      }
+    }
+    return { success: true };
+  }
+
+  /**
+   * Clear all notifications
+   */
+  async clearAll(recipient_id: string, tab: string) {
+    const notifications = await Notification.findAll({
+      where: { recipient_id, status: { [Op.ne]: "pending" } }
+    });
+
+    for (const n of notifications) {
+      const isRequestsTab = (n.type === 'request' || n.type === 'group_invite' || n.type === 'group_joined');
+      const isActivityTab = (n.type === 'transaction' || n.type === 'system' || n.type === 'settle_request');
+
+      if ((tab === 'requests' && isRequestsTab) || (tab === 'activity' && isActivityTab)) {
+        await n.destroy();
+      }
+    }
+    return { success: true };
+  }
+
+  /**
    * Update notification status (e.g. accepted/rejected)
    */
   async updateStatus(id: string, recipient_id: string, status: "accepted" | "rejected") {
