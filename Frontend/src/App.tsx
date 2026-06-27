@@ -1063,7 +1063,7 @@ function AppContent() {
   // Show bottom nav on "/" or if we are on one of the main pages and came from bottom nav
   const showBottomNav =
     location.pathname === "/" ||
-    ((location.pathname === "/person" || location.pathname === "/transactions" || location.pathname === "/analytics") &&
+    ((location.pathname === "/person" || location.pathname === "/groups" || location.pathname === "/transactions" || location.pathname === "/analytics") &&
       location.state?.from === "bottom_nav");
 
   const sidebarNavigation = [
@@ -1077,8 +1077,8 @@ function AppContent() {
 
   const navigation = [
     { name: "Home", icon: Home, path: "/", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
-    { name: "Person List", icon: Users, path: "/person", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
-    { name: "History", icon: History, path: "/transactions", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "Person List", icon: User, path: "/person", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
+    { name: "Group List", icon: Users, path: "/groups", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
     { name: "Analytics", icon: BarChart3, path: "/analytics", color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50", darkBg: "dark:bg-blue-500/10" },
   ];
 

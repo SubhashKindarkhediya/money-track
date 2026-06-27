@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, PlusCircle, Loader2, Clock, History as HistoryIcon, Users, IndianRupee, ChevronDown, User, Check, Search, Download, Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
@@ -8,6 +8,7 @@ import autoTable from "jspdf-autotable";
 const GroupTransactions = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [group, setGroup] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +65,58 @@ const GroupTransactions = () => {
       fetchGroupData();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (location.state?.expandedTxId) {
+      setExpandedTxId(location.state.expandedTxId);
+      // Clean up the state so it doesn't reopen on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  const toggleSettle = async (tx: any, memberId: string) => {
+    try {
+      let settledMembers: string[] = [];
+      if (tx.note) {
+        try {
+          settledMembers = JSON.parse(tx.note);
+          if (!Array.isArray(settledMembers)) settledMembers = [];
+        } catch (e) {
+          settledMembers = [];
+        }
+      }
+
+      if (settledMembers.includes(memberId)) {
+        settledMembers = settledMembers.filter((mid) => mid !== memberId);
+      } else {
+        settledMembers.push(memberId);
+      }
+
+      const newNote = JSON.stringify(settledMembers);
+
+      // Optimistic UI update
+      const originalTx = { ...tx };
+      setTransactions((prev) => prev.map((t) => (t.id === tx.id ? { ...t, note: newNote } : t)));
+
+      try {
+        await api.put(`/transactions/${tx.id}`, {
+          amount: tx.amount,
+          type: tx.type,
+          status: tx.status,
+          date: tx.date,
+          note: newNote,
+          category: tx.category,
+          reason: tx.reason
+        });
+      } catch (err) {
+        // Revert on error
+        setTransactions((prev) => prev.map((t) => (t.id === tx.id ? originalTx : t)));
+        toast.error("Failed to update settlement status");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchGroupData = async () => {
     try {
@@ -391,53 +444,64 @@ const GroupTransactions = () => {
                               <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">{membersCount} Members</span>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               {/* You */}
-                              <div className="flex items-center justify-between bg-white dark:bg-[#151624] p-3.5 rounded-[1rem] shadow-sm shadow-indigo-900/5 dark:shadow-none border border-transparent dark:border-gray-800/80">
-                                <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-between bg-white dark:bg-[#151624] p-2.5 rounded-xl shadow-sm shadow-indigo-900/5 dark:shadow-none border border-transparent dark:border-gray-800/80">
+                                <div className="flex items-center gap-2.5">
                                   <div className="relative">
-                                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center">
-                                      <User size={14} strokeWidth={2.5} />
+                                    <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                                      <User size={12} strokeWidth={2.5} />
                                     </div>
-                                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[7px] font-black uppercase tracking-wider px-1 rounded border border-white dark:border-[#151624]">
+                                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[6px] font-black uppercase tracking-wider px-1 rounded-sm border border-white dark:border-[#151624]">
                                       YOU
                                     </div>
                                   </div>
-                                  <span className="text-sm font-bold text-gray-900 dark:text-white">You</span>
+                                  <span className="text-xs font-bold text-gray-900 dark:text-white">You</span>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                  <span className="text-sm font-black text-gray-900 dark:text-white">
+                                  <span className="text-xs font-black text-gray-900 dark:text-white">
                                     ₹{shareAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
                                   {!tx.person_id && (
-                                    <span className="inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 text-[9px] font-bold text-emerald-700 dark:text-emerald-400">
-                                      Paid <Check size={10} strokeWidth={3} />
+                                    <span className="inline-flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 text-[8px] font-bold text-emerald-700 dark:text-emerald-400">
+                                      Paid <Check size={8} strokeWidth={3} />
                                     </span>
                                   )}
                                 </div>
                               </div>
 
                               {/* Members */}
-                              {group.members?.map((member: any) => (
-                                <div key={member.id} className="flex items-center justify-between bg-white dark:bg-[#151624] p-3.5 rounded-[1rem] shadow-sm shadow-indigo-900/5 dark:shadow-none border border-transparent dark:border-gray-800/80">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
-                                      <User size={14} strokeWidth={2.5} />
+                              {group.members?.map((member: any) => {
+                                const isSettled = tx.person_id === member.id || (tx.note && tx.note.includes(`"${member.id}"`));
+                                return (
+                                  <div key={member.id} className="flex items-center justify-between bg-white dark:bg-[#151624] p-2.5 rounded-xl shadow-sm shadow-indigo-900/5 dark:shadow-none border border-transparent dark:border-gray-800/80">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
+                                        <User size={12} strokeWidth={2.5} />
+                                      </div>
+                                      <span className="text-xs font-bold text-gray-900 dark:text-white">{member.name || 'Unknown'}</span>
                                     </div>
-                                    <span className="text-sm font-bold text-gray-900 dark:text-white">{member.name || 'Unknown'}</span>
-                                  </div>
-                                  <div className="flex flex-col items-end">
-                                    <span className="text-sm font-black text-gray-900 dark:text-white">
-                                      ₹{shareAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                    {tx.person_id === member.id && (
-                                      <span className="inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 text-[9px] font-bold text-emerald-700 dark:text-emerald-400">
-                                        Paid <Check size={10} strokeWidth={3} />
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-xs font-black text-gray-900 dark:text-white">
+                                        ₹{shareAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </span>
-                                    )}
+                                      {tx.person_id === member.id ? (
+                                        <span className="inline-flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 text-[8px] font-bold text-emerald-700 dark:text-emerald-400">
+                                          Paid <Check size={8} strokeWidth={3} />
+                                        </span>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); toggleSettle(tx, member.id); }}
+                                          className={`inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold transition-all active:scale-95 ${isSettled ? 'bg-emerald-100/80 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200' : 'bg-amber-100/80 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200 cursor-pointer shadow-sm'}`}
+                                        >
+                                          {isSettled ? 'Settled ✅' : 'Pending ⏳'}
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           </div>
                         </div>

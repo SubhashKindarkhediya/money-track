@@ -11,6 +11,7 @@ const GroupList = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<any | null>(null);
 
   useEffect(() => {
     fetchGroups();
@@ -33,7 +34,7 @@ const GroupList = () => {
     g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDeleteGroup = async (group: any) => {
+  const handleDeleteGroupClick = (group: any) => {
     const txs = group.transactions || [];
     const totalExpense = txs.reduce((sum: number, tx: any) => sum + Number(tx.amount || 0), 0);
 
@@ -42,15 +43,20 @@ const GroupList = () => {
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to delete the group "${group.name}"?`)) return;
+    setDeleteGroupConfirm(group);
+  };
 
+  const confirmDeleteGroup = async () => {
+    if (!deleteGroupConfirm) return;
     try {
-      await api.delete(`/groups/${group.id}`);
+      await api.delete(`/groups/${deleteGroupConfirm.id}`);
       toast.success("Group deleted successfully");
       fetchGroups();
     } catch (error) {
       console.error("Failed to delete group:", error);
       toast.error("Failed to delete group");
+    } finally {
+      setDeleteGroupConfirm(null);
     }
   };
 
@@ -250,7 +256,7 @@ const GroupList = () => {
 
                 <div
                   className="flex items-center gap-4 p-4 rounded-2xl hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer transition-all active:scale-[0.98] group/opt"
-                  onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group); setActiveDropdown(null); }}
+                  onClick={(e) => { e.stopPropagation(); handleDeleteGroupClick(group); setActiveDropdown(null); }}
                 >
                   <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-500 dark:text-rose-400 group-hover/opt:bg-rose-100 dark:group-hover/opt:bg-rose-500/20 transition-colors">
                     <Trash2 size={22} strokeWidth={2.5} />
@@ -262,6 +268,52 @@ const GroupList = () => {
           </div>
         );
       })()}
+
+      {/* Delete Confirmation Drawer */}
+      {deleteGroupConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-end justify-center sm:items-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setDeleteGroupConfirm(null)}
+          ></div>
+
+          {/* Drawer Content */}
+          <div className="relative w-full max-w-md bg-white dark:bg-[#151624] rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
+            <div className="flex justify-center pt-3 pb-2 sm:hidden">
+              <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+            </div>
+
+            <div className="p-6 space-y-6 pb-8 sm:pb-6 text-center">
+              <div className="w-16 h-16 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto">
+                <Trash2 size={32} strokeWidth={2} />
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Delete Group?</h3>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Are you sure you want to delete <span className="text-gray-900 dark:text-white font-bold">"{deleteGroupConfirm.name}"</span>? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setDeleteGroupConfirm(null)}
+                  className="flex-1 px-4 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteGroup}
+                  className="flex-1 px-4 py-3.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl transition-colors active:scale-95 shadow-lg shadow-rose-500/25"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
