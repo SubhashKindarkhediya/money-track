@@ -25,7 +25,12 @@ export class TransactionsService {
     note?: string;
     status?: "pending" | "completed";
     date?: Date;
+    created_by?: string | null;
   }, isMirror: boolean = false) {
+    // If created_by is not provided, default to the uid of the person initiating the creation
+    if (!data.created_by) {
+      data.created_by = data.uid;
+    }
     const transaction = await Transaction.create(data);
 
     // Trigger mirroring and notification if linked user exists and it's not already a mirror
@@ -69,6 +74,7 @@ export class TransactionsService {
               note: data.note,
               status: data.status || 'pending',
               date: data.date || new Date(),
+              created_by: data.created_by || data.uid,
             });
 
             // Notify the linked user
@@ -360,7 +366,8 @@ export class TransactionsService {
         reason: `[Paid Part] ${transaction.reason || "Payment"}`,
         note: `Settled ${settleAmount} from original pending of ${currentAmount}. ${note || ""}`,
         status: "completed",
-        date: date || new Date()
+        date: date || new Date(),
+        created_by: uid
       }, bypassApproval);
 
       // 3. Sync partial completion to mirror manually if connected
@@ -376,7 +383,8 @@ export class TransactionsService {
             reason: settledTx.reason,
             note: settledTx.note,
             status: "completed",
-            date: settledTx.date || new Date()
+            date: settledTx.date || new Date(),
+            created_by: uid
           });
         }
       }
@@ -467,7 +475,8 @@ export class TransactionsService {
       reason: "Settlement",
       note: note || `Settled ${settleAmount} towards balance`,
       status: "pending", // Initially pending
-      date: date || new Date()
+      date: date || new Date(),
+      created_by: uid
     }, bypassApproval);
 
     // 4. Recalculate net balance with the new transaction included
@@ -499,7 +508,8 @@ export class TransactionsService {
             reason: newTx.reason,
             note: newTx.note,
             status: "pending",
-            date: newTx.date || new Date()
+            date: newTx.date || new Date(),
+            created_by: uid
           });
         }
       }
@@ -604,6 +614,7 @@ export class TransactionsService {
           note: tx.note ? `${tx.note} (Old Transaction Auto-Added)` : "Old Transaction Auto-Added",
           status: tx.status,
           date: tx.date || new Date(),
+          created_by: tx.created_by || userAId,
         });
         syncCountForB++;
       }
@@ -623,6 +634,7 @@ export class TransactionsService {
           note: tx.note ? `${tx.note} (Old Transaction Auto-Added)` : "Old Transaction Auto-Added",
           status: tx.status,
           date: tx.date || new Date(),
+          created_by: tx.created_by || userBId,
         });
         syncCountForA++;
       }

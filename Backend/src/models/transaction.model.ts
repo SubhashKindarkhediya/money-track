@@ -17,6 +17,7 @@ interface TransactionAttributes {
   note?: string;
   status: "pending" | "completed" | "settle_requested";
   date: Date;
+  created_by?: string | null;
 }
 
 interface TransactionCreationAttributes extends Optional<
@@ -38,6 +39,7 @@ class Transaction
   public note!: string;
   public status!: "pending" | "completed" | "settle_requested";
   public date!: Date;
+  public created_by!: string | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -90,6 +92,10 @@ Transaction.init(
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
+    },
+    created_by: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
   },
   {

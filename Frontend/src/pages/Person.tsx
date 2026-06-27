@@ -35,6 +35,7 @@ interface Transaction {
   date: string;
   status: "pending" | "completed" | "settle_requested";
   createdAt: string;
+  created_by?: string | null;
 }
 
 interface BulkContact {
@@ -1451,7 +1452,7 @@ Takes less than a minute. See you there! 😊
                         Edit Transaction
                       </button>
 
-                      {transactions.find(t => t.id === activeTxMenuId)?.status !== 'pending' && (
+                      {(!selectedPerson.connection_status || selectedPerson.connection_status !== "connected" || transactions.find(t => t.id === activeTxMenuId)?.created_by === user?.id || !transactions.find(t => t.id === activeTxMenuId)?.created_by) && (
                         <div className="pt-2">
                           <button
                             onClick={() => {

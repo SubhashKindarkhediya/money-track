@@ -202,44 +202,6 @@ const AddTransaction: React.FC = () => {
 
         let promises: Promise<any>[] = [];
 
-        if (paidBy === "me") {
-          // I paid for everyone else -> Create a CREDIT for each selected person
-          promises = selectedPersons.map(p =>
-            api.post("/transactions", {
-              person_id: p.id,
-              type: "credit",
-              amount: amountPerPerson,
-              category: txForm.category || undefined,
-              reason: txForm.reason ? `${txForm.reason} (Group Split)` : "Group Expense Split",
-              date: finalDate,
-              status: "pending",
-            })
-          );
-
-          // Also record the user's own share as a personal expense
-          const expensePromise = api.post("/transactions", {
-            person_id: undefined,
-            type: "expense",
-            amount: amountPerPerson,
-            category: txForm.category || undefined,
-            reason: txForm.reason ? `${txForm.reason} (My Share)` : "Group Expense (My Share)",
-            date: finalDate,
-            status: "completed",
-          });
-          promises.push(expensePromise);
-        } else {
-          // Someone else paid for me -> Create a SINGLE DEBIT for that person
-          promises.push(api.post("/transactions", {
-            person_id: paidBy,
-            type: "debit",
-            amount: amountPerPerson,
-            category: txForm.category || undefined,
-            reason: txForm.reason ? `${txForm.reason} (Group Split)` : "Group Expense Split",
-            date: finalDate,
-            status: "pending",
-          }));
-        }
-
         if (activeGroupId) {
           const masterTxPromise = api.post("/transactions", {
             group_id: activeGroupId,
@@ -254,6 +216,45 @@ const AddTransaction: React.FC = () => {
             return res;
           });
           promises.push(masterTxPromise);
+        } else {
+          if (paidBy === "me") {
+            // I paid for everyone else -> Create a CREDIT for each selected person
+            const splitPromises = selectedPersons.map(p =>
+              api.post("/transactions", {
+                person_id: p.id,
+                type: "credit",
+                amount: amountPerPerson,
+                category: txForm.category || undefined,
+                reason: txForm.reason ? `${txForm.reason} (Group Split)` : "Group Expense Split",
+                date: finalDate,
+                status: "pending",
+              })
+            );
+            promises.push(...splitPromises);
+
+            // Also record the user's own share as a personal expense
+            const expensePromise = api.post("/transactions", {
+              person_id: undefined,
+              type: "expense",
+              amount: amountPerPerson,
+              category: txForm.category || undefined,
+              reason: txForm.reason ? `${txForm.reason} (My Share)` : "Group Expense (My Share)",
+              date: finalDate,
+              status: "completed",
+            });
+            promises.push(expensePromise);
+          } else {
+            // Someone else paid for me -> Create a SINGLE DEBIT for that person
+            promises.push(api.post("/transactions", {
+              person_id: paidBy,
+              type: "debit",
+              amount: amountPerPerson,
+              category: txForm.category || undefined,
+              reason: txForm.reason ? `${txForm.reason} (Group Split)` : "Group Expense Split",
+              date: finalDate,
+              status: "pending",
+            }));
+          }
         }
 
         await Promise.all(promises);
